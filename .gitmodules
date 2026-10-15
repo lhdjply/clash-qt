@@ -1,0 +1,15 @@
+[submodule "third_party/yaml-cpp"]
+	path = third_party/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "third_party/ml-kem"]
+	path = third_party/ml-kem
+	url = https://github.com/itzmeanjan/ml-kem.git
+[submodule "third_party/sha3"]
+	path = third_party/sha3
+	url = https://github.com/itzmeanjan/sha3.git
+[submodule "third_party/randomshake"]
+	path = third_party/randomshake
+	url = https://github.com/itzmeanjan/RandomShake.git
+[submodule "third_party/subtle"]
+	path = third_party/subtle
+	url = https://github.com/itzmeanjan/subtle.git

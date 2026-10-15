@@ -1,0 +1,174 @@
+#pragma once
+
+// ---------------------------------------------------------------------------
+//  出站适配器接口
+//
+//  对应参照实现 adapter/adapter.go 的 Adapter 接口。所有出站节点、代理组、
+//  DIRECT / REJECT 都实现该接口，Tunnel 只依赖此抽象，不感知具体协议。
+//
+//  线程模型：dialTcp / dialUdp 会在工作线程中被调用，该线程已运行 Qt 事件循环。
+//  实现内部使用「异步连接 + 局部事件循环等待」的方式完成握手，返回时套接字
+//  已连接且仍归属同一线程，可直接交给 Relay 做非阻塞转发。
+//
+//  ---------------------------------------------------------------------------
+//  关于协议覆盖范围（重要）
+//  ---------------------------------------------------------------------------
+//  本阶段实现 DIRECT / REJECT / HTTP / SOCKS5 四类出站，以及代理组的
+//  Selector 语义。其余 40 余种协议（VMess / VLESS / Trojan / Shadowsocks /
+//  Hysteria / TUIC / WireGuard / AnyTLS / …）的编解码与握手属于参照实现
+//  transport 包（Go 侧约 55,000 行）的对应工作，需要逐协议按序实现；
+//  这些协议在 AdapterRegistry 中会被登记为「暂不支持」，选择它们时返回
+//  明确错误，而不会静默走直连（静默降级会造成流量泄漏）。
+// ---------------------------------------------------------------------------
+
+#include "config/ProxyConfig.h"
+#include "constant/Constants.h"
+#include "rules/Rule.h"
+#include "tunnel/OutboundStream.h"
+
+#include <QHostAddress>
+#include <QJsonObject>
+#include <QString>
+#include <QStringList>
+#include <QTcpSocket>
+#include <QUdpSocket>
+
+#include <memory>
+#include <optional>
+
+namespace core {
+
+class Adapter;
+
+// 一次拨号请求的完整上下文
+struct DialContext {
+    // 目标：优先使用 host（域名），否则使用 dstIp
+    QString host;
+    QString dstIp;
+    int     dstPort = 0;
+    QString network; // "tcp" / "udp"
+    Metadata metadata;
+};
+
+// 拨号结果：成功时 stream 非空且可用，error 为空。
+// stream 是抽象出站流：DIRECT/HTTP/SOCKS5 为裸 TCP 流，
+// WebSocket 类传输则为帧化解码后的流，中继层无需感知差异。
+struct DialResult {
+    std::shared_ptr<OutboundStream> stream;
+    std::shared_ptr<QUdpSocket>     udp;
+    QString                         error;
+    // REJECT-DROP：不建立任何上行连接，但保持客户端连接打开并丢弃数据
+    // （对应参照实现的 RejectDrop 语义，直接 reset 会让对端立刻感知）
+    bool                        drop = false;
+    // 握手过程中已经读到的、属于隧道有效载荷的字节。
+    // HTTP CONNECT / SOCKS5 的响应之后可能紧跟目标数据，Qt 没有「回灌」接口
+    // （QIODevice::unreadData 在 Qt 6.8 中不存在），因此把多余字节带出，
+    // 由 Tunnel 先写入客户端，避免丢包。
+    QByteArray                  extraData;
+
+    bool ok() const { return stream != nullptr || udp != nullptr; }
+};
+
+class Adapter {
+public:
+    virtual ~Adapter() = default;
+
+    virtual QString     name() const = 0;
+    virtual AdapterType type() const = 0;
+
+    // 支持的传输层协议，取值 "TCP" / "UDP"，用于 /proxies 接口与能力判断
+    virtual QStringList supportNetworks() const { return {QStringLiteral("TCP")}; }
+    virtual bool        supportUdp() const { return supportNetworks().contains(QStringLiteral("UDP")); }
+    virtual bool        supportTcp() const { return supportNetworks().contains(QStringLiteral("TCP")); }
+
+    // 是否需要由本机先把目标域名解析成 IP 再连接。
+    // DIRECT 必须为 true（否则无法使用内核自己的 hosts / DNS 配置，
+    // 也无法应用 nameserver-policy）；代理类出站通常为 false，
+    // 让代理服务器远端解析以避免本地 DNS 泄漏。
+    virtual bool needsLocalResolution() const { return false; }
+
+    // 拨号。timeoutMs 为总体超时；实现必须保证在超时前返回。
+    virtual DialResult dial(const DialContext &context, int timeoutMs) = 0;
+
+    // 健康状态与延迟历史，用于 /proxies 接口
+    virtual bool alive() const { return m_alive; }
+    virtual void setAlive(bool alive) { m_alive = alive; }
+
+    struct DelayRecord {
+        QString time;
+        int     delay = 0;
+    };
+    virtual QList<DelayRecord> history() const { return m_history; }
+    virtual void               recordDelay(int delayMs);
+    virtual void               clearHistory()
+    {
+        m_history.clear();
+        m_alive = false;
+    }
+
+    // /proxies 接口中该节点的 JSON 表示
+    virtual QJsonObject status() const;
+
+    // 关闭所有由此适配器建立的资源（连接池、监听端口等）
+    virtual void closeAll() {}
+
+protected:
+    bool                     m_alive = false;
+    QList<DelayRecord>       m_history;
+};
+
+using AdapterPtr = std::shared_ptr<Adapter>;
+
+// ---------------------------------------------------------------------------
+//  代理组
+// ---------------------------------------------------------------------------
+
+class ProxyGroup : public Adapter {
+public:
+    ProxyGroup(ProxyGroupConfig config, std::vector<AdapterPtr> members);
+
+    QString     name() const override { return m_config.name; }
+    AdapterType type() const override { return AdapterType::Compatible; }
+    GroupType   groupType() const { return m_config.type; }
+
+    QStringList supportNetworks() const override;
+
+    DialResult dial(const DialContext &context, int timeoutMs) override;
+
+    // 当前选中的成员名；未选中时返回空
+    QString now() const;
+    // 用户是否在界面上显式选择过成员。只有显式选择才需要被持久化：
+    // 构造时按配置取的首个成员只是默认展示，不该被当成「用户的选择」写回配置。
+    bool    hasUserSelection() const { return m_userSelected; }
+    // 用户显式选定的成员名；未显式选择时返回空
+    QString userSelectedMember() const { return m_userSelected ? m_fixed : QString(); }
+    // 手动选择成员（Selector 语义）；成员不存在时返回 false
+    bool select(const QString &memberName);
+    // 清除手动固定，恢复自动选择（/proxies/{name} 的 DELETE）
+    void unfix();
+
+    const ProxyGroupConfig   &config() const { return m_config; }
+    const std::vector<AdapterPtr> &members() const { return m_members; }
+
+    AdapterPtr current() const;
+
+    QJsonObject status() const override;
+
+    // 按延迟排序并选择（URLTest / Fallback / LoadBalance 的自动策略）
+    void selectByDelay();
+
+private:
+    // 自动选择：URLTest / Fallback 按延迟挑最优，其余取首个成员。
+    // 声明为 const 以便 now() 这类只读查询复用同一逻辑。
+    AdapterPtr autoPick() const;
+
+    ProxyGroupConfig         m_config;
+    std::vector<AdapterPtr>  m_members;
+    QString                  m_fixed; // 手动固定选中的成员名
+    // 该固定选择是否来自用户的显式操作（界面点选）。
+    // 构造时按配置取的首个成员只是默认展示，不算用户选择；区分二者的原因：
+    // 拨号失败的回退只应在「自动」状态下记住结果，不能静默改写用户的选择。
+    bool                     m_userSelected = false;
+};
+
+} // namespace core
