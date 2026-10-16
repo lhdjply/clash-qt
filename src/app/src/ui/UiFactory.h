@@ -102,6 +102,11 @@ void decorate(QPushButton *button, const QString &iconName);
 // 提示标签（次要文字）
 QLabel *makeHintLabel(const QString &text, QWidget *parent = nullptr);
 
+// 让控件忽略鼠标滚轮事件。QAbstractSpinBox / QComboBox 默认「滚轮即改值」，
+// 在可滚动页面上鼠标划过就会误改端口、参数；忽略后事件会冒泡给页面滚动区，
+// 于是「划过不改值，滚轮照常滚页面」。
+void ignoreWheel(QWidget *widget);
+
 // 应用全局主题。dark 为 true 时使用深色配色。
 void applyTheme(bool dark);
 

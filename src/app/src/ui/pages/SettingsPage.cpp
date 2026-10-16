@@ -51,6 +51,8 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     m_maxLogDaysSpin = new QSpinBox(logCard);
     m_maxLogDaysSpin->setRange(1, 365);
     m_maxLogDaysSpin->setSuffix(QStringLiteral(" 天"));
+    // 滚轮不参与改值，避免鼠标划过时误改（滚轮留给页面滚动）
+    ui::ignoreWheel(m_maxLogDaysSpin);
     logLayout->addWidget(ui::makeFormRow(QStringLiteral("日志保留天数"), m_maxLogDaysSpin,
                                          QStringLiteral("超过保留天数的日志文件会在启动时清理。"),
                                          logCard));
@@ -88,6 +90,10 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     m_socksPort->setRange(1, kMaxPort);
     m_httpPort = new QSpinBox(portCard);
     m_httpPort->setRange(1, kMaxPort);
+    // 端口误触的代价是内核要重新监听，这里一并禁掉滚轮改值
+    for (QSpinBox *spin : {m_mixedPort, m_socksPort, m_httpPort}) {
+        ui::ignoreWheel(spin);
+    }
 
     portLayout->addWidget(ui::makeFormRow(QStringLiteral("混合端口（HTTP + SOCKS5）"),
                                           m_mixedPort, QString(), portCard));

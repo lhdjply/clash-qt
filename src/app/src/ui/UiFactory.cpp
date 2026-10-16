@@ -4,6 +4,7 @@
 #include "utils/AppLogger.h"
 
 #include <QApplication>
+#include <QEvent>
 #include <QFont>
 #include <QGraphicsDropShadowEffect>
 #include <QGuiApplication>
@@ -381,6 +382,25 @@ void refreshIcons()
     }
 }
 
+// 滚轮过滤器：只拦滚轮，其它事件原样放行。
+//
+// 关键在「不接受」这个状态：QWidget 不接受滚轮事件时，Qt 会把它沿父链继续
+// 往上传（见 QWidgetWindow 的滚轮分发），于是滚轮最终落到页面滚动区上 ——
+// 数值不会被改动，页面仍能正常滚动。直接吞掉（accept）反而会让滚轮失效。
+class WheelGuard : public QObject {
+public:
+    explicit WheelGuard(QObject *parent) : QObject(parent) {}
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (event->type() != QEvent::Wheel) return QObject::eventFilter(watched, event);
+
+        event->ignore();
+        return true; // 不再进入部件自身的滚轮处理
+    }
+};
+
 QString buildStyleSheet(const Theme &t)
 {
     struct Substitution {
@@ -579,6 +599,18 @@ QLabel *makeHintLabel(const QString &text, QWidget *parent)
     label->setObjectName(QStringLiteral("hintLabel"));
     label->setWordWrap(true);
     return label;
+}
+
+void ignoreWheel(QWidget *widget)
+{
+    if (!widget) return;
+
+    // 幂等：重复调用不再叠加过滤器。过滤器以控件为父对象，随控件一起销毁
+    static const char kGuardInstalled[] = "clashqt_wheel_guard";
+    if (widget->property(kGuardInstalled).toBool()) return;
+
+    widget->installEventFilter(new WheelGuard(widget));
+    widget->setProperty(kGuardInstalled, true);
 }
 
 void applyTheme(bool dark)
