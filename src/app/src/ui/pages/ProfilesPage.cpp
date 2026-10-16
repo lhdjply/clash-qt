@@ -12,7 +12,6 @@
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -48,10 +47,11 @@ QString formatUsage(const std::optional<SubscriptionUserInfo> &info)
 }
 
 // ---------------------------------------------------------------------------
-//  编辑订阅对话框
+//  订阅对话框（添加 / 编辑共用）
 //
-//  远程订阅：名称 / 订阅链接 / 是否在启动时自动更新。
-//  本地订阅：名称 + 重新选择配置文件（内容替换，id 与「当前订阅」状态不变）。
+//  两种模式的字段完全一致（名称、订阅链接、启动时自动更新），差别只在
+//  标题、链接是否必填，以及编辑本地订阅时多一个「重新选择配置」。
+//  合成一个类，免得两套几乎相同的界面各自漂移。
 //
 //  版面沿用主界面的构件（弹窗标题区 + 毛玻璃卡片 + 表单行 + 强调色主按钮），
 //  这样弹窗和页面是一套观感，而不是原生控件的拼盘。
@@ -59,24 +59,32 @@ QString formatUsage(const std::optional<SubscriptionUserInfo> &info)
 //  没有暴露 useProxy / interval 这类字段：它们在配置里能存，但内核侧尚未
 //  使用（见 AppContext 的更新流程），摆出来会是「点得动但没作用」的假开关。
 // ---------------------------------------------------------------------------
-class EditProfileDialog : public QDialog {
+class SubscriptionDialog : public QDialog {
 public:
-    EditProfileDialog(const ProfileItem &item, QWidget *parent)
-        : QDialog(parent), m_item(item), m_remote(item.type == QLatin1String("remote"))
+    enum class Mode { Add, Edit };
+
+    SubscriptionDialog(Mode mode, const ProfileItem &item, QWidget *parent)
+        : QDialog(parent), m_mode(mode), m_item(item)
     {
-        setObjectName(QStringLiteral("editProfileDialog"));
-        setWindowTitle(QStringLiteral("编辑订阅"));
-        setMinimumWidth(540);
+        const bool adding = (m_mode == Mode::Add);
+        m_remote          = adding || m_item.type == QLatin1String("remote");
+
+        setObjectName(QStringLiteral("subscriptionDialog"));
+        setWindowTitle(adding ? QStringLiteral("添加订阅") : QStringLiteral("编辑订阅"));
+        setMinimumWidth(560);
 
         auto *root = new QVBoxLayout(this);
         root->setContentsMargins(20, 18, 20, 16);
         root->setSpacing(16);
 
         root->addWidget(ui::makeDialogHeader(
-            QStringLiteral("edit"), QStringLiteral("编辑订阅"),
-            m_remote ? QStringLiteral("修改名称或订阅链接。链接变更后，若它是当前订阅，"
-                                      "会立即按新链接重新拉取。")
-                     : QStringLiteral("本地订阅的内容来自导入的配置文件，可在下面替换。"),
+            adding ? QStringLiteral("plus") : QStringLiteral("edit"),
+            adding ? QStringLiteral("添加订阅") : QStringLiteral("编辑订阅"),
+            adding ? QStringLiteral("填写订阅链接，程序会立即下载并切换到这个订阅。")
+                   : (m_remote
+                          ? QStringLiteral("修改名称或订阅链接。链接变更后，若它是当前订阅，"
+                                           "会立即按新链接重新拉取。")
+                          : QStringLiteral("本地订阅的内容来自导入的配置文件，可在下面替换。")),
             this));
 
         auto *card       = ui::makeCard(QStringLiteral("订阅信息"), this);
@@ -84,6 +92,9 @@ public:
 
         m_name = new QLineEdit(item.name, card);
         m_name->setClearButtonEnabled(true);
+        if (adding) {
+            m_name->setPlaceholderText(QStringLiteral("可留空，默认按订阅域名命名"));
+        }
         cardLayout->addWidget(ui::makeFormRow(QStringLiteral("名称"), m_name, QString(), card));
 
         if (m_remote) {
@@ -96,7 +107,8 @@ public:
                 ui::makeFormRow(QStringLiteral("订阅链接"), m_url, QString(), card));
 
             m_autoUpdate = new QCheckBox(QStringLiteral("启动时自动更新该订阅"), card);
-            m_autoUpdate->setChecked(item.autoUpdate);
+            // 新增时与 AppContext::addSubscription 的默认一致（默认开启）
+            m_autoUpdate->setChecked(adding ? true : item.autoUpdate);
             cardLayout->addWidget(ui::makeFormRow(
                 QString(), m_autoUpdate,
                 QStringLiteral("开启后，程序启动时会自动下载该订阅的最新配置。"), card));
@@ -139,15 +151,16 @@ public:
 
         auto *cancel = new QPushButton(QStringLiteral("取消"), this);
         ui::decorate(cancel, QStringLiteral("close"));
-        auto *save = ui::makePrimaryButton(QStringLiteral("保存"), this);
-        ui::decorate(save, QStringLiteral("check"));
-        save->setDefault(true);
+        auto *confirm = ui::makePrimaryButton(
+            adding ? QStringLiteral("添加") : QStringLiteral("保存"), this);
+        ui::decorate(confirm, adding ? QStringLiteral("plus") : QStringLiteral("check"));
+        confirm->setDefault(true);
 
         actions->addWidget(cancel);
-        actions->addWidget(save);
+        actions->addWidget(confirm);
         root->addLayout(actions);
 
-        QObject::connect(save, &QPushButton::clicked, this, &EditProfileDialog::accept);
+        QObject::connect(confirm, &QPushButton::clicked, this, &SubscriptionDialog::accept);
         QObject::connect(cancel, &QPushButton::clicked, this, &QDialog::reject);
     }
 
@@ -174,7 +187,8 @@ public:
 
     void accept() override
     {
-        if (name().isEmpty()) {
+        // 添加时名称可以留空（后端会按订阅域名生成），编辑时不允许清空
+        if (name().isEmpty() && m_mode == Mode::Edit) {
             QMessageBox::warning(this, QStringLiteral("名称不能为空"),
                                  QStringLiteral("请给这个订阅起一个名称。"));
             return;
@@ -184,8 +198,11 @@ public:
             if (!parsed.isValid()
                 || (parsed.scheme() != QLatin1String("http")
                     && parsed.scheme() != QLatin1String("https"))) {
-                QMessageBox::warning(this, QStringLiteral("订阅链接无效"),
-                                     QStringLiteral("请填写 http/https 开头的订阅地址。"));
+                QMessageBox::warning(
+                    this, QStringLiteral("订阅链接无效"),
+                    m_mode == Mode::Add
+                        ? QStringLiteral("请填写以 http/https 开头的订阅链接。")
+                        : QStringLiteral("订阅链接需要以 http/https 开头，请检查后重试。"));
                 return;
             }
         }
@@ -193,6 +210,7 @@ public:
     }
 
 private:
+    Mode        m_mode = Mode::Add;
     ProfileItem m_item;
     bool        m_remote = false;
 
@@ -330,22 +348,28 @@ QString ProfilesPage::selectedId() const
 
 void ProfilesPage::onAddSubscription()
 {
-    bool ok = false;
-    const QString url = QInputDialog::getText(this, QStringLiteral("添加订阅"),
-                                             QStringLiteral("订阅链接（http/https）"),
-                                             QLineEdit::Normal, QString(), &ok);
-    if (!ok || url.trimmed().isEmpty()) return;
+    // 与远程订阅同一套字段，因此复用编辑用的弹窗（模式不同而已）——
+    // 原先连着弹两个原生输入框问「链接」「名称」，既丑又多一步
+    ProfileItem blank;
+    blank.type       = QStringLiteral("remote");
+    blank.autoUpdate = true;
 
-    bool          nameOk = false;
-    const QString name =
-        QInputDialog::getText(this, QStringLiteral("添加订阅"), QStringLiteral("显示名称（可留空）"),
-                              QLineEdit::Normal, QString(), &nameOk);
-    if (!nameOk) return;
+    SubscriptionDialog dialog(SubscriptionDialog::Mode::Add, blank, this);
+    if (dialog.exec() != QDialog::Accepted) return;
 
     QString error;
-    if (!m_context->addSubscription(url, name, &error)) {
+    if (!m_context->addSubscription(dialog.url(), dialog.name(), &error)) {
         QMessageBox::warning(this, QStringLiteral("添加失败"), error);
         return;
+    }
+
+    // addSubscription 固定开启自动更新；这里尊重用户在弹窗里的选择
+    if (!dialog.autoUpdate()) {
+        const QString id = m_context->profileConfig()->current();
+        if (!id.isEmpty()) {
+            m_context->profileConfig()->updateItem(id,
+                                                   QJsonObject{{QStringLiteral("autoUpdate"), false}});
+        }
     }
     refresh();
 }
@@ -376,13 +400,13 @@ void ProfilesPage::onEditSelected()
     const ProfileItem item = m_context->profileConfig()->item(id);
     if (item.id.isEmpty()) return;
 
-    EditProfileDialog dialog(item, this);
+    SubscriptionDialog dialog(SubscriptionDialog::Mode::Edit, item, this);
     if (dialog.exec() != QDialog::Accepted) return;
 
-    const QJsonObject   patch       = dialog.patch();
-    const QString       newFile     = dialog.replacementFile();
-    const bool          urlChanged  = dialog.urlChanged();
-    const bool          isCurrent   = m_context->profileConfig()->current() == id;
+    const QJsonObject patch      = dialog.patch();
+    const QString     newFile    = dialog.replacementFile();
+    const bool        urlChanged = dialog.urlChanged();
+    const bool        isCurrent  = m_context->profileConfig()->current() == id;
 
     if (patch.isEmpty() && newFile.isEmpty()) return; // 什么都没改
 
