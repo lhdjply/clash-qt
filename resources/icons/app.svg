@@ -1,19 +1,37 @@
-<!-- 应用图标：渐变圆角方块 + 白色闪电（自绘，无外部素材）
-     用于窗口与系统托盘；颜色自带，不参与主题替换 -->
+<!-- 应用图标：渐变圆角方块 + 白色猫头
+     猫是 clash / mihomo 这一族的标志形象（见 mihomo 源码 docs/logo.png、
+     clash-party 的 icon.png），用它可以一眼看出这是 clash 系客户端；
+     底板沿用本程序界面的蓝→紫渐变，是自己的配色而不是照搬原图。
+     用于窗口图标与系统托盘；颜色自带，不参与主题替换。
+
+     画法说明：猫头的眼睛与嘴不是叠加的深色形状，而是用与底板**同一个
+     渐变**（userSpaceOnUse，坐标覆盖整个 24×24）填出来的挖空 —— 这样
+     不管底板渐变怎么调，挖空处都严丝合缝。 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
   <defs>
-    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="plate" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24">
       <stop offset="0" stop-color="#4F8CFF"/>
       <stop offset="0.55" stop-color="#3B6EF5"/>
       <stop offset="1" stop-color="#7C5CF2"/>
     </linearGradient>
     <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
-      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.20"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
   </defs>
   <rect x="0" y="0" width="24" height="24" rx="6.2" fill="url(#plate)"/>
   <rect x="0" y="0" width="24" height="24" rx="6.2" fill="url(#gloss)"/>
-  <path d="M14.2 5.2 7.8 13.2h4.1l-.7 5.8 6.7-8.6h-4.1l.4-5.2z"
-        fill="#ffffff" stroke="#ffffff" stroke-width="0.7" stroke-linejoin="round"/>
+  <rect x="0.6" y="0.6" width="22.8" height="22.8" rx="5.7" fill="none"
+        stroke="#ffffff" stroke-opacity="0.16" stroke-width="1.2"/>
+  <!-- 猫头：两只尖耳 + 中间下凹的额头 + 圆角下巴 -->
+  <path fill="#ffffff"
+        d="M6.4 4.6 9.2 9.5Q12 11.5 14.8 9.5L17.6 4.6
+           17.9 7.2Q18.5 9.4 18.5 11.3L18.5 15.5
+           Q18.5 17.8 16.2 17.8L7.8 17.8Q5.5 17.8 5.5 15.5
+           L5.5 11.3Q5.5 9.4 6.1 7.2Z"/>
+  <!-- 眼睛与嘴：挖空（取底板同款渐变） -->
+  <circle cx="9.7" cy="12.7" r="1.35" fill="url(#plate)"/>
+  <circle cx="14.3" cy="12.7" r="1.35" fill="url(#plate)"/>
+  <path d="M10.9 14.6q0.55 0.75 1.1 0q0.55 0.75 1.1 0" fill="none" stroke="url(#plate)"
+        stroke-width="1.05" stroke-linecap="round"/>
 </svg>
