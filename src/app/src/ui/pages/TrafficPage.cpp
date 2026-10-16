@@ -16,6 +16,9 @@
 #include <QValueAxis>
 #include <QVBoxLayout>
 
+#include <algorithm>
+#include <cmath>
+
 #include "hub/Hub.h"
 
 namespace clashqt {
@@ -24,9 +27,29 @@ namespace {
 // 曲线保留的采样点数（每秒 1 个采样）
 constexpr int kMaxSamples = 120;
 
+// Y 轴刻度段数：5 段 → 6 个刻度标签，落在 0 起点上
+constexpr int kYIntervals = 5;
+
 // 上下行曲线色。与侧栏「上行 / 下行」的箭头图标同色，两处观感一致
 const QColor kUploadColor(0xE0, 0x9B, 0x36);
 const QColor kDownloadColor(0x2F, 0xA8, 0x7C);
+
+// 取一个「好看」的刻度步长（1 / 2 / 2.5 / 5 / 10 × 10^n），
+// 让轴标签落在 1、2.5、100 这类整数位置上
+double niceStep(double raw)
+{
+    if (raw <= 0.0) return 1.0;
+
+    const double magnitude  = std::pow(10.0, std::floor(std::log10(raw)));
+    const double normalized = raw / magnitude;
+
+    const double step = normalized <= 1.0   ? 1.0
+                        : normalized <= 2.0 ? 2.0
+                        : normalized <= 2.5 ? 2.5
+                        : normalized <= 5.0 ? 5.0
+                                            : 10.0;
+    return step * magnitude;
+}
 
 } // namespace
 
@@ -60,9 +83,7 @@ TrafficPage::TrafficPage(AppContext *context, QWidget *parent) : QWidget(parent)
     auto *chartLayout = qobject_cast<QVBoxLayout *>(chartCard->layout());
 
     m_uploadSeries = new QLineSeries(chartCard);
-    m_uploadSeries->setName(QStringLiteral("上传 (B/s)"));
     m_downloadSeries = new QLineSeries(chartCard);
-    m_downloadSeries->setName(QStringLiteral("下载 (B/s)"));
 
     m_chart = new QChart();
     m_chart->addSeries(m_uploadSeries);
@@ -76,8 +97,9 @@ TrafficPage::TrafficPage(AppContext *context, QWidget *parent) : QWidget(parent)
     axisX->setLabelFormat(QStringLiteral("%d"));
 
     auto *axisY = new QValueAxis(m_chart);
-    axisY->setTitleText(QStringLiteral("字节/秒"));
-    axisY->setLabelFormat(QStringLiteral("%d"));
+    axisY->setLabelFormat(QStringLiteral("%.0f"));
+    m_axisX = axisX;
+    m_axisY = axisY;
 
     m_chart->addAxis(axisX, Qt::AlignBottom);
     m_chart->addAxis(axisY, Qt::AlignLeft);
@@ -95,6 +117,9 @@ TrafficPage::TrafficPage(AppContext *context, QWidget *parent) : QWidget(parent)
 
     // 图表配色（含深浅两套）在这里一次性对齐当前主题
     applyChartTheme();
+    // 初始单位：B/s（有流量后按峰值自动升到 KB/s、MB/s…）
+    applyUnitLabels(calc::speedUnit(0.0));
+    updateAxisRange();
 
     QObject::connect(m_context->hub(), &core::Hub::trafficUpdated, this,
                      &TrafficPage::onTrafficUpdated);
@@ -169,12 +194,17 @@ void TrafficPage::onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed)
             .arg(stats.value(QStringLiteral("connectionCount")).toInt())
             .arg(calc::traffic(qint64(stats.value(QStringLiteral("memoryInUse")).toDouble()))));
 
-    // 追加采样点，超出窗口时移除最旧的一个，保持曲线滚动
+    // 峰值每秒衰减 2%：用它挑显示单位，单位不会随单个采样抖动，
+    // 流量停下来了也能把大单位多保持一会儿
+    m_peakSpeed = std::max({double(uploadSpeed), double(downloadSpeed), m_peakSpeed * 0.98});
+    updateAxisUnit();
+
+    // 追加采样点（按当前显示单位缩放），超出窗口时移除最旧的一个，保持曲线滚动
     const double x = m_uploadSeries->count() > 0
                          ? m_uploadSeries->at(m_uploadSeries->count() - 1).x() + 1.0
                          : 0.0;
-    m_uploadSeries->append(x, double(uploadSpeed));
-    m_downloadSeries->append(x, double(downloadSpeed));
+    m_uploadSeries->append(x, double(uploadSpeed) / m_yDivisor);
+    m_downloadSeries->append(x, double(downloadSpeed) / m_yDivisor);
 
     while (m_uploadSeries->count() > kMaxSamples) {
         m_uploadSeries->remove(0);
@@ -183,9 +213,50 @@ void TrafficPage::onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed)
     // 曲线左移后重新适配横轴范围
     if (m_uploadSeries->count() >= kMaxSamples) {
         const double minX = m_uploadSeries->at(0).x();
-        static_cast<QValueAxis *>(m_chart->axes(Qt::Horizontal).first())->setRange(minX,
-                                                                                   minX + kMaxSamples);
+        m_axisX->setRange(minX, minX + kMaxSamples);
     }
+
+    updateAxisRange();
+}
+
+void TrafficPage::updateAxisUnit()
+{
+    const calc::SpeedUnit unit = calc::speedUnit(m_peakSpeed);
+    if (qFuzzyCompare(unit.divisor, m_yDivisor)) return;
+
+    // 单位变了：把已有采样点整体换算过去（形状不变），Y 轴标题跟着换
+    const double factor = m_yDivisor / unit.divisor;
+    for (QLineSeries *series : {m_uploadSeries, m_downloadSeries}) {
+        QList<QPointF> points = series->points();
+        for (QPointF &point : points) point.setY(point.y() * factor);
+        series->replace(points);
+    }
+
+    m_yDivisor = unit.divisor;
+    applyUnitLabels(unit);
+}
+
+void TrafficPage::applyUnitLabels(const calc::SpeedUnit &unit)
+{
+    m_axisY->setTitleText(unit.name);
+    m_uploadSeries->setName(QStringLiteral("上传 (%1)").arg(unit.name));
+    m_downloadSeries->setName(QStringLiteral("下载 (%1)").arg(unit.name));
+}
+
+void TrafficPage::updateAxisRange()
+{
+    // 上界取「好看」的档位而不是自动适配：自动适配会把下界顶到数据最小值
+    // （速度图从 0 起更直观），刻度也容易落在 1302299 这种位置上
+    const double peak     = std::max(1.0, m_peakSpeed / m_yDivisor);
+    const double step     = niceStep(peak / kYIntervals);
+    const double upper    = step * kYIntervals;
+
+    m_axisY->setRange(0.0, upper);
+    m_axisY->setTickCount(kYIntervals + 1);
+    // 步长小于 1 时留一位小数，避免刻度全挤成同一个整数
+    m_axisY->setLabelFormat(step >= 1.0   ? QStringLiteral("%.0f")
+                            : step >= 0.1 ? QStringLiteral("%.1f")
+                                          : QStringLiteral("%.2f"));
 }
 
 } // namespace clashqt

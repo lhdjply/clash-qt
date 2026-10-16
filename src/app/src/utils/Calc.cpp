@@ -39,6 +39,23 @@ QString scale(qint64 bytes, const QString &suffix)
 
 QString traffic(qint64 bytes) { return scale(bytes, QString()); }
 
+SpeedUnit speedUnit(double bytesPerSecond)
+{
+    static const char *kUnits[] = {"B/s", "KB/s", "MB/s", "GB/s", "TB/s"};
+
+    double value = bytesPerSecond;
+    int    unit  = 0;
+    while (value >= 1024.0 && unit < 4) {
+        value /= 1024.0;
+        ++unit;
+    }
+
+    double divisor = 1.0;
+    for (int i = 0; i < unit; ++i) divisor *= 1024.0;
+
+    return SpeedUnit{divisor, QString::fromLatin1(kUnits[unit])};
+}
+
 QString speed(qint64 bytesPerSecond)
 {
     return scale(bytesPerSecond, QStringLiteral("/s"));

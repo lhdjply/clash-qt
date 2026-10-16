@@ -18,6 +18,15 @@ namespace clashqt {
 
 namespace calc {
 
+// 速率的显示单位：把「字节/秒」按 1024 进制折算成便于阅读的单位，
+// 例如 4194304 -> { 1048576.0, "MB/s" }。曲线图的 Y 轴用它决定
+// 「数据除以多少」以及轴标题写什么，避免轴上出现 5699531 这种七位数。
+struct SpeedUnit {
+    double  divisor; // 显示值 = 字节/秒 ÷ divisor
+    QString name;    // 单位名，如 "MB/s"
+};
+SpeedUnit speedUnit(double bytesPerSecond);
+
 QString traffic(qint64 bytes);
 QString speed(qint64 bytesPerSecond);
 // 剩余流量按当前速率还能用多久；rate 为 0 时返回 "--"
