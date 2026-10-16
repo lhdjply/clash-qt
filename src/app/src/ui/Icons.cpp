@@ -140,19 +140,39 @@ QPixmap pixmap(const QString &name, const QColor &color, int size)
     return get(name, color, size).pixmap(size, size);
 }
 
-QPixmap appPixmap(int size)
+QPixmap appPixmap(int size, AppIconState state)
 {
-    return appIcon(size).pixmap(size, size);
+    return appIcon(size, state).pixmap(size, size);
 }
 
-QIcon appIcon(int size)
+QIcon appIcon(int size, AppIconState state)
 {
-    const QString key = QStringLiteral("__app__") + QString::number(size);
+    const QString key = QStringLiteral("__app__") + QString::number(size)
+                        + (state == AppIconState::Active ? QStringLiteral("|active")
+                                                         : QString());
     auto cached = iconCache().constFind(key);
     if (cached != iconCache().constEnd()) return *cached;
 
-    // 应用图标自带渐变色（icons/app.svg），不参与主题替换
-    const QIcon icon = renderSvg(svgSource(QStringLiteral("app")), size);
+    // 应用图标自带渐变色（icons/app.svg），不参与主题替换。
+    // 「已开启」状态只替换底板的三个渐变停靠点，其余（猫头、挖空、
+    // 高光、描边）全部沿用同一份 SVG —— 状态与图形各管各的，
+    // 不必为红色维护第二份文件。
+    QByteArray svg = svgSource(QStringLiteral("app"));
+    if (state == AppIconState::Active) {
+        static const struct {
+            const char *from;
+            const char *to;
+        } kRecolor[] = {
+            {"#4F8CFF", "#FF8778"}, // 左上高光 → 亮红
+            {"#3B6EF5", "#E23B36"}, // 主色 → 红（与危险色同族）
+            {"#7C5CF2", "#A81C17"}, // 右下 → 深红
+        };
+        for (const auto &map : kRecolor) {
+            svg.replace(map.from, map.to);
+        }
+    }
+
+    const QIcon icon = renderSvg(svg, size);
     iconCache().insert(key, icon);
     return icon;
 }

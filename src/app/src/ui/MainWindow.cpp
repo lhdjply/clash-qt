@@ -103,6 +103,19 @@ MainWindow::MainWindow(AppContext *context, QWidget *parent)
     QObject::connect(m_context->hub(), &core::Hub::trafficUpdated, this,
                      &MainWindow::onTrafficUpdated);
 
+    // 系统代理也可能在设置页里被改动，那里不走本窗口的开关回调；
+    // 订阅配置变更信号后统一同步侧栏开关与托盘图标（含颜色），
+    // 避免出现「设置页已开、托盘还是蓝的」
+    QObject::connect(m_context->appConfig(), &AppConfig::configChanged, this, [this]() {
+        const bool enabled = m_context->isSysProxyEnabled();
+        if (m_sysProxySwitch->isChecked() != enabled) {
+            m_sysProxySwitch->blockSignals(true);
+            m_sysProxySwitch->setChecked(enabled);
+            m_sysProxySwitch->blockSignals(false);
+        }
+        updateTray();
+    });
+
     buildTray();
 
     // 启动已由入口完成（与窗口解耦，静默启动也要运行），这里只把界面
@@ -326,9 +339,17 @@ void MainWindow::updateTray()
 {
     if (!m_tray) return;
 
-    m_trayToggleSysProxy->setText(m_context->isSysProxyEnabled()
-                                      ? QStringLiteral("关闭系统代理")
-                                      : QStringLiteral("启用系统代理"));
+    const bool sysProxy = m_context->isSysProxyEnabled();
+
+    // 托盘图标随系统代理状态变色：开启时用红色底板，扫一眼就知道
+    // 流量是不是正被接管（关掉时回到常规蓝紫）
+    m_tray->setIcon(ui::icons::appIcon(
+        64, sysProxy ? ui::icons::AppIconState::Active : ui::icons::AppIconState::Normal));
+    m_tray->setToolTip(sysProxy ? QStringLiteral("Clash Qt · 系统代理已开启")
+                                : QStringLiteral("Clash Qt · 系统代理未开启"));
+
+    m_trayToggleSysProxy->setText(sysProxy ? QStringLiteral("关闭系统代理")
+                                           : QStringLiteral("启用系统代理"));
 }
 
 void MainWindow::onNavChanged(int index)

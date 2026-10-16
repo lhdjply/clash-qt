@@ -27,10 +27,16 @@ QIcon get(const QString &name, const QColor &color, int size = 20);
 
 // 直接取位图（供 QLabel::setPixmap 使用，省去再经 QIcon 取回的一步）
 QPixmap pixmap(const QString &name, const QColor &color, int size = 20);
-QPixmap appPixmap(int size = 64);
 
-// 应用图标（渐变圆角方块 + 白色闪电），用于窗口与系统托盘
-QIcon appIcon(int size = 64);
+// 应用图标底板的状态色：
+//   Normal —— 常规（蓝紫渐变）
+//   Active —— 系统代理已开启，底板换成红色，托盘上一眼看出「流量正被接管」
+enum class AppIconState { Normal, Active };
+
+QPixmap appPixmap(int size = 64, AppIconState state = AppIconState::Normal);
+
+// 应用图标（渐变圆角方块 + 白色猫头），用于窗口与系统托盘
+QIcon appIcon(int size = 64, AppIconState state = AppIconState::Normal);
 
 // 标题 → 图标映射：让既有 makeCard(标题) 调用自动获得合适的图标，
 // 无需逐个改动页面代码。未收录的标题返回空图标。
