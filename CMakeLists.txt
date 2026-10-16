@@ -163,6 +163,7 @@ set(CORE_PUBLIC_HEADERS
     src/core/include/base/Common.h
     src/core/include/constant/Constants.h
     src/core/include/common/Yaml.h
+    src/core/include/common/Hysteria2Client.h
     src/core/include/common/JsonUtil.h
     src/core/include/common/SocketUtil.h
     src/core/include/common/Tls13Client.h
@@ -178,6 +179,7 @@ set(CORE_PUBLIC_HEADERS
     src/core/include/adapter/Adapters.h
     src/core/include/adapter/VlessAdapter.h
     src/core/include/adapter/AdapterRegistry.h
+    src/core/include/adapter/Hysteria2Adapter.h
     src/core/include/listener/Listener.h
     src/core/include/listener/HttpListener.h
     src/core/include/listener/Socks5Listener.h
@@ -194,6 +196,7 @@ set(CORE_SOURCES
     src/core/src/base/Common.cpp
     src/core/src/constant/Constants.cpp
     src/core/src/common/Yaml.cpp
+    src/core/src/common/Hysteria2Client.cpp
     src/core/src/common/JsonUtil.cpp
     src/core/src/common/SocketUtil.cpp
     src/core/src/common/Tls13Client.cpp
@@ -207,6 +210,7 @@ set(CORE_SOURCES
     src/core/src/rules/RuleParser.cpp
     src/core/src/adapter/Adapter.cpp
     src/core/src/adapter/AdapterRegistry.cpp
+    src/core/src/adapter/Hysteria2Adapter.cpp
     src/core/src/adapter/VlessAdapter.cpp
     src/core/src/listener/Listener.cpp
     src/core/src/listener/HttpListener.cpp

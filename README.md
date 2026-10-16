@@ -72,8 +72,9 @@ FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake .
 | 模块 | 说明 |
 |------|------|
 | 出站协议 | VLESS 已实现（裸 TCP / TLS / WebSocket / REALITY + XTLS Vision，含
-  X25519MLKEM768 混合密钥交换）；VMess / Trojan / Shadowsocks / Hysteria / TUIC /
-  WireGuard 等其余协议注册为「暂不支持」，选中时**明确报错而非静默直连**，避免流量绕过代理 |
+  X25519MLKEM768 混合密钥交换）、Hysteria2 已实现（QUIC + HTTP/3 鉴权，见下）；
+  VMess / Trojan / Shadowsocks / Hysteria v1 / TUIC / WireGuard 等其余协议注册为
+  「暂不支持」，选中时**明确报错而非静默直连**，避免流量绕过代理 |
 | 外部控制器 | REST / WebSocket API（`external-controller`），供 zashboard 等第三方面板使用 |
 | TUN / redir / tproxy | 透明代理入站，需要内核网络特性与提权 |
 | JS 覆写引擎 | 需要嵌入 JS 引擎（QuickJS 或 Qt Qml 的 QJSEngine）；当前遇 js 覆写会告警并跳过 |
@@ -99,8 +100,33 @@ FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake .
   被判定字段不足 | 子规则补占位目标后继承外层策略 |
 
 验证结论：内核正确加载全部节点与代理组；命中 DIRECT 规则的流量正常转发；
-走 VLESS 组的流量可正常出网（已在真实机场的 VLESS + TLS + WebSocket 节点上验证）；
-未实现的协议则明确失败，不会静默直连。
+VLESS 组流量可正常出网（已在真实机场的 REALITY + Vision、VLESS + TLS + WebSocket
+节点上验证）；Hysteria2 节点同样已跑通（见下）；未实现的协议则明确失败，
+不会静默直连。
+
+## Hysteria2 支持说明
+
+Hysteria2（`type: hysteria2` / `hy2`）不走 TCP，而是在 UDP 上跑 QUIC，因此与
+VLESS 系列完全不同的一套协议栈，实现位于 `src/core/src/common/Hysteria2Client.cpp`：
+
+| 层 | 实现 |
+|----|------|
+| QUIC | OpenSSL 3.2+ 自带的 QUIC 客户端 API（`OSSL_QUIC_client_method` + `BIO_new_dgram`），不引入第三方 QUIC 库 |
+| TLS | QUIC 内置 TLS 1.3，ALPN 固定 `h3`；`skip-cert-verify` 与 `fingerprint`（证书 SHA-256 指纹固定）均支持 |
+| 鉴权 | HTTP/3 最小子集：控制流 SETTINGS + `POST https://hysteria/auth`；QPACK 仅用静态表（动态表容量声明为 0），并按 RFC 7541 解码服务端 Huffman 字符串 |
+| 隧道 | 每条目标连接一条双向流：`0x401`(varint) \| 地址长度 \| `host:port` \| 填充长度 \| 填充 |
+| 端口跳跃 | `ports: 60000-63000` 形式，每次建连随机取一个端口 |
+| 重试 | 网络类失败（握手/鉴权超时）在总超时预算内最多换端口重试 3 次；鉴权被拒等确定性失败不重试 |
+
+**明确的边界**（不做静默降级）：
+
+- **不支持 UDP 中继**：OpenSSL 3.2 尚未实现 QUIC DATAGRAM 帧。UDP 流量与内核
+  其余部分一致地明确失败（内核本身也未实现 UDP 中继），不会退化为直连。
+- **不支持 Salamander 混淆（`obfs`）与 realm**：选中时给出明确原因。
+- **不做流复用**：每条入站连接独立建立一条 QUIC 会话（因此新建连接比原生实现
+  多一次握手往返，约几十毫秒量级）。这样每个连接的对象都归属自己的工作线程，
+  无跨线程共享。后续若需降低首包延迟，可在不改协议层的前提下改为按节点共享
+  会话 + 专用 I/O 线程。
 
 ## 已知实现差异
 

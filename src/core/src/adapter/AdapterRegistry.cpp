@@ -1,6 +1,7 @@
 #include "adapter/AdapterRegistry.h"
 
 #include "adapter/Adapters.h"
+#include "adapter/Hysteria2Adapter.h"
 #include "adapter/VlessAdapter.h"
 #include "base/Common.h"
 #include "common/JsonUtil.h"
@@ -55,6 +56,8 @@ std::shared_ptr<Adapter> AdapterRegistry::buildNode(const ProxyConfig &config)
         return std::make_shared<Socks5ProxyAdapter>(config);
     case AdapterType::Vless:
         return std::make_shared<VlessAdapter>(config);
+    case AdapterType::Hysteria2:
+        return std::make_shared<Hysteria2Adapter>(config);
     default:
         // 其余协议尚未实现：构造占位适配器并登记，界面据此提示「暂不支持」。
         // 关键点是绝不能退化为直连——那会让用户流量在无感知的情况下绕过代理。
