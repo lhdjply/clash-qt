@@ -52,6 +52,7 @@ LogsPage::LogsPage(AppContext *context, QWidget *parent) : QWidget(parent), m_co
     toolbar->addWidget(m_pauseScroll);
 
     m_clearButton = new QPushButton(QStringLiteral("清空显示"), this);
+    ui::decorate(m_clearButton, QStringLiteral("eraser"));
     toolbar->addWidget(m_clearButton);
     toolbar->addStretch(1);
 

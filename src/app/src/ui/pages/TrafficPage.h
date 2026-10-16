@@ -8,7 +8,9 @@
 
 #include <QWidget>
 
+class QEvent;
 class QLabel;
+class QShowEvent;
 
 // Qt 6 起 Qt Charts 的类位于全局命名空间（Qt 5 才在 QtCharts 命名空间内）。
 // 这里只做前置声明以减少头文件依赖，不要写进任何命名空间，
@@ -29,7 +31,17 @@ public:
     // 记录一次速度采样（由主窗口转发 Hub::trafficUpdated）
     void onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed);
 
+protected:
+    // 主题（调色板 / 样式表）变化时重刷图表配色：QChart 不会跟着调色板走，
+    // 不处理就会在深色界面里留一块浅色白底
+    void changeEvent(QEvent *event) override;
+    // 切到本页时兜底对齐一次主题（避免隐藏期间漏掉主题变化）
+    void showEvent(QShowEvent *event) override;
+
 private:
+    // 把当前主题的颜色应用到图表（背景交给卡片，坐标轴 / 图例 / 曲线显式着色）
+    void applyChartTheme();
+
     AppContext  *m_context = nullptr;
     QLabel      *m_uploadLabel = nullptr;
     QLabel      *m_downloadLabel = nullptr;

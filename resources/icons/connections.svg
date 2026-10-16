@@ -1,0 +1,11 @@
+<!-- 连接：三节点互连
+     24x24 线性图标：描边色写 currentColor，由运行时按主题替换
+     （见 src/app/src/ui/Icons.cpp） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+     stroke-linejoin="round">
+  <circle cx="6.5" cy="12" r="2.6"/>
+  <circle cx="17.5" cy="6" r="2.6"/>
+  <circle cx="17.5" cy="18" r="2.6"/>
+  <path d="M8.9 10.8 15.1 7.2M8.9 13.2l6.2 3.6"/>
+</svg>

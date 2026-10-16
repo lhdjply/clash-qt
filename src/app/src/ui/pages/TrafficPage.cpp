@@ -4,11 +4,15 @@
 #include "ui/UiFactory.h"
 #include "utils/Calc.h"
 
+#include <QAbstractAxis>
+#include <QBrush>
 #include <QChart>
 #include <QChartView>
+#include <QEvent>
 #include <QLabel>
 #include <QLineSeries>
 #include <QPainter>
+#include <QPen>
 #include <QValueAxis>
 #include <QVBoxLayout>
 
@@ -19,6 +23,10 @@ namespace {
 
 // 曲线保留的采样点数（每秒 1 个采样）
 constexpr int kMaxSamples = 120;
+
+// 上下行曲线色。与侧栏「上行 / 下行」的箭头图标同色，两处观感一致
+const QColor kUploadColor(0xE0, 0x9B, 0x36);
+const QColor kDownloadColor(0x2F, 0xA8, 0x7C);
 
 } // namespace
 
@@ -85,8 +93,63 @@ TrafficPage::TrafficPage(AppContext *context, QWidget *parent) : QWidget(parent)
     chartLayout->addWidget(chartView);
     root->addWidget(chartCard, 1);
 
+    // 图表配色（含深浅两套）在这里一次性对齐当前主题
+    applyChartTheme();
+
     QObject::connect(m_context->hub(), &core::Hub::trafficUpdated, this,
                      &TrafficPage::onTrafficUpdated);
+}
+
+void TrafficPage::applyChartTheme()
+{
+    const ui::Theme &t = ui::theme();
+
+    // 背景交给卡片：图表自带一块实底（默认是浅色），深色界面下会突兀地
+    // 留一块白，索性让它透明，露出卡片的毛玻璃底
+    m_chart->setBackgroundVisible(false);
+    m_chart->setPlotAreaBackgroundVisible(false);
+    m_chart->setBackgroundRoundness(0);
+    m_chart->setMargins(QMargins(6, 6, 6, 2));
+
+    for (QAbstractAxis *axis : m_chart->axes()) {
+        axis->setLabelsColor(t.textMuted);
+        axis->setTitleBrush(QBrush(t.textMuted));
+        axis->setLinePenColor(t.scrollHandle);      // 轴线：略实一点
+        axis->setGridLinePen(QPen(t.separator, 1)); // 网格：浅到不喧宾夺主
+    }
+
+    // 图例同样自带浅色底：关掉它，否则深色主题下会出现一块白底 + 浅色文字
+    m_chart->legend()->setBackgroundVisible(false);
+    m_chart->legend()->setLabelColor(t.text);
+    // 曲线线宽 2：1px 在半透明卡片上偏细，看不出「流动」的曲线感
+    m_uploadSeries->setPen(QPen(kUploadColor, 2));
+    m_downloadSeries->setPen(QPen(kDownloadColor, 2));
+}
+
+void TrafficPage::changeEvent(QEvent *event)
+{
+    QWidget::changeEvent(event);
+
+    // 应用主题时会重设调色板与样式表，图表不在 QSS 的管辖范围内，
+    // 需要在这里重新上色（否则深色主题下曲线图仍是浅色）
+    switch (event->type()) {
+    case QEvent::PaletteChange:
+    case QEvent::ApplicationPaletteChange:
+    case QEvent::StyleChange:
+    case QEvent::ApplicationFontChange:
+        applyChartTheme();
+        break;
+    default:
+        break;
+    }
+}
+
+void TrafficPage::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+
+    // 兜底：本页隐藏期间主题若变过，切回来时对齐一次
+    applyChartTheme();
 }
 
 void TrafficPage::onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed)

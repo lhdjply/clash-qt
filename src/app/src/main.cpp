@@ -112,8 +112,8 @@ int main(int argc, char *argv[])
     clashqt::MainWindow *window = nullptr;
     auto showWindow = [&]() {
         if (!window) {
-            clashqt::ui::applyTheme(
-                context->appConfig()->appTheme() == QLatin1String("dark"));
+            // 主题按配置名解析：system 会跟随桌面配色方案（不再一律当浅色）
+            clashqt::ui::applyThemeFor(context->appConfig()->appTheme());
             window = new clashqt::MainWindow(context);
             QObject::connect(&app, &QApplication::aboutToQuit, window,
                              &QObject::deleteLater);

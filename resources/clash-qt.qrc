@@ -1,0 +1,52 @@
+<!--
+  clash-qt 图标资源清单。
+
+  resources/icons/ 下是真实的 .svg 文件（不是 C++ 内联字符串），由本文件
+  经 Qt 资源系统编译进可执行文件 —— 既保持「单个二进制、无外部文件依赖」
+  的既有约定，也让图标能脱离源码单独编辑与预览。
+
+  新增图标：把 .svg 放进 icons/，再把文件名加进下面的 <file> 列表。
+
+  资源路径 = 前缀 + 文件相对路径，即 :/icons/xxx.svg（与 ui/Icons.cpp 对应）。
+  描边色约定：普通图标写 currentColor，运行时按主题替换（见 ui/Icons.cpp）；
+  应用图标 app.svg 自带渐变色，不参与替换。
+-->
+<RCC>
+    <qresource prefix="/">
+        <file>icons/activity.svg</file>
+        <file>icons/app.svg</file>
+        <file>icons/arrowdown.svg</file>
+        <file>icons/arrowup.svg</file>
+        <file>icons/bolt.svg</file>
+        <file>icons/check.svg</file>
+        <file>icons/clock.svg</file>
+        <file>icons/close.svg</file>
+        <file>icons/clouddown.svg</file>
+        <file>icons/code.svg</file>
+        <file>icons/connections.svg</file>
+        <file>icons/eraser.svg</file>
+        <file>icons/external.svg</file>
+        <file>icons/folder.svg</file>
+        <file>icons/gauge.svg</file>
+        <file>icons/info.svg</file>
+        <file>icons/logs.svg</file>
+        <file>icons/plus.svg</file>
+        <file>icons/port.svg</file>
+        <file>icons/profiles.svg</file>
+        <file>icons/proxy.svg</file>
+        <file>icons/quick.svg</file>
+        <file>icons/refresh.svg</file>
+        <file>icons/rules.svg</file>
+        <file>icons/server.svg</file>
+        <file>icons/settings.svg</file>
+        <file>icons/shield.svg</file>
+        <file>icons/speed.svg</file>
+        <file>icons/stats.svg</file>
+        <file>icons/system.svg</file>
+        <file>icons/target.svg</file>
+        <file>icons/traffic.svg</file>
+        <file>icons/trash.svg</file>
+        <file>icons/trend.svg</file>
+        <file>icons/warning.svg</file>
+    </qresource>
+</RCC>

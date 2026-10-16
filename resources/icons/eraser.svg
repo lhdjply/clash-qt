@@ -1,0 +1,10 @@
+<!-- 擦除：橡皮
+     24x24 线性图标：描边色写 currentColor，由运行时按主题替换
+     （见 src/app/src/ui/Icons.cpp） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+     stroke-linejoin="round">
+  <path d="M8.5 20h11"/>
+  <path d="M4.6 15.6 12.2 8l4.2 4.2-5.4 5.4a2 2 0 0 1-2.8 0l-3.6-3.6a1.5 1.5 0 0 1 0-2.1z"/>
+  <path d="M12.2 8l2.6-2.6a2 2 0 0 1 2.8 0l2 2a2 2 0 0 1 0 2.8L16.4 12.2"/>
+</svg>

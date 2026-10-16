@@ -288,6 +288,7 @@ set(APP_SOURCES
 
     src/app/src/ui/MainWindow.cpp
     src/app/src/ui/UiFactory.cpp
+    src/app/src/ui/Icons.cpp
     src/app/src/ui/pages/ProxiesPage.cpp
     src/app/src/ui/pages/ProfilesPage.cpp
     src/app/src/ui/pages/ConnectionsPage.cpp
@@ -317,6 +318,7 @@ set(APP_HEADERS
 
     src/app/src/ui/MainWindow.h
     src/app/src/ui/UiFactory.h
+    src/app/src/ui/Icons.h
     src/app/src/ui/pages/ProxiesPage.h
     src/app/src/ui/pages/ProfilesPage.h
     src/app/src/ui/pages/ConnectionsPage.h
@@ -326,7 +328,16 @@ set(APP_HEADERS
     src/app/src/ui/pages/SettingsPage.h
 )
 
-qt_add_executable(clash-qt ${APP_SOURCES} ${APP_HEADERS})
+# 图标资源：项目根 resources/icons/ 下的 .svg 为真实文件，由 clash-qt.qrc 经 Qt 资源
+# 系统编译进可执行文件 —— 保持「单个二进制、无外部文件依赖」的既有约定，
+# 同时让图标能脱离 C++ 源码单独编辑与预览。
+set(APP_RESOURCES
+    resources/clash-qt.qrc
+)
+
+qt_add_executable(clash-qt ${APP_SOURCES} ${APP_HEADERS} ${APP_RESOURCES})
+# .qrc 由 AUTORCC 编译出 qrc_*.cpp 参与链接
+set_target_properties(clash-qt PROPERTIES AUTORCC ON)
 
 target_include_directories(clash-qt PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app/src")
 
@@ -355,10 +366,11 @@ set_target_properties(clash-qt PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-# 资源（图标等）后续阶段以 .qrc 引入；此处保证目录存在时被识别
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/app/resources")
+# 资源目录路径宏：图标已通过 clash-qt.qrc 内嵌，此宏供需要访问
+# resources/ 原始路径的场景使用（当前无消费者，保留以便扩展）
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources")
     target_compile_definitions(clash-qt PRIVATE
-        CLASHQT_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src/app/resources")
+        CLASHQT_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
 endif()
 
 endif() # CLASHQT_BUILD_APP

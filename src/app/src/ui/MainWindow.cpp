@@ -5,6 +5,7 @@
 #include "config/ControledKernelConfig.h"
 #include "config/ProfileConfig.h"
 #include "sys/SysProxy.h"
+#include "ui/Icons.h"
 #include "ui/UiFactory.h"
 #include "ui/pages/ConnectionsPage.h"
 #include "ui/pages/LogsPage.h"
@@ -21,6 +22,7 @@
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
@@ -32,8 +34,15 @@
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QStyle>
+#include <QStyleHints>
 #include <QVBoxLayout>
 #include <QWidget>
+
+#include <QLinearGradient>
+#include <QListWidgetItem>
+#include <QPaintEvent>
+#include <QPainter>
+#include <QRadialGradient>
 
 #include "hub/Hub.h"
 
@@ -45,8 +54,22 @@ MainWindow::MainWindow(AppContext *context, QWidget *parent)
     setWindowTitle(QStringLiteral("Clash Qt"));
     resize(1180, 760);
     setMinimumSize(960, 620);
+    setWindowIcon(ui::icons::appIcon(64));
+
+    // 主题必须在创建任何界面部件之前应用：卡片、徽标、按钮的图标都是
+    // 按当前主题色渲染的位图，晚于部件创建就只会得到默认浅色配色
+    // （深色主题下按钮图标会变成近黑，几乎看不见）。
+    applyThemeFromConfig();
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    // 桌面深浅色在运行期变化时（设置里选「跟随系统」）实时跟随
+    QObject::connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this,
+                     &MainWindow::onSystemColorSchemeChanged);
+#endif
 
     auto *central = new QWidget(this);
+    // 命名以便样式表把它设为透明，露出主窗口自绘的渐变背景
+    central->setObjectName(QStringLiteral("centralRoot"));
     auto *layout  = new QHBoxLayout(central);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
@@ -61,10 +84,15 @@ MainWindow::MainWindow(AppContext *context, QWidget *parent)
     // ---- 注册页面（顺序与导航项一致） ------------------------------------
     const QStringList titles = registerPages();
 
+    m_navTitles = titles;
     m_navList->blockSignals(true);
-    m_navList->addItems(titles);
+    for (const QString &title : titles) {
+        auto *item = new QListWidgetItem(title, m_navList);
+        item->setSizeHint(QSize(0, 40));
+    }
     m_navList->blockSignals(false);
     m_navList->setCurrentRow(0);
+    updateNavIcons();
 
     // ---- 信号 -------------------------------------------------------------
     QObject::connect(m_navList, &QListWidget::currentRowChanged, this,
@@ -75,7 +103,6 @@ MainWindow::MainWindow(AppContext *context, QWidget *parent)
     QObject::connect(m_context->hub(), &core::Hub::trafficUpdated, this,
                      &MainWindow::onTrafficUpdated);
 
-    applyThemeFromConfig();
     buildTray();
 
     // 启动已由入口完成（与窗口解耦，静默启动也要运行），这里只把界面
@@ -92,6 +119,35 @@ QWidget *MainWindow::buildSider()
     auto *siderLayout = new QVBoxLayout(sider);
     siderLayout->setContentsMargins(10, 12, 10, 12);
     siderLayout->setSpacing(10);
+
+    // ---- 应用标识（图标 + 名称 + 版本） -----------------------------------
+    auto *brand = new QWidget(sider);
+    brand->setObjectName(QStringLiteral("brand"));
+    auto *brandLayout = new QHBoxLayout(brand);
+    brandLayout->setContentsMargins(4, 2, 4, 4);
+    brandLayout->setSpacing(10);
+
+    auto *logo = new QLabel(brand);
+    logo->setFixedSize(30, 30);
+    logo->setPixmap(ui::icons::appPixmap(30));
+    brandLayout->addWidget(logo);
+
+    auto *brandTexts = new QWidget(brand);
+    auto *brandTextLayout = new QVBoxLayout(brandTexts);
+    brandTextLayout->setContentsMargins(0, 0, 0, 0);
+    brandTextLayout->setSpacing(0);
+
+    auto *brandName = new QLabel(QStringLiteral("Clash Qt"), brandTexts);
+    brandName->setObjectName(QStringLiteral("brandName"));
+    brandTextLayout->addWidget(brandName);
+
+    auto *brandVersion =
+        new QLabel(QStringLiteral("v%1").arg(QLatin1String(CLASHQT_VERSION)), brandTexts);
+    brandVersion->setObjectName(QStringLiteral("brandVersion"));
+    brandTextLayout->addWidget(brandVersion);
+
+    brandLayout->addWidget(brandTexts, 1);
+    siderLayout->addWidget(brand);
 
     // ---- 快捷设置卡片（出站模式 + 系统代理） -------------------------------
     auto *kernelCard = ui::makeCard(QStringLiteral("快捷设置"), sider);
@@ -120,11 +176,38 @@ QWidget *MainWindow::buildSider()
 
     siderLayout->addWidget(kernelCard);
 
-    // ---- 统计卡片 ---------------------------------------------------------
+    // ---- 统计卡片（上行 / 下行各一行，带方向图标） --------------------------
     auto *statsCard = ui::makeCard(QStringLiteral("统计"), sider);
     auto *statsLayout = qobject_cast<QVBoxLayout *>(statsCard->layout());
-    m_statsLabel = new QLabel(QStringLiteral("↑ 0 B/s\n↓ 0 B/s"), statsCard);
-    statsLayout->addWidget(m_statsLabel);
+
+    // 生成一行「方向图标 + 名称 + 数值」，返回数值标签供实时刷新
+    auto makeStatRow = [&](const QString &iconName, const QColor &color,
+                           const QString &caption) {
+        auto *row = new QWidget(statsCard);
+        auto *rowLayout = new QHBoxLayout(row);
+        rowLayout->setContentsMargins(0, 0, 0, 0);
+        rowLayout->setSpacing(8);
+
+        auto *iconLabel = new QLabel(row);
+        iconLabel->setFixedSize(16, 16);
+        iconLabel->setPixmap(ui::icons::pixmap(iconName, color, 16));
+        rowLayout->addWidget(iconLabel);
+
+        rowLayout->addWidget(new QLabel(caption, row));
+
+        auto *value = new QLabel(QStringLiteral("0 B/s"), row);
+        value->setObjectName(QStringLiteral("statValue"));
+        value->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        rowLayout->addWidget(value, 1);
+        return value;
+    };
+
+    m_uploadLabel = makeStatRow(QStringLiteral("arrowup"),
+                                QColor(0xE0, 0x9B, 0x36), QStringLiteral("上行"));
+    m_downloadLabel = makeStatRow(QStringLiteral("arrowdown"),
+                                  QColor(0x2F, 0xA8, 0x7C), QStringLiteral("下行"));
+    statsLayout->addWidget(m_uploadLabel->parentWidget());
+    statsLayout->addWidget(m_downloadLabel->parentWidget());
     siderLayout->addWidget(statsCard);
 
     // ---- 导航 -------------------------------------------------------------
@@ -153,11 +236,21 @@ QStringList MainWindow::registerPages()
         // 页面内容可能高于可视区（例如设置页有多张卡片）。放进滚动区域后，
         // 布局不会为了塞进窗口把「可压缩」的行（自动换行标签）压到 0 高度，
         // 否则会出现文字互相重叠。
+        //
+        // 外层再包一个留白容器：卡片带投影，投影会画到卡片矩形之外，
+        // 紧贴滚动区边缘时会被裁掉。
+        auto *host = new QWidget(this);
+        host->setObjectName(QStringLiteral("pageHost"));
+        auto *hostLayout = new QVBoxLayout(host);
+        hostLayout->setContentsMargins(6, 6, 6, 6);
+        hostLayout->addWidget(page);
+
         auto *scroll = new QScrollArea(this);
-        scroll->setWidget(page);
+        scroll->setWidget(host);
         scroll->setWidgetResizable(true);
         scroll->setFrameShape(QFrame::NoFrame);
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        scroll->viewport()->setAutoFillBackground(false);
         m_pages->addWidget(scroll);
     };
 
@@ -183,8 +276,8 @@ void MainWindow::buildTray()
 
     m_tray = new QSystemTrayIcon(this);
 
-    // 使用桌面风格内置图标，避免额外资源文件；后续以 .qrc 引入专属图标
-    m_tray->setIcon(QApplication::style()->standardIcon(QStyle::SP_ComputerIcon));
+    // 专属图标（resources/icons/app.svg），与窗口图标一致
+    m_tray->setIcon(ui::icons::appIcon(64));
     m_tray->setToolTip(QStringLiteral("Clash Qt"));
 
     auto *menu = new QMenu(this);
@@ -242,6 +335,7 @@ void MainWindow::onNavChanged(int index)
 {
     if (index < 0 || index >= m_pages->count()) return;
     m_pages->setCurrentIndex(index);
+    updateNavIcons();
 
     // 切到某页时立即刷新一次，避免展示过期数据
     switch (index) {
@@ -298,8 +392,8 @@ void MainWindow::onSysProxyToggled(bool enabled)
 
 void MainWindow::onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed)
 {
-    m_statsLabel->setText(QStringLiteral("↑ %1\n↓ %2")
-                              .arg(calc::speed(uploadSpeed), calc::speed(downloadSpeed)));
+    if (m_uploadLabel) m_uploadLabel->setText(calc::speed(uploadSpeed));
+    if (m_downloadLabel) m_downloadLabel->setText(calc::speed(downloadSpeed));
 
     // 托盘 tooltip 同步显示当前速度（对应原实现的 setToolTip）
     if (m_tray) {
@@ -321,16 +415,59 @@ void MainWindow::onToast(const QString &type, const QString &message)
 
 void MainWindow::applyThemeFromConfig()
 {
-    const QString theme = m_context->appConfig()->appTheme();
-    bool dark = false;
-    if (theme == QLatin1String("dark")) {
-        dark = true;
-    } else if (theme == QLatin1String("system")) {
-        // 依据系统调色板亮度判断，避免在深色系统上强制浅色
-        const QPalette palette = QApplication::palette();
-        dark = palette.color(QPalette::Window).lightness() < 128;
+    // 主题名 → 深浅：system 跟随桌面配色方案，light / dark 为用户显式选择
+    ui::applyThemeFor(m_context->appConfig()->appTheme());
+}
+
+void MainWindow::onSystemColorSchemeChanged()
+{
+    // 只有「跟随系统」才跟着变；显式选了浅色 / 深色时不受桌面影响
+    if (m_context->appConfig()->appTheme() != QLatin1String("system")) return;
+
+    ui::applyThemeFor(QStringLiteral("system"));
+    update(); // 窗口背景是自绘的，换主题后需要重画
+}
+
+void MainWindow::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+
+    const QRectF area(rect());
+    const ui::Theme &theme = ui::theme();
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // 对角渐变：为半透明卡片提供可透出的底色层次
+    QLinearGradient background(area.topLeft(), area.bottomRight());
+    background.setColorAt(0.0, theme.bgTop);
+    background.setColorAt(1.0, theme.bgBottom);
+    painter.fillRect(area, background);
+
+    // 左上角强调色光晕：卡片是半透明的，光晕会从卡片下透出来，
+    // 形成「磨砂玻璃后面有光」的观感
+    QRadialGradient glow(QPointF(area.width() * 0.15, area.height() * 0.06),
+                         qMax(area.width(), area.height()) * 0.55);
+    QColor start = theme.glow;
+    glow.setColorAt(0.0, start);
+    start.setAlpha(0);
+    glow.setColorAt(1.0, start);
+    painter.fillRect(area, glow);
+}
+
+void MainWindow::updateNavIcons()
+{
+    if (!m_navList) return;
+
+    const int current = m_navList->currentRow();
+    for (int i = 0; i < m_navList->count(); ++i) {
+        QListWidgetItem *item = m_navList->item(i);
+        if (!item) continue;
+
+        const QString title = m_navTitles.value(i, item->text());
+        const QColor  color = (i == current) ? ui::theme().onAccent : ui::theme().text;
+        item->setIcon(ui::icons::forNavTitle(title, color, 18));
     }
-    ui::applyTheme(dark);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

@@ -46,6 +46,10 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
     m_testAllButton = new QPushButton(QStringLiteral("测试全部组"), this);
     // 清除手动固定、交还给组的自动策略（URLTest/Fallback 按延迟选）
     m_autoButton = new QPushButton(QStringLiteral("恢复自动"), this);
+
+    ui::decorate(m_testButton, QStringLiteral("bolt"));
+    ui::decorate(m_testAllButton, QStringLiteral("speed"));
+    ui::decorate(m_autoButton, QStringLiteral("check"));
     toolbar->addWidget(m_testButton);
     toolbar->addWidget(m_testAllButton);
     toolbar->addWidget(m_autoButton);

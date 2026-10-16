@@ -1,0 +1,10 @@
+<!-- 速度：仪表 + 指针
+     24x24 线性图标：描边色写 currentColor，由运行时按主题替换
+     （见 src/app/src/ui/Icons.cpp） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+     stroke-linejoin="round">
+  <path d="M12 4.2a8.3 8.3 0 0 1 7.1 12.6H4.9A8.3 8.3 0 0 1 12 4.2z"/>
+  <path d="M12 12l3.4-3.4"/>
+  <path d="M6.6 12.6h10.8"/>
+</svg>

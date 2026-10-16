@@ -66,6 +66,13 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
     auto *switchBtn = new QPushButton(QStringLiteral("设为当前"), this);
     auto *removeBtn = ui::makeDangerButton(QStringLiteral("删除"), this);
 
+    ui::decorate(addRemote, QStringLiteral("plus"));
+    ui::decorate(addLocal, QStringLiteral("folder"));
+    ui::decorate(update, QStringLiteral("refresh"));
+    ui::decorate(updateAll, QStringLiteral("clouddown"));
+    ui::decorate(switchBtn, QStringLiteral("target"));
+    ui::decorate(removeBtn, QStringLiteral("trash"));
+
     toolbar->addWidget(addRemote);
     toolbar->addWidget(addLocal);
     toolbar->addWidget(update);

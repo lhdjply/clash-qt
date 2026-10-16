@@ -56,6 +56,7 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
                                          logCard));
 
     auto *openDir = new QPushButton(QStringLiteral("打开数据目录"), logCard);
+    ui::decorate(openDir, QStringLiteral("folder"));
     logLayout->addWidget(openDir);
 
     m_dataDirLabel = ui::makeHintLabel(QString(), logCard);
@@ -264,7 +265,8 @@ void SettingsPage::onThemeChanged(int index)
     if (m_loading) return;
     const QString theme = m_themeCombo->itemData(index).toString();
     m_context->appConfig()->patch(QJsonObject{{QStringLiteral("appTheme"), theme}});
-    ui::applyTheme(theme == QLatin1String("dark"));
+    // 按主题名解析（system → 跟随桌面配色方案）
+    ui::applyThemeFor(theme);
 }
 
 void SettingsPage::onOpenDataDir()

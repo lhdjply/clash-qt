@@ -1,0 +1,8 @@
+<!-- 目录：文件夹
+     24x24 线性图标：描边色写 currentColor，由运行时按主题替换
+     （见 src/app/src/ui/Icons.cpp） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+     stroke-linejoin="round">
+  <path d="M3 7.2a2 2 0 0 1 2-2h3.4l2 2.5H19a2 2 0 0 1 2 2v8.1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+</svg>

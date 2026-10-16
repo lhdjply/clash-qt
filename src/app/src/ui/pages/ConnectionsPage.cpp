@@ -42,6 +42,9 @@ ConnectionsPage::ConnectionsPage(AppContext *context, QWidget *parent)
 
     auto *closeSelected = new QPushButton(QStringLiteral("关闭选中"), this);
     auto *closeAll      = ui::makeDangerButton(QStringLiteral("关闭全部"), this);
+
+    ui::decorate(closeSelected, QStringLiteral("close"));
+    ui::decorate(closeAll, QStringLiteral("trash"));
     toolbar->addWidget(closeSelected);
     toolbar->addWidget(closeAll);
 

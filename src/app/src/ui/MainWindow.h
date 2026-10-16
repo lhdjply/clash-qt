@@ -15,6 +15,7 @@
 #include <QLabel>
 #include <QMainWindow>
 #include <QPushButton>
+#include <QStringList>
 #include <QSystemTrayIcon>
 
 class QListWidget;
@@ -32,6 +33,9 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    // 自绘窗口背景：对角渐变 + 左上角光晕。侧栏与卡片是半透明面板，
+    // 叠在这层背景上形成「磨砂玻璃透底」的观感（见 UiFactory.h 说明）。
+    void paintEvent(QPaintEvent *event) override;
 
 private slots:
     void onNavChanged(int index);
@@ -40,6 +44,8 @@ private slots:
     void onSysProxyToggled(bool enabled);
     void onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed);
     void onToast(const QString &type, const QString &message);
+    // 桌面深浅色发生变化（仅「跟随系统」时跟随）
+    void onSystemColorSchemeChanged();
 
 private:
     // 构建左侧栏（状态卡片与导航）
@@ -52,6 +58,8 @@ private:
     void updateTray();
     // 依据配置应用主题
     void applyThemeFromConfig();
+    // 刷新导航图标：选中项是实心强调色底，图标取白；其余取正文色
+    void updateNavIcons();
 
     AppContext     *m_context = nullptr;
     QListWidget    *m_navList = nullptr;
@@ -60,7 +68,11 @@ private:
     // 因此按类型访问页面必须用本列表而不是 m_pages->widget()。
     QList<QWidget *> m_pageContents;
 
-    QLabel     *m_statsLabel = nullptr;
+    // 导航标题（顺序与页面一致），刷新图标时按标题取图标
+    QStringList m_navTitles;
+
+    QLabel     *m_uploadLabel = nullptr;
+    QLabel     *m_downloadLabel = nullptr;
     QComboBox  *m_modeCombo = nullptr;
     QCheckBox  *m_sysProxySwitch = nullptr;
 

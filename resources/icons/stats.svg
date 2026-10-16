@@ -1,0 +1,9 @@
+<!-- 统计：坐标系折线
+     24x24 线性图标：描边色写 currentColor，由运行时按主题替换
+     （见 src/app/src/ui/Icons.cpp） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+     stroke-linejoin="round">
+  <path d="M4 4v15a1 1 0 0 0 1 1h15"/>
+  <path d="M7.5 15.5 11 11l3 2.5 4.5-6"/>
+</svg>
