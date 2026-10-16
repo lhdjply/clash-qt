@@ -6,15 +6,19 @@
 #include "ui/UiFactory.h"
 #include "utils/Calc.h"
 
+#include <QCheckBox>
 #include <QDateTime>
+#include <QDialog>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QInputDialog>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QTableWidget>
+#include <QUrl>
 #include <QVBoxLayout>
 
 namespace clashqt {
@@ -43,6 +47,162 @@ QString formatUsage(const std::optional<SubscriptionUserInfo> &info)
         .arg(calc::traffic(info->download + info->upload), calc::traffic(info->total));
 }
 
+// ---------------------------------------------------------------------------
+//  编辑订阅对话框
+//
+//  远程订阅：名称 / 订阅链接 / 是否在启动时自动更新。
+//  本地订阅：名称 + 重新选择配置文件（内容替换，id 与「当前订阅」状态不变）。
+//
+//  版面沿用主界面的构件（弹窗标题区 + 毛玻璃卡片 + 表单行 + 强调色主按钮），
+//  这样弹窗和页面是一套观感，而不是原生控件的拼盘。
+//
+//  没有暴露 useProxy / interval 这类字段：它们在配置里能存，但内核侧尚未
+//  使用（见 AppContext 的更新流程），摆出来会是「点得动但没作用」的假开关。
+// ---------------------------------------------------------------------------
+class EditProfileDialog : public QDialog {
+public:
+    EditProfileDialog(const ProfileItem &item, QWidget *parent)
+        : QDialog(parent), m_item(item), m_remote(item.type == QLatin1String("remote"))
+    {
+        setObjectName(QStringLiteral("editProfileDialog"));
+        setWindowTitle(QStringLiteral("编辑订阅"));
+        setMinimumWidth(540);
+
+        auto *root = new QVBoxLayout(this);
+        root->setContentsMargins(20, 18, 20, 16);
+        root->setSpacing(16);
+
+        root->addWidget(ui::makeDialogHeader(
+            QStringLiteral("edit"), QStringLiteral("编辑订阅"),
+            m_remote ? QStringLiteral("修改名称或订阅链接。链接变更后，若它是当前订阅，"
+                                      "会立即按新链接重新拉取。")
+                     : QStringLiteral("本地订阅的内容来自导入的配置文件，可在下面替换。"),
+            this));
+
+        auto *card       = ui::makeCard(QStringLiteral("订阅信息"), this);
+        auto *cardLayout = qobject_cast<QVBoxLayout *>(card->layout());
+
+        m_name = new QLineEdit(item.name, card);
+        m_name->setClearButtonEnabled(true);
+        cardLayout->addWidget(ui::makeFormRow(QStringLiteral("名称"), m_name, QString(), card));
+
+        if (m_remote) {
+            m_url = new QLineEdit(item.url, card);
+            m_url->setClearButtonEnabled(true);
+            m_url->setPlaceholderText(QStringLiteral("https://example.com/sub?token=..."));
+            // 链接通常很长，默认把光标停在行首，免得一进来只看到尾巴
+            m_url->setCursorPosition(0);
+            cardLayout->addWidget(
+                ui::makeFormRow(QStringLiteral("订阅链接"), m_url, QString(), card));
+
+            m_autoUpdate = new QCheckBox(QStringLiteral("启动时自动更新该订阅"), card);
+            m_autoUpdate->setChecked(item.autoUpdate);
+            cardLayout->addWidget(ui::makeFormRow(
+                QString(), m_autoUpdate,
+                QStringLiteral("开启后，程序启动时会自动下载该订阅的最新配置。"), card));
+        } else {
+            auto *fileRow  = new QWidget(card);
+            auto *fileLine = new QHBoxLayout(fileRow);
+            fileLine->setContentsMargins(0, 0, 0, 0);
+            fileLine->setSpacing(8);
+
+            m_fileLabel = new QLabel(item.file.isEmpty() ? QStringLiteral("-") : item.file,
+                                     fileRow);
+            m_fileLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+            fileLine->addWidget(m_fileLabel, 1);
+
+            auto *pick = new QPushButton(QStringLiteral("重新选择配置"), fileRow);
+            ui::decorate(pick, QStringLiteral("folder"));
+            fileLine->addWidget(pick);
+
+            cardLayout->addWidget(ui::makeFormRow(
+                QStringLiteral("配置文件"), fileRow,
+                QStringLiteral("选择新文件后会替换该订阅的内容，id 与「当前订阅」状态保持不变。"),
+                card));
+
+            QObject::connect(pick, &QPushButton::clicked, this, [this]() {
+                const QString path = QFileDialog::getOpenFileName(
+                    this, QStringLiteral("选择配置文件"), QString(),
+                    QStringLiteral("Clash 配置 (*.yaml *.yml);;所有文件 (*)"));
+                if (path.isEmpty()) return;
+                m_replacementFile = path;
+                m_fileLabel->setText(QFileInfo(path).fileName());
+            });
+        }
+
+        root->addWidget(card);
+
+        // 按钮排在卡片之外、右对齐：主操作是强调色实心按钮
+        auto *actions = new QHBoxLayout();
+        actions->setSpacing(8);
+        actions->addStretch(1);
+
+        auto *cancel = new QPushButton(QStringLiteral("取消"), this);
+        ui::decorate(cancel, QStringLiteral("close"));
+        auto *save = ui::makePrimaryButton(QStringLiteral("保存"), this);
+        ui::decorate(save, QStringLiteral("check"));
+        save->setDefault(true);
+
+        actions->addWidget(cancel);
+        actions->addWidget(save);
+        root->addLayout(actions);
+
+        QObject::connect(save, &QPushButton::clicked, this, &EditProfileDialog::accept);
+        QObject::connect(cancel, &QPushButton::clicked, this, &QDialog::reject);
+    }
+
+    QString name() const { return m_name->text().trimmed(); }
+    QString url() const { return m_url ? m_url->text().trimmed() : QString(); }
+    bool    autoUpdate() const { return m_autoUpdate && m_autoUpdate->isChecked(); }
+    QString replacementFile() const { return m_replacementFile; }
+
+    // 只有真正改动过的字段才写回，避免无谓地重写 profile.yaml
+    QJsonObject patch() const
+    {
+        QJsonObject object;
+        if (name() != m_item.name) object.insert(QStringLiteral("name"), name());
+        if (m_remote) {
+            if (url() != m_item.url) object.insert(QStringLiteral("url"), url());
+            if (autoUpdate() != m_item.autoUpdate) {
+                object.insert(QStringLiteral("autoUpdate"), autoUpdate());
+            }
+        }
+        return object;
+    }
+
+    bool urlChanged() const { return m_remote && url() != m_item.url; }
+
+    void accept() override
+    {
+        if (name().isEmpty()) {
+            QMessageBox::warning(this, QStringLiteral("名称不能为空"),
+                                 QStringLiteral("请给这个订阅起一个名称。"));
+            return;
+        }
+        if (m_remote) {
+            const QUrl parsed(url());
+            if (!parsed.isValid()
+                || (parsed.scheme() != QLatin1String("http")
+                    && parsed.scheme() != QLatin1String("https"))) {
+                QMessageBox::warning(this, QStringLiteral("订阅链接无效"),
+                                     QStringLiteral("请填写 http/https 开头的订阅地址。"));
+                return;
+            }
+        }
+        QDialog::accept();
+    }
+
+private:
+    ProfileItem m_item;
+    bool        m_remote = false;
+
+    QLineEdit   *m_name = nullptr;
+    QLineEdit   *m_url = nullptr;
+    QCheckBox   *m_autoUpdate = nullptr;
+    QLabel      *m_fileLabel = nullptr;
+    QString      m_replacementFile;
+};
+
 } // namespace
 
 ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
@@ -61,6 +221,7 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
 
     auto *addRemote = ui::makePrimaryButton(QStringLiteral("添加订阅"), this);
     auto *addLocal  = new QPushButton(QStringLiteral("导入本地配置"), this);
+    auto *editBtn   = new QPushButton(QStringLiteral("编辑"), this);
     auto *update    = new QPushButton(QStringLiteral("更新选中"), this);
     auto *updateAll = new QPushButton(QStringLiteral("更新全部"), this);
     auto *switchBtn = new QPushButton(QStringLiteral("设为当前"), this);
@@ -68,13 +229,17 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
 
     ui::decorate(addRemote, QStringLiteral("plus"));
     ui::decorate(addLocal, QStringLiteral("folder"));
+    ui::decorate(editBtn, QStringLiteral("edit"));
     ui::decorate(update, QStringLiteral("refresh"));
     ui::decorate(updateAll, QStringLiteral("clouddown"));
     ui::decorate(switchBtn, QStringLiteral("target"));
     ui::decorate(removeBtn, QStringLiteral("trash"));
 
+    editBtn->setToolTip(QStringLiteral("修改名称 / 订阅链接（双击某一行也可以）"));
+
     toolbar->addWidget(addRemote);
     toolbar->addWidget(addLocal);
+    toolbar->addWidget(editBtn);
     toolbar->addWidget(update);
     toolbar->addWidget(updateAll);
     toolbar->addWidget(switchBtn);
@@ -103,10 +268,15 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
 
     QObject::connect(addRemote, &QPushButton::clicked, this, &ProfilesPage::onAddSubscription);
     QObject::connect(addLocal, &QPushButton::clicked, this, &ProfilesPage::onAddLocal);
+    QObject::connect(editBtn, &QPushButton::clicked, this, &ProfilesPage::onEditSelected);
     QObject::connect(update, &QPushButton::clicked, this, &ProfilesPage::onUpdateSelected);
     QObject::connect(updateAll, &QPushButton::clicked, this, &ProfilesPage::onUpdateAll);
     QObject::connect(switchBtn, &QPushButton::clicked, this, &ProfilesPage::onSwitchSelected);
     QObject::connect(removeBtn, &QPushButton::clicked, this, &ProfilesPage::onRemoveSelected);
+
+    // 双击一行直接进编辑，省去「先选中再点按钮」两步
+    QObject::connect(m_table, &QTableWidget::cellDoubleClicked, this,
+                     [this](int, int) { onEditSelected(); });
 
     QObject::connect(m_context->profileConfig(), &ProfileConfig::configChanged, this,
                      &ProfilesPage::refresh);
@@ -131,7 +301,13 @@ void ProfilesPage::refresh()
         else if (item.type == QLatin1String("plugin")) typeText = QStringLiteral("插件");
 
         m_table->setItem(row, 0, currentCell);
-        m_table->setItem(row, 1, new QTableWidgetItem(item.name));
+
+        auto *nameItem = new QTableWidgetItem(item.name);
+        // 列表里没有链接列，编辑时又要对照着看，因此挂在名称的悬浮提示上
+        if (!item.url.isEmpty()) nameItem->setToolTip(item.url);
+        else if (!item.file.isEmpty()) nameItem->setToolTip(item.file);
+
+        m_table->setItem(row, 1, nameItem);
         m_table->setItem(row, 2, new QTableWidgetItem(typeText));
         m_table->setItem(row, 3, new QTableWidgetItem(formatUsage(item.extra)));
         m_table->setItem(row, 4, new QTableWidgetItem(
@@ -186,6 +362,58 @@ void ProfilesPage::onAddLocal()
         QMessageBox::warning(this, QStringLiteral("导入失败"), error);
         return;
     }
+    refresh();
+}
+
+void ProfilesPage::onEditSelected()
+{
+    const QString id = selectedId();
+    if (id.isEmpty()) {
+        m_context->showToast(QStringLiteral("warning"), QStringLiteral("请先选择一个订阅"));
+        return;
+    }
+
+    const ProfileItem item = m_context->profileConfig()->item(id);
+    if (item.id.isEmpty()) return;
+
+    EditProfileDialog dialog(item, this);
+    if (dialog.exec() != QDialog::Accepted) return;
+
+    const QJsonObject   patch       = dialog.patch();
+    const QString       newFile     = dialog.replacementFile();
+    const bool          urlChanged  = dialog.urlChanged();
+    const bool          isCurrent   = m_context->profileConfig()->current() == id;
+
+    if (patch.isEmpty() && newFile.isEmpty()) return; // 什么都没改
+
+    if (!patch.isEmpty() && !m_context->profileConfig()->updateItem(id, patch)) {
+        QMessageBox::warning(this, QStringLiteral("保存失败"), QStringLiteral("写入订阅配置失败"));
+        return;
+    }
+
+    // 本地订阅换了文件：内容替换（校验 → 写入 → 当前订阅则重载内核）
+    if (!newFile.isEmpty()) {
+        QString error;
+        if (!m_context->replaceProfileContent(id, newFile, &error)) {
+            QMessageBox::warning(this, QStringLiteral("替换失败"), error);
+        }
+        refresh();
+        return;
+    }
+
+    // 远程订阅改了链接：当前订阅要立刻按新链接拉一份，否则界面显示的还是旧内容
+    if (urlChanged && isCurrent) {
+        QString error;
+        if (!m_context->updateSubscription(id, &error)) {
+            // 链接已经保存成功，只是内容没拉下来，提示即可，不必回滚
+            QMessageBox::warning(
+                this, QStringLiteral("链接已保存"),
+                QStringLiteral("链接已保存，但拉取新订阅内容失败：\n\n%1\n\n"
+                               "可稍后用「更新选中」重试。")
+                    .arg(error));
+        }
+    }
+
     refresh();
 }
 

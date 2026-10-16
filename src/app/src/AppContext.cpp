@@ -52,6 +52,31 @@ QString subscriptionUserAgent(const QString &itemUserAgent, const QString &appUs
     return QStringLiteral("clash-qt/v%1 (clash.meta)").arg(QStringLiteral(CLASHQT_VERSION));
 }
 
+// 读取本地配置文件并校验是合法的 Clash 配置。避免把坏内容写进订阅库后
+// 污染内核配置（本地导入与「编辑时替换文件」共用）。
+bool readValidatedProfile(const QString &filePath, QString *content, QString *error)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        if (error) {
+            *error = QStringLiteral("无法读取文件 %1：%2").arg(filePath, file.errorString());
+        }
+        return false;
+    }
+    const QString text = QString::fromUtf8(file.readAll());
+    file.close();
+
+    QString    parseError;
+    const auto parsed = core::RawConfig::fromYaml(text, &parseError);
+    if (!parsed) {
+        if (error) *error = QStringLiteral("不是合法的 Clash 配置：%1").arg(parseError);
+        return false;
+    }
+
+    if (content) *content = text;
+    return true;
+}
+
 } // namespace
 
 AppContext::AppContext(QObject *parent)
@@ -319,23 +344,8 @@ QString AppContext::outboundMode() const
 
 bool AppContext::addLocalProfile(const QString &filePath, const QString &name, QString *error)
 {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        if (error) {
-            *error = QStringLiteral("无法读取文件 %1：%2").arg(filePath, file.errorString());
-        }
-        return false;
-    }
-    const QString content = QString::fromUtf8(file.readAll());
-    file.close();
-
-    // 先校验是合法的 YAML 映射，避免把错误内容写入订阅库后污染内核配置
-    QString    parseError;
-    const auto parsed = core::RawConfig::fromYaml(content, &parseError);
-    if (!parsed) {
-        if (error) *error = QStringLiteral("不是合法的 Clash 配置：%1").arg(parseError);
-        return false;
-    }
+    QString content;
+    if (!readValidatedProfile(filePath, &content, error)) return false;
 
     ProfileItem item;
     item.id   = m_profileConfig->generateId();
@@ -355,6 +365,31 @@ bool AppContext::addLocalProfile(const QString &filePath, const QString &name, Q
     }
 
     emit toast(QStringLiteral("info"), QStringLiteral("已添加本地配置：%1").arg(item.name));
+    return reloadKernel(error);
+}
+
+bool AppContext::replaceProfileContent(const QString &id, const QString &filePath, QString *error)
+{
+    const ProfileItem item = m_profileConfig->item(id);
+    if (item.id.isEmpty()) {
+        if (error) *error = QStringLiteral("订阅不存在：%1").arg(id);
+        return false;
+    }
+
+    QString content;
+    if (!readValidatedProfile(filePath, &content, error)) return false;
+
+    if (!m_profileConfig->setProfileContent(id, content)) {
+        if (error) *error = QStringLiteral("订阅内容写入失败");
+        return false;
+    }
+    m_profileConfig->touchUpdated(id);
+
+    emit toast(QStringLiteral("info"),
+               QStringLiteral("已替换「%1」的配置文件").arg(item.name));
+
+    // 只有当前生效的订阅才需要重载内核
+    if (m_profileConfig->current() != id) return true;
     return reloadKernel(error);
 }
 

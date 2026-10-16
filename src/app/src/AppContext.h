@@ -80,6 +80,10 @@ public:
     bool addSubscription(const QString &url, const QString &name, QString *error = nullptr);
     // 从本地文件添加订阅
     bool addLocalProfile(const QString &filePath, const QString &name, QString *error = nullptr);
+    // 用新的配置文件替换已有订阅的内容（保留 id、名称与「当前订阅」状态）。
+    // 用于编辑本地订阅时重新选择文件。
+    bool replaceProfileContent(const QString &id, const QString &filePath,
+                               QString *error = nullptr);
     // 重新下载订阅内容
     bool updateSubscription(const QString &id, QString *error = nullptr);
     // 更新全部启用自动更新的远程订阅；返回成功数量

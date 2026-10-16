@@ -322,6 +322,13 @@ QToolTip {
     border-radius: 8px; padding: 5px 9px;
 }
 
+/* ---------- 弹窗 ---------- */
+/* 弹窗底色沿用主窗口那层渐变，避免各平台给出一块原生灰；卡片叠在上面
+   就是和主界面一致的观感。QMessageBox 等同为 QDialog，一并受益。 */
+QDialog { background: @windowBg; }
+QLabel#dialogBadge { background: @accentSoft; border-radius: 11px; }
+QLabel#dialogTitle { font-size: 16px; font-weight: 600; color: @text; }
+
 /* ---------- 图表容器 ---------- */
 QChartView { background: transparent; border: 0px; }
 )QSS";
@@ -428,6 +435,10 @@ QString buildStyleSheet(const Theme &t)
         {"@scroll", css(t.scrollHandle)},
         {"@scrollHover", css(t.scrollHandleHover)},
         {"@tooltipBg", css(t.tooltipBg)},
+        // 弹窗底色：与主窗口同向的渐变，用 qlineargradient 直接写在样式里
+        {"@windowBg",
+         QStringLiteral("qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 %1, stop:1 %2)")
+             .arg(t.bgTop.name(), t.bgBottom.name())},
     };
 
     QString sheet = QString::fromUtf8(kStyleSheetTemplate);
@@ -547,6 +558,45 @@ QWidget *makePageHeader(const QString &title, const QString &description, QWidge
 
     auto *titleLabel = new QLabel(title, texts);
     titleLabel->setObjectName(QStringLiteral("pageTitle"));
+    textLayout->addWidget(titleLabel);
+
+    if (!description.isEmpty()) {
+        auto *descLabel = new QLabel(description, texts);
+        descLabel->setObjectName(QStringLiteral("pageDescription"));
+        descLabel->setWordWrap(true);
+        textLayout->addWidget(descLabel);
+    }
+    layout->addWidget(texts, 1);
+
+    return header;
+}
+
+QWidget *makeDialogHeader(const QString &iconName, const QString &title,
+                          const QString &description, QWidget *parent)
+{
+    auto *header = new QWidget(parent);
+    header->setObjectName(QStringLiteral("pageHeader"));
+
+    auto *layout = new QHBoxLayout(header);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(12);
+
+    if (!iconName.isEmpty()) {
+        auto *badge = new QLabel(header);
+        badge->setObjectName(QStringLiteral("dialogBadge"));
+        badge->setFixedSize(38, 38);
+        badge->setAlignment(Qt::AlignCenter);
+        applyIconToLabel(badge, iconName, g_theme.accent, 20);
+        layout->addWidget(badge, 0, Qt::AlignTop);
+    }
+
+    auto *texts = new QWidget(header);
+    auto *textLayout = new QVBoxLayout(texts);
+    textLayout->setContentsMargins(0, 0, 0, 0);
+    textLayout->setSpacing(4);
+
+    auto *titleLabel = new QLabel(title, texts);
+    titleLabel->setObjectName(QStringLiteral("dialogTitle"));
     textLayout->addWidget(titleLabel);
 
     if (!description.isEmpty()) {

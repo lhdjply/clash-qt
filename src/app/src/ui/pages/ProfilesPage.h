@@ -5,7 +5,7 @@
 //
 //  对应 clash-party 的 src/renderer/src/pages/profiles.tsx。
 //  展示订阅列表（含流量与到期信息），支持添加远程/本地订阅、
-//  更新、切换当前订阅与删除。
+//  编辑、更新、切换当前订阅与删除。
 // ---------------------------------------------------------------------------
 
 #include <QWidget>
@@ -28,6 +28,7 @@ public:
 private slots:
     void onAddSubscription();
     void onAddLocal();
+    void onEditSelected();
     void onUpdateSelected();
     void onUpdateAll();
     void onSwitchSelected();

@@ -91,6 +91,11 @@ QWidget *makeFormRow(const QString &label, QWidget *field, const QString &hint =
 QWidget *makePageHeader(const QString &title, const QString &description,
                         QWidget *parent = nullptr);
 
+// 弹窗标题区：与页面标题同一套观感，尺寸更适合对话框。
+// 图标名显式给出（弹窗标题不在导航 / 卡片标题的映射表里）。
+QWidget *makeDialogHeader(const QString &iconName, const QString &title,
+                          const QString &description, QWidget *parent = nullptr);
+
 // 主操作按钮（强调色实心）与危险按钮（描边式）
 QPushButton *makePrimaryButton(const QString &text, QWidget *parent = nullptr);
 QPushButton *makeDangerButton(const QString &text, QWidget *parent = nullptr);
