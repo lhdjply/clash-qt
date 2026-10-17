@@ -62,6 +62,9 @@ public:
     QString tunStack() const;
     void    setTunStack(const QString &stack);
     QString tunDevice() const;
+    bool    tunAutoRoute() const;
+    void    setTunAutoRoute(bool enabled);
+    int     tunMtu() const;
 
     // DNS
     bool        dnsEnabled() const;

@@ -55,7 +55,10 @@ FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake .
 - 出站适配器：DIRECT / REJECT / REJECT-DROP / HTTP / SOCKS5（含认证）以及代理组
   （Selector / URLTest / Fallback 的选择与回退语义）
 - 入站：HTTP（CONNECT + 明文转发）、SOCKS5（含 RFC 1929 认证）、MIXED（同端口双协议嗅探）
-- 隧道：规则匹配 → 出站 → 双向中继，连接跟踪与流量统计
+- 隧道：规则匹配 → 出站 → 双向中继（TCP 与 UDP），连接跟踪与流量统计
+- UDP 中继：TUN 数据面按四元组建会话，首包触发拨号，DIRECT 直发 /
+  VLESS `CMD=0x02`（隧道内 2 字节长度前缀分帧）两种承载；拨号在独立线程，
+  失败目标 30 秒内直接回 ICMP 促使 QUIC 回落 TCP
 - 运行期接口：切模式、切节点、测延迟、规则启停、连接查询与关闭
 
 ### 应用（clash-qt）
@@ -76,7 +79,7 @@ FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake .
   VMess / Trojan / Shadowsocks / Hysteria v1 / TUIC / WireGuard 等其余协议注册为
   「暂不支持」，选中时**明确报错而非静默直连**，避免流量绕过代理 |
 | 外部控制器 | REST / WebSocket API（`external-controller`），供 zashboard 等第三方面板使用 |
-| TUN / redir / tproxy | 透明代理入站，需要内核网络特性与提权 |
+| redir / tproxy | 透明代理入站（`SO_ORIGINAL_DST` / `IP_TRANSPARENT`）；TUN 模式已实现 |
 | JS 覆写引擎 | 需要嵌入 JS 引擎（QuickJS 或 Qt Qml 的 QJSEngine）；当前遇 js 覆写会告警并跳过 |
 | Geo 数据层 | geoip.metadb / geosite.dat 的读取（GEOIP / GEOSITE 规则依赖） |
 | 远程规则集 | `type: http` 的 rule-provider 下载与缓存 |
@@ -120,8 +123,10 @@ VLESS 系列完全不同的一套协议栈，实现位于 `src/core/src/common/H
 
 **明确的边界**（不做静默降级）：
 
-- **不支持 UDP 中继**：OpenSSL 3.2 尚未实现 QUIC DATAGRAM 帧。UDP 流量与内核
-  其余部分一致地明确失败（内核本身也未实现 UDP 中继），不会退化为直连。
+- **不支持 UDP 中继**：OpenSSL 3.2 尚未实现 QUIC DATAGRAM 帧，因此选中
+  Hysteria2 节点时 UDP 会话会明确失败并回 ICMP（促使应用回落 TCP），
+  不会退化为直连。UDP 中继本身在 TUN 数据面已实现（DIRECT 与 VLESS 均可承载），
+  只有选中 Hysteria2 节点时 UDP 会话不可用。
 - **不支持 Salamander 混淆（`obfs`）与 realm**：选中时给出明确原因。
 - **不做流复用**：每条入站连接独立建立一条 QUIC 会话（因此新建连接比原生实现
   多一次握手往返，约几十毫秒量级）。这样每个连接的对象都归属自己的工作线程，

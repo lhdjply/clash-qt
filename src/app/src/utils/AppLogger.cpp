@@ -7,6 +7,8 @@
 #include <QFile>
 #include <QFileInfo>
 
+#include <atomic>
+
 #include "base/Common.h"
 
 namespace clashqt {
@@ -84,8 +86,10 @@ void AppLogger::writeToFile(const QString &level, const QString &category, const
     const QString path = coreLog ? paths::coreLogPath() : paths::appLogPath();
     paths::ensureParentDir(path);
 
-    // 每 512KB 检查一次体积即可，避免每条日志都 stat 文件
-    static int writeCounter = 0;
+    // 每 512KB 检查一次体积即可，避免每条日志都 stat 文件。
+    // 计数必须是原子的：日志会从 TUN 数据面线程、每个连接的拨号线程同时写入，
+    // 普通 static int 的 ++ 在这里是数据竞争（UB）。
+    static std::atomic<int> writeCounter{0};
     if (++writeCounter % 512 == 0) rotateIfNeeded(path);
 
     QFile file(path);

@@ -45,7 +45,7 @@ public:
 
     // 首次读取前懒消费「裸 VLESS 应答头」（VER + ADDONS_LEN + ADDONS）。
     // 服务端会把应答头缓冲到首次写出业务数据时才发送，拨号阶段同步等待会死锁。
-    void setLazyVlessResponseHeader(bool enabled) { m_expectVlessHeader = enabled; }
+    void setLazyVlessResponseHeader(bool enabled) override { m_expectVlessHeader = enabled; }
 
 private:
     void   pumpOut();                       // 解帧状态机：transport → m_out

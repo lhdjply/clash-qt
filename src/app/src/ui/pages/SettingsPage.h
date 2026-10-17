@@ -35,6 +35,8 @@ private slots:
     void onPortChanged(int value);
     void onAutoStartToggled(bool enabled);
     void onSysProxyToggled(bool enabled);
+    void onTunToggled(bool enabled);
+    void onTunAutoRouteToggled(bool enabled);
     void onThemeChanged(int index);
     void onOpenDataDir();
 
@@ -49,6 +51,8 @@ private:
     QSpinBox     *m_httpPort = nullptr;
     QCheckBox    *m_autoStart = nullptr;
     QCheckBox    *m_sysProxy = nullptr;
+    QCheckBox    *m_tunEnabled = nullptr;
+    QCheckBox    *m_tunAutoRoute = nullptr;
     QComboBox    *m_themeCombo = nullptr;
     QLabel       *m_dataDirLabel = nullptr;
 

@@ -71,6 +71,15 @@ DialResult Hysteria2Adapter::dial(const DialContext &context, int timeoutMs)
 {
     DialResult result;
 
+    if (context.network.compare(QLatin1String("udp"), Qt::CaseInsensitive) == 0) {
+        // Hysteria2 的 UDP 中继走 QUIC DATAGRAM，而当前 OpenSSL 3.2 未提供该接口。
+        // 明确失败，绝不静默降级成 TCP（那会让应用的 UDP 流量变成一条死连接）。
+        result.error = QStringLiteral("节点 %1 暂不支持 UDP 中继"
+                                      "（Hysteria2 需要 QUIC DATAGRAM，OpenSSL 3.2 未提供）")
+                           .arg(m_config.name);
+        return result;
+    }
+
     if (!m_unsupported.isEmpty()) {
         result.error = QStringLiteral("节点 %1 暂不支持：%2")
                            .arg(m_config.name, m_unsupported);

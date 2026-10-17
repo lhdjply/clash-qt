@@ -16,6 +16,17 @@
 //  因此必须在工作线程中调用，不能在 GUI 线程直接调用——这与每个连接由
 //  独立工作线程处理的监听器设计一致（见 listener/）。fake-ip 命中时不发起
 //  网络查询，可直接返回。
+//
+//  ---- 线程安全（重要）------------------------------------------------------
+//  同一个 Resolver 会被下面这些线程**同时**访问：
+//    · TUN 数据面线程：DNS 53 劫持 → mappingFakeIp / fakeIpToHost
+//    · 每个连接一个的拨号线程：DIRECT / MATCH 兜底 → resolveReal → 写缓存
+//    · GUI 线程：applyDnsConfig（换订阅 / 改设置）、fake-ip 判断
+//  内部容器（缓存 QHash、fake-ip 双向表、hosts、配置字符串）**全部**由
+//  m_mutex 保护。缺了这把锁时的表现是：两个线程同时往 QHash 里插入触发
+//  rehash，堆被写坏 → 随机时刻 SIGSEGV / SIGABRT 闪退（TUN 开着跑一会儿
+//  就崩，且栈上看不到任何业务代码）。锁的粒度只覆盖容器读写，**绝不**
+//  包括网络等待，否则一次 DoH 超时会把数据面卡死 5 秒。
 // ---------------------------------------------------------------------------
 
 #include "constant/Constants.h"
@@ -24,8 +35,10 @@
 #include <QHostAddress>
 #include <QJsonObject>
 #include <QList>
+#include <QMutex>
 #include <QObject>
 #include <QPair>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 
@@ -75,6 +88,11 @@ private:
 
 // 构造 A / AAAA 查询报文
 QByteArray buildQuery(quint16 id, const QString &name, quint16 type);
+
+// 构造应答报文：id / 问题段按查询原样回带（问题名用指针压缩），
+// answers 里的 A / AAAA / CNAME 会被写入应答段，其余类型忽略。
+// 供 DnsServer 与 TUN 的 53 端口劫持使用。
+QByteArray buildResponse(const Message &query, const QList<Answer> &answers, int rcode = 0);
 
 // 解析应答报文
 std::optional<Message> parseMessage(const QByteArray &payload);
@@ -169,10 +187,20 @@ public:
     // 该域名是否被 fake-ip-filter 排除（排除项走真实解析）
     bool shouldSkipFakeIp(const QString &host) const;
 
+    // DNS 上游自身用到的域名（如 DoH 的 doh.pub）。这些名字必须走**引导解析**
+    // 并绕过 fake-ip：否则内核解析 DoH 服务器地址时会拿到假 IP，再连回自己的
+    // TUN，形成自锁（界面正常但网页全打不开）。
+    QSet<QString> upstreamHosts() const;
+
+    // 代理节点自身的服务器域名（如 unamecf.example.com）。TUN 模式下它们如果被
+    // 分配假 IP，连节点这一步就会连回本机 TUN —— 表现为「所有代理流量都不通」。
+    // 由 Hub 在装载配置时告知。
+    void setServerHosts(const QStringList &hosts);
+
     // ---- 缓存 -------------------------------------------------------------
 
     void clearCache();
-    int  cacheSize() const { return m_cache.size(); }
+    int  cacheSize() const;
 
 signals:
     // 内核日志（DNS 查询详情），由 Hub 转发到日志流
@@ -195,6 +223,16 @@ private:
     static std::optional<Server> parseServer(const QString &spec);
     QStringList selectNameservers(const QString &host, bool fallback) const;
 
+    // ---- 以下 *Locked / cacheXxx 辅助函数内部自己加锁，
+    //      供 resolveImpl 这类「锁外跑网络、锁内读表」的路径使用 ----
+    bool shouldSkipFakeIpLocked(const QString &host) const; // 调用方已持锁
+    bool isUpstreamHost(const QString &host) const;         // 内部加锁
+    std::optional<CacheEntry> cacheLookup(const QString &key) const; // 内部加锁，已过期返回空
+    void cacheStore(const QString &key, const CacheEntry &entry);    // 内部加锁
+    // 取配置副本：查询过程中容器可能被 applyDnsConfig 整体替换
+    QStringList defaultNameservers() const;
+    QStringList fallbackServers() const;
+
     // 解析实现；allowFakeIp 控制是否启用 fake-ip 映射
     QList<QHostAddress> resolveImpl(const QString &host, int timeoutMs, bool ipv6,
                                     bool allowFakeIp);
@@ -211,6 +249,11 @@ private:
                                  quint16 type, int timeoutMs);
     QList<QHostAddress> queryHttps(const Server &server, const QString &host,
                                    quint16 type, int timeoutMs);
+
+    // QNetworkAccessManager 有线程亲和性：在 A 线程创建、B 线程使用会让 Qt 报
+    // 「Cannot create children for a parent that is in a different thread」，
+    // 甚至崩溃。TUN 的 DNS 解析跑在工作线程，所以按线程各留一个。
+    static QNetworkAccessManager *networkForCurrentThread();
 
     void remember(const QString &host, int type, const QList<QHostAddress> &addresses, quint32 ttl);
 
@@ -230,12 +273,18 @@ private:
     QHash<QString, QString> m_hosts;
     // fake-ip-filter
     QStringList m_fakeIpFilter;
+    QSet<QString> m_upstreamHosts;
+    QSet<QString> m_serverHosts;
     FilterMode  m_fakeIpFilterMode = FilterMode::Blacklist;
 
     FakeIpPool m_fakeIp;
 
     QHash<QString, CacheEntry> m_cache;
-    std::unique_ptr<QNetworkAccessManager> m_network;
+
+    // 保护上面所有容器与配置字段（见头部的线程安全说明）。
+    // 用 QMutex 而非 QRecursiveMutex 是刻意的：加锁路径只做容器读写，
+    // 一旦出现「持锁再调公开方法」的写法就会直接死锁暴露出来。
+    mutable QMutex m_mutex;
 };
 
 } // namespace core

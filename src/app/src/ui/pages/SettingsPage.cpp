@@ -121,6 +121,23 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
                        "当前后端：%1").arg(m_context->sysProxy()->backendName()),
         systemCard));
 
+    // ---- TUN 模式 --------------------------------------------------------
+    m_tunEnabled = new QCheckBox(QStringLiteral("TUN 模式"), systemCard);
+    systemLayout->addWidget(m_tunEnabled);
+    systemLayout->addWidget(ui::makeHintLabel(
+        QStringLiteral("创建虚拟网卡接管流量，连不认系统代理的程序（游戏 / 命令行 / 部分 Electron）"
+                       "也能走代理。首次开启会弹系统密码框授权一次；"
+                       "必须与「接管域名流量」配合才真正生效。"),
+        systemCard));
+
+    m_tunAutoRoute = new QCheckBox(QStringLiteral("接管域名流量（fake-ip 路由）"), systemCard);
+    systemLayout->addWidget(m_tunAutoRoute);
+    systemLayout->addWidget(ui::makeHintLabel(
+        QStringLiteral("把假 IP 网段的路由指向 TUN（关闭 TUN 时随接口一起消失）。"
+                       "不改动系统默认路由，因此不会影响网络连通性；"
+                       "关掉这一项，TUN 将收不到任何流量。"),
+        systemCard));
+
     m_themeCombo = new QComboBox(systemCard);
     m_themeCombo->addItem(QStringLiteral("跟随系统"), QStringLiteral("system"));
     m_themeCombo->addItem(QStringLiteral("浅色"), QStringLiteral("light"));
@@ -147,6 +164,17 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
                      &SettingsPage::onPortChanged);
     QObject::connect(m_autoStart, &QCheckBox::toggled, this, &SettingsPage::onAutoStartToggled);
     QObject::connect(m_sysProxy, &QCheckBox::toggled, this, &SettingsPage::onSysProxyToggled);
+    QObject::connect(m_tunEnabled, &QCheckBox::toggled, this, &SettingsPage::onTunToggled);
+    QObject::connect(m_tunAutoRoute, &QCheckBox::toggled, this,
+                     &SettingsPage::onTunAutoRouteToggled);
+    // 异步启用完成/失败后同步开关，避免「界面已勾上、实际没起来」
+    QObject::connect(m_context, &clashqt::AppContext::tunStateChanged, this,
+                     [this](bool enabled) {
+                         m_loading = true;
+                         m_tunEnabled->setChecked(enabled);
+                         m_tunEnabled->setEnabled(true); // 启用流程已结束，解除临时禁用
+                         m_loading = false;
+                     });
     QObject::connect(m_themeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &SettingsPage::onThemeChanged);
     QObject::connect(openDir, &QPushButton::clicked, this, &SettingsPage::onOpenDataDir);
@@ -173,6 +201,8 @@ void SettingsPage::loadFromConfig()
 
     m_autoStart->setChecked(m_context->autoRun()->isEnabled());
     m_sysProxy->setChecked(m_context->isSysProxyEnabled());
+    m_tunEnabled->setChecked(m_context->tunEnabled());
+    m_tunAutoRoute->setChecked(m_context->tunAutoRoute());
 
     const QString theme = app->appTheme();
     const int themeIndex = m_themeCombo->findData(theme);
@@ -254,6 +284,51 @@ void SettingsPage::onAutoStartToggled(bool enabled)
     }
 }
 
+void SettingsPage::onTunToggled(bool enabled)
+{
+    if (m_loading) return;
+
+    QString error;
+    if (!m_context->setTunEnabled(enabled, &error)) {
+        // 失败（未授权 / 端口冲突 / 无内核）：回滚开关并说明原因
+        m_loading = true;
+        m_tunEnabled->setChecked(m_context->tunEnabled());
+        m_loading = false;
+        if (!error.isEmpty()) {
+            emit m_context->toast(QStringLiteral("error"), error);
+        }
+        return;
+    }
+
+    m_loading = true;
+    if (m_context->tunStarting()) {
+        // 启用是异步的（拉起辅助程序 → 等 fd → 建数据面）：先保持勾选并临时
+        // 禁用，等 tunStateChanged 回来再解禁，避免开关"点下就弹回"的错觉
+        m_tunEnabled->setChecked(true);
+        m_tunEnabled->setEnabled(false);
+    } else {
+        m_tunEnabled->setChecked(m_context->tunEnabled());
+    }
+    m_loading = false;
+}
+
+void SettingsPage::onTunAutoRouteToggled(bool enabled)
+{
+    if (m_loading) return;
+
+    QString error;
+    if (!m_context->setTunAutoRoute(enabled, &error)) {
+        m_loading = true;
+        m_tunAutoRoute->setChecked(m_context->tunAutoRoute());
+        m_loading = false;
+        if (!error.isEmpty()) emit m_context->toast(QStringLiteral("error"), error);
+        return;
+    }
+    m_loading = true;
+    m_tunAutoRoute->setChecked(m_context->tunAutoRoute());
+    m_loading = false;
+}
+
 void SettingsPage::onSysProxyToggled(bool enabled)
 {
     if (m_loading) return;
@@ -262,6 +337,8 @@ void SettingsPage::onSysProxyToggled(bool enabled)
     if (!m_context->setSysProxyEnabled(enabled, &error)) {
         m_loading = true;
         m_sysProxy->setChecked(m_context->isSysProxyEnabled());
+    m_tunEnabled->setChecked(m_context->tunEnabled());
+    m_tunAutoRoute->setChecked(m_context->tunAutoRoute());
         m_loading = false;
     }
 }

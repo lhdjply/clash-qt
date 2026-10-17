@@ -28,10 +28,13 @@ QIcon get(const QString &name, const QColor &color, int size = 20);
 // 直接取位图（供 QLabel::setPixmap 使用，省去再经 QIcon 取回的一步）
 QPixmap pixmap(const QString &name, const QColor &color, int size = 20);
 
-// 应用图标底板的状态色：
-//   Normal —— 常规（蓝紫渐变）
-//   Active —— 系统代理已开启，底板换成红色，托盘上一眼看出「流量正被接管」
-enum class AppIconState { Normal, Active };
+// 应用图标底板的状态色（一眼看出「流量以哪种方式被接管」）：
+//   Normal  —— 常规（蓝紫渐变），两种接管都没开
+//   Active  —— 仅系统代理已开启：红色
+//   Tun     —— 仅 TUN 已开启：绿色
+//   Both    —— 系统代理与 TUN 同时开启：紫色
+// 三种状态共用同一份 SVG，只替换底板渐变的三个停靠点（见 Icons.cpp）。
+enum class AppIconState { Normal, Active, Tun, Both };
 
 QPixmap appPixmap(int size = 64, AppIconState state = AppIconState::Normal);
 

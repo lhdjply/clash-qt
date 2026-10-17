@@ -147,29 +147,58 @@ QPixmap appPixmap(int size, AppIconState state)
 
 QIcon appIcon(int size, AppIconState state)
 {
-    const QString key = QStringLiteral("__app__") + QString::number(size)
-                        + (state == AppIconState::Active ? QStringLiteral("|active")
-                                                         : QString());
+    QString stateKey;
+    switch (state) {
+    case AppIconState::Active: stateKey = QStringLiteral("|proxy"); break;
+    case AppIconState::Tun:    stateKey = QStringLiteral("|tun"); break;
+    case AppIconState::Both:   stateKey = QStringLiteral("|both"); break;
+    case AppIconState::Normal: break;
+    }
+    const QString key = QStringLiteral("__app__") + QString::number(size) + stateKey;
     auto cached = iconCache().constFind(key);
     if (cached != iconCache().constEnd()) return *cached;
 
     // 应用图标自带渐变色（icons/app.svg），不参与主题替换。
-    // 「已开启」状态只替换底板的三个渐变停靠点，其余（猫头、挖空、
-    // 高光、描边）全部沿用同一份 SVG —— 状态与图形各管各的，
-    // 不必为红色维护第二份文件。
+    // 接管状态只替换底板的三个渐变停靠点，其余（猫头、挖空、高光、描边）
+    // 全部沿用同一份 SVG —— 状态与图形各管各的，不必为每种颜色维护一份文件。
     QByteArray svg = svgSource(QStringLiteral("app"));
+
+    struct Recolor {
+        const char *from;
+        const char *to;
+    };
+    // 红：系统代理；绿：TUN；紫：两者同时开启。
+    // 三组都按「亮 → 主 → 深」排列，与原始渐变同一结构，白猫头对比度一致。
+    static const Recolor kProxy[] = {
+        {"#4F8CFF", "#FF8778"},
+        {"#3B6EF5", "#E23B36"},
+        {"#7C5CF2", "#A81C17"},
+    };
+    static const Recolor kTun[] = {
+        {"#4F8CFF", "#6BE0A8"},
+        {"#3B6EF5", "#17A06B"},
+        {"#7C5CF2", "#0B5A3C"},
+    };
+    static const Recolor kBoth[] = {
+        {"#4F8CFF", "#C08BFF"},
+        {"#3B6EF5", "#8B5CF6"},
+        {"#7C5CF2", "#4C1D95"},
+    };
+
+    const Recolor *table = nullptr;
+    int            count = 0;
     if (state == AppIconState::Active) {
-        static const struct {
-            const char *from;
-            const char *to;
-        } kRecolor[] = {
-            {"#4F8CFF", "#FF8778"}, // 左上高光 → 亮红
-            {"#3B6EF5", "#E23B36"}, // 主色 → 红（与危险色同族）
-            {"#7C5CF2", "#A81C17"}, // 右下 → 深红
-        };
-        for (const auto &map : kRecolor) {
-            svg.replace(map.from, map.to);
-        }
+        table = kProxy;
+        count = int(std::size(kProxy));
+    } else if (state == AppIconState::Tun) {
+        table = kTun;
+        count = int(std::size(kTun));
+    } else if (state == AppIconState::Both) {
+        table = kBoth;
+        count = int(std::size(kBoth));
+    }
+    for (int i = 0; i < count; ++i) {
+        svg.replace(table[i].from, table[i].to);
     }
 
     const QIcon icon = renderSvg(svg, size);

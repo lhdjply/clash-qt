@@ -28,6 +28,7 @@ class Factory;
 class OverrideConfig;
 class ProfileConfig;
 class SysProxy;
+class TunController;
 
 class AppContext : public QObject {
     Q_OBJECT
@@ -56,6 +57,17 @@ public:
 
     // 仅重新生成并应用配置（不停监听），对应「热重载」
     bool reloadKernel(QString *error = nullptr);
+
+    // ---- TUN 模式 ----
+    // 开启需要 root 权限：内部会先检查辅助程序是否已 setuid 授权，
+    // 未授权时弹 pkexec 密码框完成授权，再建 TUN 并把 fd 交给内核协议栈。
+    bool tunEnabled() const { return m_tunRunning; }
+    // 正在启用（已拉起辅助程序，等 fd）：界面据此保持开关处于「已打开」
+    bool tunStarting() const { return m_tunStarting; }
+    bool setTunEnabled(bool enabled, QString *error = nullptr);
+    // 「接管系统路由」开关：改默认路由（断网级操作，需 TUN 先开启）
+    bool setTunAutoRoute(bool enabled, QString *error = nullptr);
+    bool tunAutoRoute() const;
 
     // ---- 系统代理 ---------------------------------------------------------
 
@@ -105,6 +117,8 @@ public:
     void showToast(const QString &type, const QString &message) { emit toast(type, message); }
 
 signals:
+    // TUN 状态变化（异步启用完成/失败），界面据此同步开关
+    void tunStateChanged(bool enabled);
     void kernelRunningChanged(bool running);
     // 需要向用户提示的信息：type 取 "info" / "warning" / "error"
     void toast(const QString &type, const QString &message);
@@ -121,6 +135,17 @@ private:
     core::Hub           *m_hub = nullptr;
     SysProxy              *m_sysProxy = nullptr;
     AutoRun               *m_autoRun = nullptr;
+
+    std::unique_ptr<TunController> m_tun;
+    bool                           m_tunRunning  = false;
+    bool                           m_tunStarting = false;
+    bool                           m_tunAutoRoutePending = false; // 启用的同时是否接管路由
+    bool                           m_tunSignalsConnected = false;  // ready/failed 只连一次
+    void                           finishTunStart();
+
+    // 收集当前配置里代理服务器的 IP，作为 TUN 的旁路路由（防止出站环路）
+    QStringList proxyServerIps() const;
+    void        stopTunInternal();
 };
 
 } // namespace clashqt

@@ -15,9 +15,11 @@
 // ---------------------------------------------------------------------------
 
 #include "adapter/AdapterRegistry.h"
+#include "component/dns/DnsServer.h"
 #include "component/dns/Resolver.h"
 #include "config/RawConfig.h"
 #include "listener/Listener.h"
+#include "tunnel/TunIpStack.h"
 #include "tunnel/Tunnel.h"
 
 #include <QJsonArray>
@@ -30,6 +32,9 @@
 #include <vector>
 
 class QTimer;
+
+class QSocketNotifier;
+class QThread;
 
 namespace core {
 
@@ -78,6 +83,20 @@ public:
     // 运行期开关 DNS 段 / 嗅探段（对应受控配置的 controlDns / controlSniff）
     void setDnsEnabled(bool enabled);
     bool dnsEnabled() const { return m_dnsEnabled; }
+
+    // DNS 应答侧。TUN 模式下的 53 端口劫持会直接调它的 handleQuery()，
+    // 不必经过 socket。
+    std::shared_ptr<DnsServer> dnsServer() const { return m_dnsServer; }
+    std::shared_ptr<Resolver>  resolver() const { return m_resolver; }
+
+    // ---- TUN ----
+    // 接管一个已打开的 TUN 设备 fd（由特权辅助程序经 SCM_RIGHTS 传来）：
+    // 内核在 fd 上做事件驱动读写，跑用户态协议栈并复用规则/出站拨号。
+    // 接管后 fd 的所有权归 Hub（stopTun 会关闭它）。
+    // dnsUdpFd / dnsTcpFd 是辅助程序在 TUN 地址上绑好的 53 端口（可为 -1）
+    bool startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error = nullptr);
+    void stopTun();
+    bool tunActive() const { return m_tunDevice != nullptr; }
     void setSnifferEnabled(bool enabled);
     bool snifferEnabled() const { return m_snifferEnabled; }
 
@@ -142,6 +161,13 @@ private:
     std::shared_ptr<Tunnel>                 m_tunnel;
     std::shared_ptr<AdapterRegistry>        m_registry;
     std::shared_ptr<Resolver>               m_resolver;
+    std::shared_ptr<DnsServer>              m_dnsServer;
+    class TunDevice                        *m_tunDevice  = nullptr;
+    // 给拨号线程的「存活令牌」：TUN 停止时置 false，工作线程看到后立即返回，
+    // 不去访问可能已经被销毁的 Hub（每连接一个线程，退出时可能还在拨号）。
+    std::shared_ptr<bool>                   m_tunAlive;
+    QThread                                *m_tunThread  = nullptr;
+    int                                     m_tunFd      = -1;
     std::vector<RulePtr>                    m_rules;
 
     // 所有入站监听统一以基类指针持有：mixed 端口会同时提供 HTTP 与 SOCKS5，

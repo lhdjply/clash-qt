@@ -67,8 +67,14 @@ std::optional<IpNet> IpNet::parse(const QString &text)
     // 统一转成字节串再按掩码归零，IPv4-mapped IPv6 也能正确处理
     Q_IPV6ADDR v6 = address->isNull() ? Q_IPV6ADDR{} : QHostAddress(*address).toIPv6Address();
     if (net.m_family == 4) {
-        quint32 v4 = address->toIPv4Address();
-        std::memcpy(net.m_bytes.data(), &v4, 4);
+        // 网络字节序（大端）：m_bytes[0] 是最高位字节（a.b.c.d 的 a）。
+        // 之前直接 memcpy 一个 quint32，在小端机器上字节序是反的，
+        // 导致 /24 之类的掩码落在错误字节上 —— 所有 IP-CIDR 规则都会误判。
+        const quint32 v4 = address->toIPv4Address();
+        net.m_bytes[0] = quint8((v4 >> 24) & 0xFF);
+        net.m_bytes[1] = quint8((v4 >> 16) & 0xFF);
+        net.m_bytes[2] = quint8((v4 >> 8) & 0xFF);
+        net.m_bytes[3] = quint8(v4 & 0xFF);
     } else {
         std::memcpy(net.m_bytes.data(), &v6, 16);
     }
@@ -104,8 +110,11 @@ bool IpNet::contains(const QHostAddress &address) const
 
     std::array<unsigned char, 16> bytes{};
     if (family == 4) {
-        quint32 v4 = address.toIPv4Address();
-        std::memcpy(bytes.data(), &v4, 4);
+        const quint32 v4 = address.toIPv4Address();
+        bytes[0] = quint8((v4 >> 24) & 0xFF);
+        bytes[1] = quint8((v4 >> 16) & 0xFF);
+        bytes[2] = quint8((v4 >> 8) & 0xFF);
+        bytes[3] = quint8(v4 & 0xFF);
     } else {
         Q_IPV6ADDR v6 = address.toIPv6Address();
         std::memcpy(bytes.data(), &v6, 16);

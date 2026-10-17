@@ -69,7 +69,7 @@ public:
     // 首个 readAll 前先消费「裸 VLESS 应答头」（VER + ADDONS_LEN + ADDONS）。
     // 服务端把应答头缓冲到首次写出业务数据时才发送，拨号阶段同步等待会死锁，
     // 因此统一改为首次读取时懒消费。与 VisionStream / WsStream 语义一致。
-    void setLazyVlessResponseHeader(bool enabled) { m_expectVlessHeader = enabled; }
+    void setLazyVlessResponseHeader(bool enabled) override { m_expectVlessHeader = enabled; }
 
     // ---- Vision 直接拼接支持 -------------------------------------------
     // 停止 TLS 记录层解析；此后 takeRaw()/writeRaw() 直通原始 socket

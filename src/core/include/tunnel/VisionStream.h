@@ -54,7 +54,7 @@ public:
     // 首个 readAll 前先消费「裸 VLESS 应答头」（VER+ADDONS_LEN+ADDONS）。
     // 服务端会把应答头缓冲到首次写出业务数据时才发送，因此不能在拨号阶段
     // 同步等待，否则与「先发请求体」的中继流程互相死锁。
-    void setLazyVlessResponseHeader(bool enabled) { m_expectVlessHeader = enabled; }
+    void setLazyVlessResponseHeader(bool enabled) override { m_expectVlessHeader = enabled; }
 
 private:
     enum : uchar {

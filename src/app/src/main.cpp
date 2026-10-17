@@ -19,6 +19,7 @@
 #include "ui/MainWindow.h"
 #include "ui/UiFactory.h"
 #include "utils/AppLogger.h"
+#include "utils/CrashHandler.h"
 #include "utils/Paths.h"
 
 #include <QApplication>
@@ -74,6 +75,10 @@ int main(int argc, char *argv[])
 
     // ---- 日志 -------------------------------------------------------------
     clashqt::AppLogger::instance().install();
+    // 崩溃现场记录：TUN 数据面是多线程的，靠 gdb 手抓很容易只截到无关线程。
+    // 这里把致命信号的崩溃线程栈直接落到数据目录，便于事后定位。
+    const QByteArray crashDir = clashqt::paths::dataDir().toLocal8Bit();
+    clashqt::crash::install(crashDir.constData());
     clashqt::AppLogger::instance().info(
         QStringLiteral("启动 clash-qt %1（%2，silent=%3）")
             .arg(QApplication::applicationVersion())

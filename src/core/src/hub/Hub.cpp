@@ -1,5 +1,7 @@
 #include "hub/Hub.h"
 
+#include "tunnel/TunDevice.h"
+
 #include "adapter/Adapters.h"
 #include "base/Common.h"
 #include "common/JsonUtil.h"
@@ -12,6 +14,14 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QSet>
+
+#ifdef Q_OS_UNIX
+#include <QSocketNotifier>
+#include <QThread>
+#include <cerrno>
+#include <cstring>
+#include <unistd.h>
+#endif
 #include <QTimer>
 
 #include <algorithm>
@@ -27,9 +37,14 @@ Hub::Hub(QObject *parent) : QObject(parent), m_tunnel(std::make_shared<Tunnel>()
 {
     m_registry = std::make_shared<AdapterRegistry>();
     m_resolver = std::make_shared<Resolver>();
+    m_dnsServer = std::make_shared<DnsServer>(m_resolver);
 
     // 内核日志汇聚到统一的 Logger，再经信号对外广播
     QObject::connect(m_resolver.get(), &Resolver::logMessage, this,
+                     [this](const QString &level, const QString &message) {
+                         emit logMessage(level, message);
+                     });
+    QObject::connect(m_dnsServer.get(), &DnsServer::logMessage, this,
                      [this](const QString &level, const QString &message) {
                          emit logMessage(level, message);
                      });
@@ -72,15 +87,39 @@ bool Hub::applyConfig(const RawConfig &config, QString *error)
     // ---- DNS --------------------------------------------------------------
     if (m_dnsEnabled) {
         m_resolver->applyDnsConfig(config.dns());
+
+        // 代理节点的服务器域名必须走真实解析：TUN 下若被分配假 IP，
+        // 连节点就会连回本机 TUN，所有代理流量全断。
+        {
+            QStringList serverHosts;
+            const QJsonArray proxies = config.proxies();
+            for (const QJsonValue &value : proxies) {
+                if (!value.isObject()) continue;
+                const QString server =
+                    value.toObject().value(QStringLiteral("server")).toString().trimmed();
+                if (!server.isEmpty() && !server.at(0).isDigit()) serverHosts.append(server);
+            }
+            m_resolver->setServerHosts(serverHosts);
+        }
+        // 应答侧：按需开 dns.listen（TUN 的 53 劫持不依赖它，直接调 handleQuery）
+        m_dnsServer->applyDnsConfig(config.dns());
     } else {
         // DNS 受控关闭：清空自定义 DNS，仅保留 hosts 语义所需的直连解析
         m_resolver->applyDnsConfig(QJsonObject());
+        m_dnsServer->applyDnsConfig(QJsonObject());
         Logger::instance().info(LogCategory::Config,
                                 QStringLiteral("DNS 覆写已关闭，使用系统解析"));
     }
 
     // ---- 适配器 -----------------------------------------------------------
-    m_registry->loadFromConfig(config);
+    // 每次都建一份**新的**注册表再挂到快照上，而不是原地 loadFromConfig。
+    // 原因：loadFromConfig 内部先 clear() 再重建（std::map / vector），而旧快照
+    // 里的注册表指针仍被正在拨号的连接线程使用（dispatch → resolvePolicy）。
+    // 原地重建 = 那些线程遍历到被清空的容器，随机时刻闪退。换新对象后，
+    // 老注册表随最后一个 shared_ptr 自然销毁，正在用它的人不受影响。
+    auto registry = std::make_shared<AdapterRegistry>();
+    registry->loadFromConfig(config);
+    m_registry = registry;
 
     // ---- 规则集与规则 ------------------------------------------------------
     RuleSetRegistry ruleSets;
@@ -313,12 +352,183 @@ void Hub::setMode(OutboundMode mode)
     emit configChanged();
 }
 
+// ---------------------------------------------------------------------------
+//  TUN 接管：数据面跑在独立工作线程
+//
+//  fd 由特权辅助程序（build/bin/clash-qt-tun）建好 TUN 后经 SCM_RIGHTS 传来，
+//  主程序无需 root 即可读写。这里把它交给 TunDevice，并把它 move 到一个
+//  QThread 里：
+//
+//    工作线程: fd 可读 → TunIpStack::onPackets → packetsReady → 写回 fd
+//    工作线程: DNS 应答、规则派发、adapter->dial（这两者内部有局部事件循环）
+//    GUI 线程: 只负责开关与日志转发
+//
+//  早期版本把这一切放在 GUI 线程，结果是界面卡死 + 嵌套事件循环导致
+//  onPackets 重入、段错误闪退。线程边界见 TunDevice 的头文件说明。
+// ---------------------------------------------------------------------------
+#ifdef Q_OS_UNIX
+bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
+{
+    if (deviceFd < 0) {
+        if (error) *error = QStringLiteral("无效的 TUN 设备 fd");
+        return false;
+    }
+    if (m_tunDevice) {
+        if (error) *error = QStringLiteral("TUN 已在运行");
+        return false;
+    }
+
+    // 拨号：在**每个连接自己的线程**里执行（adapter->dial 内部有阻塞握手）
+    auto alive  = std::make_shared<bool>(true);
+    m_tunAlive  = alive;
+    auto dialFn = [this, alive](const DialContext &context) {
+        DialResult aborted;
+        if (!*alive) {
+            aborted.error = QStringLiteral("TUN 已关闭");
+            return aborted;
+        }
+        DialContext working = context;
+
+        DispatchOutcome outcome = m_tunnel->dispatch(working.metadata);
+        if (!outcome.adapter) {
+            DialResult failure;
+            failure.error = outcome.error.isEmpty()
+                                ? QStringLiteral("没有匹配到可用出站")
+                                : outcome.error;
+            return failure;
+        }
+
+        // 只落到 MATCH 兜底时，用真实 IP 再匹配一次：这样 GEOIP / 不带 no-resolve
+        // 的 IP-CIDR 规则也能生效（TUN 下伪装地址没有判断意义，域名先走域名规则，
+        // 命中就不多花这次解析）。
+        if (working.dstIp.isEmpty() && !working.host.isEmpty()
+            && outcome.ruleType == QStringLiteral("MATCH")) {
+            const QList<QHostAddress> resolved =
+                m_resolver ? m_resolver->resolveReal(working.host, 5000)
+                           : QList<QHostAddress>{};
+            if (!resolved.isEmpty()) {
+                working.dstIp          = resolved.first().toString();
+                working.metadata.dstIp = working.dstIp;
+                const DispatchOutcome retry = m_tunnel->dispatch(working.metadata);
+                if (retry.adapter) outcome = retry;
+            }
+        }
+
+        // DIRECT 类出站需要真实地址。这里必须用**内核解析器**：
+        // TUN 模式下系统 DNS 已指向我们自己，交给 Qt/系统解析会拿到 fake-ip，
+        // 于是连回本机 TUN —— 自环。resolveReal 明确不走 fake-ip。
+        if (outcome.adapter->needsLocalResolution() && working.dstIp.isEmpty()
+            && !working.host.isEmpty()) {
+            const QList<QHostAddress> resolved =
+                m_resolver ? m_resolver->resolveReal(working.host, 5000)
+                           : QList<QHostAddress>{};
+            if (resolved.isEmpty()) {
+                DialResult failure;
+                failure.error = QStringLiteral("域名解析失败：%1").arg(working.host);
+                return failure;
+            }
+            working.dstIp           = resolved.first().toString();
+            working.metadata.dstIp  = working.dstIp;
+        }
+
+        // 5 秒足够（真实代理握手 300~800ms）；原来 8 秒会把数据面堵更久
+        return outcome.adapter->dial(working, 5000);
+    };
+
+    m_tunThread = new QThread(this);
+    m_tunThread->setObjectName(QStringLiteral("clash-qt-tun"));
+    m_tunDevice = new TunDevice(dialFn, m_resolver, m_dnsServer); // 无 parent，随后 moveToThread
+    m_tunDevice->moveToThread(m_tunThread);
+
+    QObject::connect(m_tunDevice, &TunDevice::logMessage, this,
+                     [this](const QString &level, const QString &message) {
+                         emit logMessage(level, message);
+                     });
+    QObject::connect(m_tunDevice, &TunDevice::failed, this, [this](const QString &reason) {
+        emit logMessage(QStringLiteral("warning"),
+                        QStringLiteral("TUN 数据面异常（%1），已停止 TUN").arg(reason));
+        // 在 GUI 线程收尾，避免在设备线程里析构自己
+        QMetaObject::invokeMethod(this, [this]() { stopTun(); }, Qt::QueuedConnection);
+    });
+    QObject::connect(m_tunThread, &QThread::finished, m_tunDevice, &QObject::deleteLater);
+
+    m_tunThread->start();
+
+    TunDevice *device = m_tunDevice;
+    QMetaObject::invokeMethod(device, [device, deviceFd, dnsUdpFd, dnsTcpFd]() {
+        device->start(deviceFd, dnsUdpFd, dnsTcpFd);
+    }, Qt::QueuedConnection);
+
+    m_tunFd = -1; // 所有权已交给 TunDevice（由它关闭）
+    Logger::instance().info(LogCategory::Core,
+                            QStringLiteral("TUN 已接管（fd=%1），数据面运行在工作线程")
+                                .arg(deviceFd));
+    emit configChanged();
+    return true;
+}
+
+void Hub::stopTun()
+{
+    if (!m_tunDevice) {
+        if (m_tunFd >= 0) {
+            ::close(m_tunFd);
+            m_tunFd = -1;
+        }
+        return;
+    }
+
+    TunDevice *device = m_tunDevice;
+    m_tunDevice       = nullptr;
+
+    if (m_tunAlive) *m_tunAlive = false; // 让还在拨号的工作线程立刻退出
+    m_tunAlive.reset();
+
+    QThread *thread = m_tunThread;
+    m_tunThread     = nullptr;
+
+    if (thread && thread->isRunning()) {
+        // 用**排队**调用而不是 BlockingQueued：后者在数据面线程正忙于
+        // DNS 解析（内部有局部事件循环）时会把 GUI 线程一起卡住，
+        // 那样用户连开关都点不动。TunDevice::shutdown 内部会避开「协议栈
+        // 正在执行」的情况，不会在它自己的栈上把自己删掉。
+        QMetaObject::invokeMethod(device, &TunDevice::shutdown, Qt::QueuedConnection);
+        thread->quit();
+
+        if (thread->wait(800)) {
+            thread->deleteLater();
+        } else {
+            // 线程还卡在阻塞拨号里：绝不能 deleteLater —— 销毁一个仍在运行的
+            // QThread 会让 Qt 直接 abort（"Destroyed while thread is still
+            // running"），这正是「关闭 TUN 闪退」的第二个原因。
+            // 交给它自己退出后回收。
+            emit logMessage(QStringLiteral("warning"),
+                            QStringLiteral("TUN 数据面线程仍在收尾，退出后自动释放"));
+            QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+        }
+    } else if (thread) {
+        thread->deleteLater();
+    }
+
+    Logger::instance().info(LogCategory::Core, QStringLiteral("TUN 已关闭"));
+    emit configChanged();
+}
+#else
+bool Hub::startTun(int, int, int, QString *error)
+{
+    if (error) *error = QStringLiteral("当前平台尚未实现 TUN");
+    return false;
+}
+void Hub::stopTun() {}
+#endif
+
 void Hub::setDnsEnabled(bool enabled)
 {
     if (m_dnsEnabled == enabled) return;
     m_dnsEnabled = enabled;
     // 重新应用 DNS 段：开启时装载配置，关闭时退回系统解析
-    m_resolver->applyDnsConfig(enabled ? m_config.dns() : QJsonObject());
+    const QJsonObject dnsConfig = enabled ? m_config.dns() : QJsonObject();
+    m_resolver->applyDnsConfig(dnsConfig);
+    m_dnsServer->applyDnsConfig(dnsConfig);
     emit configChanged();
 }
 

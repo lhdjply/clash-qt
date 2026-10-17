@@ -5,6 +5,7 @@
 #include "common/SocketUtil.h"
 #include "common/Tls13Client.h"
 #include "common/WebSocketClient.h"
+#include "tunnel/UdpChannel.h"
 #include "tunnel/VisionStream.h"
 #include "tunnel/WsStream.h"
 
@@ -40,14 +41,15 @@ bool parseUuid(const QString &text, unsigned char out[16])
 // 构造 VLESS 请求：VER | UUID | ADDONS_LEN | ADDONS | CMD | PORT | ATYP | ADDR
 // addons 为 protobuf 编码（vision 时含 flow 字段），可为空
 QByteArray makeVlessRequest(const unsigned char uuid[16], const QByteArray &addons,
-                            const QString &host, quint16 port, QString *error)
+                            const QString &host, quint16 port, quint8 cmd,
+                            QString *error)
 {
     QByteArray request;
     request.append(char(0x00)); // VER
     request.append(reinterpret_cast<const char *>(uuid), 16);
     request.append(char(addons.size()));
     request.append(addons);
-    request.append(char(0x01)); // CMD = TCP
+    request.append(char(cmd)); // CMD：1=TCP，2=UDP
     request.append(char((port >> 8) & 0xFF));
     request.append(char(port & 0xFF));
 
@@ -147,9 +149,7 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
     DialResult result;
 
     if (context.network.compare(QLatin1String("udp"), Qt::CaseInsensitive) == 0) {
-        // VLESS 的 UDP 承载（CMD=0x02）需要 addons 中的 XUDP 扩展，尚未实现
-        result.error = QStringLiteral("VLESS UDP 尚未实现（Phase 2）");
-        return result;
+        return dialUdp(context, timeoutMs);
     }
 
     if (m_uuid.isEmpty()) {
@@ -223,7 +223,7 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
 
         QString requestError;
         const QByteArray request =
-            makeVlessRequest(uuidBytes, addons, host, quint16(context.dstPort),
+            makeVlessRequest(uuidBytes, addons, host, quint16(context.dstPort), 0x01,
                              &requestError);
         if (request.isEmpty()) {
             result.error = requestError;
@@ -258,7 +258,7 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
     // ---- 预构建 VLESS 请求（ws+TLS 与其余路径共用） ------------------------
     QString requestError;
     const QByteArray request =
-        makeVlessRequest(uuidBytes, QByteArray(), host, quint16(context.dstPort),
+        makeVlessRequest(uuidBytes, QByteArray(), host, quint16(context.dstPort), 0x01,
                          &requestError);
     if (request.isEmpty()) {
         result.error = requestError;
@@ -424,6 +424,129 @@ QJsonObject VlessAdapter::status() const
                   m_network.isEmpty() ? QStringLiteral("tcp") : m_network);
     object.insert(QStringLiteral("tls"), m_tls);
     return object;
+}
+
+// ---------------------------------------------------------------------------
+//  UDP 承载（CMD = 0x02）
+//
+//  与 TCP 的差别只在「请求头里的命令字」和「业务数据的封装方式」：
+//    · 请求头 CMD=2，ADDR 是**这条 UDP 会话的目标**（域名或 IP）；
+//    · 之后双向都是 [2 字节大端长度][数据报] 的帧，由 StreamUdpChannel 处理；
+//    · vision flow 只用于 TCP，UDP 走普通 TLS / WS / 明文传输。
+//  服务端的应答头仍由各流的「懒消费」机制在首次读取时跳过。
+// ---------------------------------------------------------------------------
+DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
+{
+    DialResult result;
+
+    if (m_uuid.isEmpty()) {
+        result.error = QStringLiteral("节点 %1 缺少 uuid").arg(m_config.name);
+        return result;
+    }
+
+    unsigned char uuidBytes[16];
+    if (!parseUuid(m_uuid, uuidBytes)) {
+        result.error = QStringLiteral("节点 %1 的 uuid 非法：%2").arg(m_config.name, m_uuid);
+        return result;
+    }
+
+    const QString host = context.host.isEmpty() ? context.dstIp : context.host;
+    if (host.isEmpty() || context.dstPort <= 0) {
+        result.error = QStringLiteral("VLESS UDP 缺少目标地址");
+        return result;
+    }
+
+    QString requestError;
+    const QByteArray request =
+        makeVlessRequest(uuidBytes, QByteArray(), host, quint16(context.dstPort), 0x02,
+                         &requestError);
+    if (request.isEmpty()) {
+        result.error = requestError;
+        return result;
+    }
+
+    // ---- 1) 建立底层传输 ---------------------------------------------------
+    std::shared_ptr<OutboundStream> stream;
+
+    if (m_tls) {
+        const QJsonObject realityOpts =
+            m_config.extra.value(QStringLiteral("reality-opts")).toObject();
+
+        RealityConfig tls;
+        tls.server     = m_config.server;
+        tls.port       = quint16(m_config.port);
+        tls.serverName = m_serverName;
+        tls.reality    = !realityOpts.isEmpty();
+        tls.skipVerify =
+            jsonutil::boolValue(m_config.extra, QStringLiteral("skip-cert-verify"), false);
+        if (tls.reality) {
+            tls.publicKey = QByteArray::fromBase64(
+                jsonutil::stringValue(realityOpts, QStringLiteral("public-key")).toUtf8(),
+                QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
+            tls.shortId = QByteArray::fromHex(
+                jsonutil::stringValue(realityOpts, QStringLiteral("short-id")).toUtf8());
+            if (tls.publicKey.size() != 32) {
+                result.error = QStringLiteral("节点 %1 的 reality-opts.public-key 非法")
+                                   .arg(m_config.name);
+                return result;
+            }
+        }
+
+        QString tlsError;
+        auto tlsStream = RealityTlsStream::connect(tls, timeoutMs, &tlsError);
+        if (!tlsStream) {
+            result.error = QStringLiteral("节点 %1 TLS 建连失败：%2")
+                               .arg(m_config.name, tlsError);
+            return result;
+        }
+
+        if (m_network == QLatin1String("ws")) {
+            QString wsError;
+            auto ws = std::make_shared<WsStream>(tlsStream, m_wsPath, m_wsHost, timeoutMs,
+                                                 &wsError);
+            if (!ws->isOpen()) {
+                result.error = QStringLiteral("节点 %1 WebSocket 握手失败：%2")
+                                   .arg(m_config.name, wsError);
+                return result;
+            }
+            stream = ws;
+        } else if (m_network.isEmpty()) {
+            stream = tlsStream;
+        } else {
+            result.error = QStringLiteral("节点 %1 的传输 %2 尚不支持 UDP")
+                               .arg(m_config.name, m_network);
+            return result;
+        }
+    } else {
+        auto socket = connectPlainTcp(timeoutMs, &result.error);
+        if (!socket) return result;
+        if (m_network == QLatin1String("ws")) {
+            QString wsError;
+            if (!websocket::handshake(socket.get(), m_wsPath, m_wsHost, timeoutMs, &wsError)) {
+                result.error = QStringLiteral("节点 %1 WebSocket 握手失败：%2")
+                                   .arg(m_config.name, wsError);
+                return result;
+            }
+            stream = std::make_shared<WebSocketStream>(socket.release(), nullptr);
+        } else if (m_network.isEmpty()) {
+            stream = std::make_shared<TcpStream>(socket.release(), nullptr);
+        } else {
+            result.error = QStringLiteral("节点 %1 的传输 %2 尚不支持 UDP")
+                               .arg(m_config.name, m_network);
+            return result;
+        }
+    }
+
+    // ---- 2) 发送请求 → 延迟消费应答头 --------------------------------------
+    if (stream->write(request) < 0) {
+        result.error = QStringLiteral("节点 %1 VLESS 请求发送失败").arg(m_config.name);
+        return result;
+    }
+    stream->setLazyVlessResponseHeader(true);
+
+    result.udpChannel = std::make_shared<StreamUdpChannel>(stream);
+    m_alive           = true;
+    return result;
 }
 
 } // namespace core

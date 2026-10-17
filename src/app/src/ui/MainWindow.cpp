@@ -116,7 +116,14 @@ MainWindow::MainWindow(AppContext *context, QWidget *parent)
         updateTray();
     });
 
+    // TUN 的启用是异步的（拉起特权辅助程序 → 等 fd → 建数据面），
+    // 完成/失败都只通过这个信号通知；三处开关（快捷设置、托盘、设置页）
+    // 全部以它为准，避免出现「界面已开、实际没起来」
+    QObject::connect(m_context, &AppContext::tunStateChanged, this,
+                     [this](bool) { syncTunUi(); });
+
     buildTray();
+    syncTunUi();
 
     // 启动已由入口完成（与窗口解耦，静默启动也要运行），这里只把界面
     // 同步到当前状态：状态栏端口、托盘文案，以及代理/规则列表的首次加载。
@@ -187,6 +194,15 @@ QWidget *MainWindow::buildSider()
             kernelCard));
     }
 
+    // TUN 模式：接管全部流量（不只是走系统代理的应用），首次启用会弹一次授权框。
+    // 它与系统代理是两套独立机制，可以同时开启：TUN 负责收发全部 IP 流量，
+    // 系统代理只影响读环境变量的应用，二者互不冲突。
+    m_tunSwitch = new QCheckBox(QStringLiteral("TUN 模式"), kernelCard);
+    m_tunSwitch->setChecked(m_context->tunEnabled());
+    m_tunSwitch->setToolTip(
+        QStringLiteral("接管本机全部流量（含不读系统代理的程序）。首次启用需要输入一次密码授权。"));
+    kernelLayout->addWidget(m_tunSwitch);
+
     siderLayout->addWidget(kernelCard);
 
     // ---- 统计卡片（上行 / 下行各一行，带方向图标） --------------------------
@@ -233,6 +249,8 @@ QWidget *MainWindow::buildSider()
                      &MainWindow::onOutboundModeChanged);
     QObject::connect(m_sysProxySwitch, &QCheckBox::toggled, this,
                      &MainWindow::onSysProxyToggled);
+    QObject::connect(m_tunSwitch, &QCheckBox::toggled, this,
+                     &MainWindow::onTunToggleRequested);
 
     return sider;
 }
@@ -303,6 +321,14 @@ void MainWindow::buildTray()
         m_sysProxySwitch->setChecked(!m_sysProxySwitch->isChecked());
     });
 
+    // TUN 与系统代理并列：不读系统代理的程序（游戏、容器、命令行工具）
+    // 只有 TUN 能接管，所以托盘里必须能直接开关
+    m_trayToggleTun = menu->addAction(QStringLiteral("启用 TUN 模式"));
+    QObject::connect(m_trayToggleTun, &QAction::triggered, this, [this]() {
+        // 走与快捷设置同一条入口：失败会 toast，状态以 AppContext 为准
+        onTunToggleRequested(!m_context->tunEnabled());
+    });
+
     menu->addSeparator();
     QAction *showAction = menu->addAction(QStringLiteral("显示主窗口"));
     QObject::connect(showAction, &QAction::triggered, this, [this]() {
@@ -340,16 +366,63 @@ void MainWindow::updateTray()
     if (!m_tray) return;
 
     const bool sysProxy = m_context->isSysProxyEnabled();
+    const bool tun      = m_context->tunEnabled();
 
-    // 托盘图标随系统代理状态变色：开启时用红色底板，扫一眼就知道
-    // 流量是不是正被接管（关掉时回到常规蓝紫）
-    m_tray->setIcon(ui::icons::appIcon(
-        64, sysProxy ? ui::icons::AppIconState::Active : ui::icons::AppIconState::Normal));
-    m_tray->setToolTip(sysProxy ? QStringLiteral("Clash Qt · 系统代理已开启")
-                                : QStringLiteral("Clash Qt · 系统代理未开启"));
+    // 托盘图标随「用哪种方式接管流量」变色：
+    //   都没开 → 蓝紫；仅系统代理 → 红；仅 TUN → 绿；两者同时 → 紫
+    ui::icons::AppIconState state = ui::icons::AppIconState::Normal;
+    if (sysProxy && tun) {
+        state = ui::icons::AppIconState::Both;
+    } else if (tun) {
+        state = ui::icons::AppIconState::Tun;
+    } else if (sysProxy) {
+        state = ui::icons::AppIconState::Active;
+    }
+    m_tray->setIcon(ui::icons::appIcon(64, state));
+
+    m_tray->setToolTip(QStringLiteral("Clash Qt · %1").arg(trayStateText()));
 
     m_trayToggleSysProxy->setText(sysProxy ? QStringLiteral("关闭系统代理")
                                            : QStringLiteral("启用系统代理"));
+}
+
+QString MainWindow::trayStateText() const
+{
+    if (m_context->tunStarting()) return QStringLiteral("TUN 启用中…");
+
+    const bool sysProxy = m_context->isSysProxyEnabled();
+    const bool tun      = m_context->tunEnabled();
+    if (sysProxy && tun) return QStringLiteral("系统代理 + TUN 已开启");
+    if (tun) return QStringLiteral("TUN 已开启");
+    if (sysProxy) return QStringLiteral("系统代理已开启");
+    return QStringLiteral("系统代理未开启");
+}
+
+// 快捷设置与托盘菜单共用：显示状态一律以 AppContext 为准。
+// 启用是异步的（要拉起特权辅助程序），所以「启用中」单独占一个状态，
+// 否则开关会在点下之后立刻弹回未勾选（看起来像点击失效）。
+void MainWindow::syncTunUi()
+{
+    const bool running  = m_context->tunEnabled();
+    const bool starting = m_context->tunStarting();
+
+    if (m_tunSwitch) {
+        m_tunSwitch->blockSignals(true);
+        m_tunSwitch->setChecked(running || starting);
+        m_tunSwitch->blockSignals(false);
+        m_tunSwitch->setEnabled(!starting);
+        m_tunSwitch->setText(starting ? QStringLiteral("TUN 模式（启用中…）")
+                                      : QStringLiteral("TUN 模式"));
+    }
+
+    if (m_trayToggleTun) {
+        m_trayToggleTun->setEnabled(!starting);
+        m_trayToggleTun->setText(starting ? QStringLiteral("TUN 启用中…")
+                                          : (running ? QStringLiteral("关闭 TUN 模式")
+                                                     : QStringLiteral("启用 TUN 模式")));
+    }
+
+    updateTray();
 }
 
 void MainWindow::onNavChanged(int index)
@@ -411,15 +484,37 @@ void MainWindow::onSysProxyToggled(bool enabled)
     updateTray();
 }
 
+// 快捷设置与托盘菜单共用同一个入口，避免两处逻辑出现分歧
+void MainWindow::onTunToggleRequested(bool enabled)
+{
+    // 正在启用（等特权辅助程序回 fd）时忽略重复请求；AppContext 内部也会挡，
+    // 这里只是让界面不去抖那一下
+    if (enabled && m_context->tunStarting()) {
+        syncTunUi();
+        return;
+    }
+
+    QString error;
+    if (!m_context->setTunEnabled(enabled, &error)) {
+        if (!error.isEmpty()) emit m_context->toast(QStringLiteral("error"), error);
+        syncTunUi(); // 回滚到 AppContext 的真实状态
+        return;
+    }
+    // 启用是异步的：这里先显示「启用中…」，成功/失败由 tunStateChanged 收尾
+    syncTunUi();
+}
+
 void MainWindow::onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed)
 {
     if (m_uploadLabel) m_uploadLabel->setText(calc::speed(uploadSpeed));
     if (m_downloadLabel) m_downloadLabel->setText(calc::speed(downloadSpeed));
 
-    // 托盘 tooltip 同步显示当前速度（对应原实现的 setToolTip）
+    // 托盘 tooltip 同步显示当前速度（对应原实现的 setToolTip）。
+    // 速度每秒刷新、会覆盖 updateTray 里设的文案，所以这里必须把接管状态
+    // 一起带上，否则开了 TUN 之后 tooltip 里就再也看不到状态了。
     if (m_tray) {
-        m_tray->setToolTip(QStringLiteral("Clash Qt\n↑ %1/s\n↓ %2/s")
-                               .arg(calc::traffic(uploadSpeed),
+        m_tray->setToolTip(QStringLiteral("Clash Qt · %1\n↑ %2/s\n↓ %3/s")
+                               .arg(trayStateText(), calc::traffic(uploadSpeed),
                                     calc::traffic(downloadSpeed)));
     }
 }

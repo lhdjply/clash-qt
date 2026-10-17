@@ -45,6 +45,11 @@ public:
     // 底层 socket 是否仍然连接
     virtual bool isOpen() const = 0;
 
+    // VLESS 应答头（VER + ADDONS_LEN + ADDONS）延迟到首次读取时再消费。
+    // 服务端只有在首次写出业务数据时才会发应答头，拨号阶段同步等它会死锁；
+    // 各具体流实现按需覆盖（Vision / WS / 裸 TLS）。
+    virtual void setLazyVlessResponseHeader(bool enabled) { Q_UNUSED(enabled); }
+
 signals:
     // 有新的业务数据可读
     void readyToRead();

@@ -130,6 +130,72 @@ QByteArray buildQuery(quint16 id, const QString &name, quint16 type)
     return out;
 }
 
+QByteArray buildResponse(const Message &query, const QList<Answer> &answers, int rcode)
+{
+    QByteArray out;
+    if (!query.isValid() || query.questions.isEmpty()) return out;
+
+    // ---- 头部：QR=1，RA=1，RD 沿用查询，rcode 由调用方决定 ----
+    const quint16 questionCount = quint16(query.questions.size());
+    quint16       answerCount   = 0;
+    for (const Answer &answer : answers) {
+        if (answer.type == 1 && answer.address.protocol() == QAbstractSocket::IPv4Protocol) {
+            ++answerCount;
+        } else if (answer.type == 28
+                   && answer.address.protocol() == QAbstractSocket::IPv6Protocol) {
+            ++answerCount;
+        } else if (answer.type == 5 && !answer.text.isEmpty()) {
+            ++answerCount;
+        }
+    }
+
+    appendU16(out, query.id);
+    appendU16(out, quint16(0x8000 | 0x0080 | (rcode & 0x000F))); // QR | RA | rcode
+    appendU16(out, questionCount);
+    appendU16(out, answerCount);
+    appendU16(out, 0); // NSCOUNT
+    appendU16(out, 0); // ARCOUNT
+
+    // ---- 问题段：原样回带。第一条问题的名字位于偏移 12，
+    //      应答段用它做指针压缩（0xC00C），省掉重复的域名 ----
+    for (const Question &question : query.questions) {
+        const QByteArray encoded = encodeName(question.name);
+        if (encoded.isEmpty()) return QByteArray();
+        out.append(encoded);
+        appendU16(out, question.type);
+        appendU16(out, question.cls);
+    }
+
+    // ---- 应答段 ----
+    for (const Answer &answer : answers) {
+        QByteArray rdata;
+        if (answer.type == 1 && answer.address.protocol() == QAbstractSocket::IPv4Protocol) {
+            const quint32 v4 = answer.address.toIPv4Address();
+            rdata.append(char((v4 >> 24) & 0xFF)).append(char((v4 >> 16) & 0xFF));
+            rdata.append(char((v4 >> 8) & 0xFF)).append(char(v4 & 0xFF));
+        } else if (answer.type == 28
+                   && answer.address.protocol() == QAbstractSocket::IPv6Protocol) {
+            const Q_IPV6ADDR v6 = answer.address.toIPv6Address();
+            rdata.append(reinterpret_cast<const char *>(v6.c), sizeof(v6.c));
+        } else if (answer.type == 5 && !answer.text.isEmpty()) {
+            rdata = encodeName(answer.text);
+            if (rdata.isEmpty()) continue;
+        } else {
+            continue; // 暂不支持的类型不写入（宁缺勿错）
+        }
+
+        appendU16(out, 0xC00C); // 名字指针 → 第一条问题
+        appendU16(out, answer.type);
+        appendU16(out, 1); // IN
+        out.append(char((answer.ttl >> 24) & 0xFF)).append(char((answer.ttl >> 16) & 0xFF));
+        out.append(char((answer.ttl >> 8) & 0xFF)).append(char(answer.ttl & 0xFF));
+        appendU16(out, quint16(rdata.size()));
+        out.append(rdata);
+    }
+
+    return out;
+}
+
 std::optional<Message> parseMessage(const QByteArray &payload)
 {
     if (payload.size() < 12) return std::nullopt;
@@ -291,7 +357,7 @@ void FakeIpPool::clear()
 // ===========================================================================
 
 Resolver::Resolver(QObject *parent)
-    : QObject(parent), m_network(std::make_unique<QNetworkAccessManager>())
+    : QObject(parent)
 {
 }
 
@@ -354,89 +420,133 @@ std::optional<Resolver::Server> Resolver::parseServer(const QString &spec)
 
 void Resolver::applyDnsConfig(const QJsonObject &dnsConfig)
 {
-    if (dnsConfig.isEmpty()) {
-        // 未提供 dns 段时保持可用：使用公共 DNS 兜底，避免解析器完全瘫痪
-        m_nameservers = {QStringLiteral("223.5.5.5"), QStringLiteral("119.29.29.29")};
-        m_defaultNameservers = m_nameservers;
-        return;
-    }
+    // 整段配置替换必须在锁内完成：此时可能正有拨号线程在 selectNameservers /
+    // 读缓存，把 QStringList / QHash 换掉却不同步，读到的是「半新半旧的堆」。
+    // 这里不含网络等待，持锁时间只有内存拷贝的量级。
+    QString summary;
+    {
+        QMutexLocker locker(&m_mutex);
 
-    m_ipv6 = jsonutil::boolValue(dnsConfig, QStringLiteral("ipv6"), false);
+        if (dnsConfig.isEmpty()) {
+            // 未提供 dns 段时保持可用：使用公共 DNS 兜底，避免解析器完全瘫痪
+            m_nameservers = {QStringLiteral("223.5.5.5"), QStringLiteral("119.29.29.29")};
+            m_defaultNameservers = m_nameservers;
+            m_cache.clear();
+            return;
+        }
 
-    const QString enhanced = jsonutil::stringValue(dnsConfig, QStringLiteral("enhanced-mode"));
-    m_enhancedMode = parseDnsEnhancedMode(enhanced).value_or(DnsEnhancedMode::Normal);
+        m_ipv6 = jsonutil::boolValue(dnsConfig, QStringLiteral("ipv6"), false);
 
-    m_nameservers = jsonutil::stringArrayValue(dnsConfig, QStringLiteral("nameserver"));
-    m_fallback    = jsonutil::stringArrayValue(dnsConfig, QStringLiteral("fallback"));
-    m_proxyServerNameservers =
-        jsonutil::stringArrayValue(dnsConfig, QStringLiteral("proxy-server-nameserver"));
-    m_directNameservers = jsonutil::stringArrayValue(dnsConfig, QStringLiteral("direct-nameserver"));
+        const QString enhanced = jsonutil::stringValue(dnsConfig, QStringLiteral("enhanced-mode"));
+        m_enhancedMode = parseDnsEnhancedMode(enhanced).value_or(DnsEnhancedMode::Normal);
 
-    m_defaultNameservers =
-        jsonutil::stringArrayValue(dnsConfig, QStringLiteral("default-nameserver"));
-    if (m_defaultNameservers.isEmpty()) {
-        // 与参照实现一致：default-nameserver 用于解析 DNS 服务器自身的域名，
-        // 未配置时退化为使用 nameserver 的第一项。
-        m_defaultNameservers = m_nameservers.isEmpty()
-                                   ? QStringList{QStringLiteral("223.5.5.5")}
-                                   : QStringList{m_nameservers.first()};
-    }
-    if (m_nameservers.isEmpty()) m_nameservers = m_defaultNameservers;
+        m_nameservers = jsonutil::stringArrayValue(dnsConfig, QStringLiteral("nameserver"));
+        m_fallback    = jsonutil::stringArrayValue(dnsConfig, QStringLiteral("fallback"));
+        m_proxyServerNameservers =
+            jsonutil::stringArrayValue(dnsConfig, QStringLiteral("proxy-server-nameserver"));
+        m_directNameservers = jsonutil::stringArrayValue(dnsConfig, QStringLiteral("direct-nameserver"));
 
-    m_fakeIpFilter = jsonutil::stringArrayValue(dnsConfig, QStringLiteral("fake-ip-filter"));
-    m_fakeIpFilterMode = parseFilterMode(
-                             jsonutil::stringValue(dnsConfig, QStringLiteral("fake-ip-filter-mode")))
-                             .value_or(FilterMode::Blacklist);
+        // 收集上游用到的域名（DoH 的 doh.pub / dns.alidns.com 等）：它们必须绕过
+        // fake-ip，并在解析时用引导服务器，否则会解析到自己身上形成自锁。
+        m_upstreamHosts.clear();
+        {
+            const QStringList all = m_nameservers + m_fallback + m_proxyServerNameservers
+                                    + m_directNameservers
+                                    + jsonutil::stringArrayValue(dnsConfig,
+                                                                 QStringLiteral("default-nameserver"));
+            for (const QString &spec : all) {
+                QString hostPart = spec.trimmed();
+                const int schemeEnd = hostPart.indexOf(QStringLiteral("://"));
+                if (schemeEnd >= 0) hostPart = hostPart.mid(schemeEnd + 3);
 
-    const QString fakeRange = jsonutil::stringValue(
-        dnsConfig, QStringLiteral("fake-ip-range"), QStringLiteral("198.18.0.1/16"));
-
-    m_fakeIp.clear();
-    m_fakeIp.configure(fakeRange);
-    m_fakeIp.setEnabled(m_enhancedMode == DnsEnhancedMode::FakeIp);
-    if (!m_fakeIp.enabled()) m_fakeIp.clear();
-
-    // nameserver-policy: { "example.com": ["1.1.1.1"], "+.cn": "223.5.5.5" }
-    m_nameserverPolicy.clear();
-    const QJsonObject policy = dnsConfig.value(QStringLiteral("nameserver-policy")).toObject();
-    for (auto it = policy.constBegin(); it != policy.constEnd(); ++it) {
-        QStringList servers;
-        if (it.value().isArray()) {
-            for (const auto &entry : it.value().toArray()) {
-                if (entry.isString()) servers << entry.toString();
+                const QString lower = hostPart.toLower();
+                if (lower.startsWith(QLatin1String("system"))
+                    || lower.startsWith(QLatin1String("dhcp"))) {
+                    continue;
+                }
+                const int slash = hostPart.indexOf(QLatin1Char('/'));
+                if (slash >= 0) hostPart = hostPart.left(slash);
+                // IPv6 形如 [::1]:53
+                if (hostPart.startsWith(QLatin1Char('['))) {
+                    const int close = hostPart.indexOf(QLatin1Char(']'));
+                    if (close > 0) hostPart = hostPart.mid(1, close - 1);
+                } else {
+                    const int colon = hostPart.indexOf(QLatin1Char(':'));
+                    if (colon > 0) hostPart = hostPart.left(colon);
+                }
+                if (hostPart.isEmpty()) continue;
+                if (IpNet::parseIp(hostPart)) continue; // 字面 IP 不需要
+                m_upstreamHosts.insert(hostPart.toLower());
             }
-        } else if (it.value().isString()) {
-            servers << it.value().toString();
         }
-        if (!servers.isEmpty()) {
-            QString key = it.key().trimmed().toLower();
-            if (key.startsWith(QLatin1String("+."))) key = key.mid(2);
-            m_nameserverPolicy.append({key, servers});
-        }
-    }
 
-    // hosts: { "example.com": "1.2.3.4", "*.test": ["1.1.1.1", "::1"] }
-    m_hosts.clear();
-    const QJsonObject hosts = dnsConfig.value(QStringLiteral("hosts")).toObject();
-    for (auto it = hosts.constBegin(); it != hosts.constEnd(); ++it) {
-        QString value;
-        if (it.value().isArray()) {
-            const QJsonArray array = it.value().toArray();
-            if (!array.isEmpty() && array.first().isString()) value = array.first().toString();
-        } else if (it.value().isString()) {
-            value = it.value().toString();
+        m_defaultNameservers =
+            jsonutil::stringArrayValue(dnsConfig, QStringLiteral("default-nameserver"));
+        if (m_defaultNameservers.isEmpty()) {
+            // 与参照实现一致：default-nameserver 用于解析 DNS 服务器自身的域名，
+            // 未配置时退化为使用 nameserver 的第一项。
+            m_defaultNameservers = m_nameservers.isEmpty()
+                                       ? QStringList{QStringLiteral("223.5.5.5")}
+                                       : QStringList{m_nameservers.first()};
         }
-        if (!value.isEmpty()) {
-            m_hosts.insert(it.key().trimmed().toLower(), value);
+        if (m_nameservers.isEmpty()) m_nameservers = m_defaultNameservers;
+
+        m_fakeIpFilter = jsonutil::stringArrayValue(dnsConfig, QStringLiteral("fake-ip-filter"));
+        m_fakeIpFilterMode = parseFilterMode(
+                                 jsonutil::stringValue(dnsConfig, QStringLiteral("fake-ip-filter-mode")))
+                                 .value_or(FilterMode::Blacklist);
+
+        const QString fakeRange = jsonutil::stringValue(
+            dnsConfig, QStringLiteral("fake-ip-range"), QStringLiteral("198.18.0.1/16"));
+
+        m_fakeIp.clear();
+        m_fakeIp.configure(fakeRange);
+        m_fakeIp.setEnabled(m_enhancedMode == DnsEnhancedMode::FakeIp);
+        if (!m_fakeIp.enabled()) m_fakeIp.clear();
+
+        // nameserver-policy: { "example.com": ["1.1.1.1"], "+.cn": "223.5.5.5" }
+        m_nameserverPolicy.clear();
+        const QJsonObject policy = dnsConfig.value(QStringLiteral("nameserver-policy")).toObject();
+        for (auto it = policy.constBegin(); it != policy.constEnd(); ++it) {
+            QStringList servers;
+            if (it.value().isArray()) {
+                for (const auto &entry : it.value().toArray()) {
+                    if (entry.isString()) servers << entry.toString();
+                }
+            } else if (it.value().isString()) {
+                servers << it.value().toString();
+            }
+            if (!servers.isEmpty()) {
+                QString key = it.key().trimmed().toLower();
+                if (key.startsWith(QLatin1String("+."))) key = key.mid(2);
+                m_nameserverPolicy.append({key, servers});
+            }
         }
-    }
 
-    m_cache.clear();
+        // hosts: { "example.com": "1.2.3.4", "*.test": ["1.1.1.1", "::1"] }
+        m_hosts.clear();
+        const QJsonObject hosts = dnsConfig.value(QStringLiteral("hosts")).toObject();
+        for (auto it = hosts.constBegin(); it != hosts.constEnd(); ++it) {
+            QString value;
+            if (it.value().isArray()) {
+                const QJsonArray array = it.value().toArray();
+                if (!array.isEmpty() && array.first().isString()) value = array.first().toString();
+            } else if (it.value().isString()) {
+                value = it.value().toString();
+            }
+            if (!value.isEmpty()) {
+                m_hosts.insert(it.key().trimmed().toLower(), value);
+            }
+        }
 
-    emit logMessage(QStringLiteral("info"),
-                    QStringLiteral("DNS 已配置：enhanced-mode=%1，nameserver=%2，fake-ip=%3")
-                        .arg(toString(m_enhancedMode), m_nameservers.join(QLatin1Char(',')),
-                             m_fakeIp.enabled() ? QStringLiteral("on") : QStringLiteral("off")));
+        m_cache.clear();
+
+        summary = QStringLiteral("DNS 已配置：enhanced-mode=%1，nameserver=%2，fake-ip=%3")
+                      .arg(toString(m_enhancedMode), m_nameservers.join(QLatin1Char(',')),
+                           m_fakeIp.enabled() ? QStringLiteral("on") : QStringLiteral("off"));
+    } // 释放锁后再发信号：槽函数可能又调回 Resolver
+
+    if (!summary.isEmpty()) emit logMessage(QStringLiteral("info"), summary);
 }
 
 // ---- hosts / fake-ip ------------------------------------------------------
@@ -445,6 +555,8 @@ std::optional<QHostAddress> Resolver::lookupHosts(const QString &host, bool ipv6
 {
     const QString needle = host.trimmed().toLower();
     if (needle.isEmpty()) return std::nullopt;
+
+    QMutexLocker locker(&m_mutex);
 
     // 精确匹配优先
     auto it = m_hosts.constFind(needle);
@@ -470,11 +582,38 @@ std::optional<QHostAddress> Resolver::lookupHosts(const QString &host, bool ipv6
     return std::nullopt;
 }
 
+void Resolver::setServerHosts(const QStringList &hosts)
+{
+    QMutexLocker locker(&m_mutex);
+    m_serverHosts.clear();
+    for (const QString &host : hosts) {
+        const QString needle = host.trimmed().toLower();
+        if (!needle.isEmpty()) m_serverHosts.insert(needle);
+    }
+}
+
+QSet<QString> Resolver::upstreamHosts() const
+{
+    QMutexLocker locker(&m_mutex);
+    return m_upstreamHosts;
+}
+
 bool Resolver::shouldSkipFakeIp(const QString &host) const
 {
+    QMutexLocker locker(&m_mutex);
+    return shouldSkipFakeIpLocked(host);
+}
+
+bool Resolver::shouldSkipFakeIpLocked(const QString &host) const
+{
+    const QString needle0 = host.trimmed().toLower();
+    // DNS 上游自身的域名：必须给真实地址，否则解析器会连回 TUN 自锁
+    if (m_upstreamHosts.contains(needle0)) return true;
+    // 代理节点的服务器域名：同样必须真实解析，否则连不到节点
+    if (m_serverHosts.contains(needle0)) return true;
     if (m_fakeIpFilter.isEmpty()) return false;
 
-    const QString needle = host.trimmed().toLower();
+    const QString needle = needle0;
     bool          listed = false;
 
     for (const QString &rawPattern : m_fakeIpFilter) {
@@ -509,9 +648,12 @@ bool Resolver::shouldSkipFakeIp(const QString &host) const
 
 std::optional<QHostAddress> Resolver::mappingFakeIp(const QString &host)
 {
-    if (!m_fakeIp.enabled()) return std::nullopt;
     if (host.isEmpty()) return std::nullopt;
-    if (shouldSkipFakeIp(host)) return std::nullopt;
+
+    // 分配要改 fake-ip 的双向表，必须与其它线程的 fakeIpToHost 互斥
+    QMutexLocker locker(&m_mutex);
+    if (!m_fakeIp.enabled()) return std::nullopt;
+    if (shouldSkipFakeIpLocked(host)) return std::nullopt;
 
     // 真实 IP 文本不做 fake-ip 映射
     if (IpNet::parseIp(host)) return std::nullopt;
@@ -523,11 +665,13 @@ std::optional<QHostAddress> Resolver::mappingFakeIp(const QString &host)
 
 std::optional<QString> Resolver::fakeIpToHost(const QHostAddress &address) const
 {
+    QMutexLocker locker(&m_mutex);
     return m_fakeIp.reverseLookup(address);
 }
 
 bool Resolver::isFakeIp(const QHostAddress &address) const
 {
+    QMutexLocker locker(&m_mutex);
     return m_fakeIp.isFakeIp(address);
 }
 
@@ -535,6 +679,8 @@ bool Resolver::isFakeIp(const QHostAddress &address) const
 
 QStringList Resolver::selectNameservers(const QString &host, bool useFallback) const
 {
+    QMutexLocker locker(&m_mutex);
+
     if (useFallback && !m_fallback.isEmpty()) return m_fallback;
 
     const QString needle = host.trimmed().toLower();
@@ -560,7 +706,42 @@ void Resolver::remember(const QString &host, int type,
     // TTL 上限 1 小时、下限 10 秒，避免内核返回 0 导致缓存失效或异常长缓存
     const quint32 clamped = std::clamp(ttl, 10u, 3600u);
     entry.expireAtMs = QDateTime::currentMSecsSinceEpoch() + qint64(clamped) * 1000;
-    m_cache.insert(QStringLiteral("%1|%2").arg(host.toLower()).arg(type), entry);
+    cacheStore(QStringLiteral("%1|%2").arg(host.toLower()).arg(type), entry);
+}
+
+// ---- 容器访问辅助（全部自带锁，供锁外跑网络的路径复用）-------------------
+
+bool Resolver::isUpstreamHost(const QString &host) const
+{
+    QMutexLocker locker(&m_mutex);
+    return m_upstreamHosts.contains(host.trimmed().toLower());
+}
+
+std::optional<Resolver::CacheEntry> Resolver::cacheLookup(const QString &key) const
+{
+    QMutexLocker locker(&m_mutex);
+    const auto it = m_cache.constFind(key);
+    if (it == m_cache.constEnd()) return std::nullopt;
+    if (it.value().expireAtMs <= QDateTime::currentMSecsSinceEpoch()) return std::nullopt;
+    return it.value();
+}
+
+void Resolver::cacheStore(const QString &key, const CacheEntry &entry)
+{
+    QMutexLocker locker(&m_mutex);
+    m_cache.insert(key, entry);
+}
+
+void Resolver::clearCache()
+{
+    QMutexLocker locker(&m_mutex);
+    m_cache.clear();
+}
+
+int Resolver::cacheSize() const
+{
+    QMutexLocker locker(&m_mutex);
+    return int(m_cache.size());
 }
 
 // ---- 查询 -----------------------------------------------------------------
@@ -665,11 +846,24 @@ QList<QHostAddress> Resolver::queryTcp(const Server &server, const QString &host
     return result;
 }
 
+QNetworkAccessManager *Resolver::networkForCurrentThread()
+{
+    // 每个线程一份，首次使用时在该线程内创建。
+    // 这里**故意不释放**：thread_local 的析构发生在 main 返回之后，那时
+    // QCoreApplication 可能已经销毁，QNAM 析构会踩到已释放的内部对象
+    //（实测表现为退出时 free(): invalid pointer）。一个 QNAM 几十 KB，
+    // 每个线程留一个完全可以接受。
+    static thread_local QNetworkAccessManager *manager = nullptr;
+    if (!manager) manager = new QNetworkAccessManager();
+    return manager;
+}
+
 QList<QHostAddress> Resolver::queryHttps(const Server &server, const QString &host,
                                          quint16 type, int timeoutMs)
 {
     QList<QHostAddress> result;
-    if (!m_network || server.httpsUrl.isEmpty()) return result;
+    QNetworkAccessManager *network = networkForCurrentThread();
+    if (!network || server.httpsUrl.isEmpty()) return result;
 
     QUrl url(server.httpsUrl);
     // RFC 8484：POST + application/dns-message
@@ -685,7 +879,7 @@ QList<QHostAddress> Resolver::queryHttps(const Server &server, const QString &ho
     request.setTransferTimeout(std::max(1000, timeoutMs));
 
     // 使用 GET + dns 参数形式，兼容性最好，无需关心分块 POST
-    QNetworkReply *reply = m_network->get(request);
+    QNetworkReply *reply = network->get(request);
 
     QEventLoop loop;
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
@@ -745,6 +939,46 @@ QList<QHostAddress> Resolver::resolveImpl(const QString &host, int timeoutMs, bo
         return {*literal};
     }
 
+    // 1.5) 上游服务器自身的域名：只能走 default-nameserver（字面 IP 的 DoT/DNS），
+    //      绝不能再走 DoH —— 那等于解析「解析器自己」，在 TUN 下会自锁。
+    if (isUpstreamHost(needle)) {
+        // 先看缓存：这条路径会被 TUN 线程反复调用（每次 DIRECT 解析都可能触发），
+        // 每次都去问引导服务器会明显拖慢建连。
+        const QString upstreamKey =
+            QStringLiteral("%1|%2").arg(needle.toLower()).arg(int(ipv6 ? 28 : 1));
+        if (const auto cached = cacheLookup(upstreamKey)) return cached->addresses;
+
+        // 引导服务器列表取一份副本再遍历：容器在本线程查询期间可能被
+        // applyDnsConfig 整体替换（换订阅 / 改设置），直接引用会读到坏内存。
+        const QStringList bootstrapServers = defaultNameservers();
+
+        for (const QString &spec : bootstrapServers) {
+            const auto server = parseServer(spec);
+            if (!server) continue;
+            if (!IpNet::parseIp(server->host)) continue; // 引导服务器也必须是字面 IP
+
+            // 引导阶段一律用明文 UDP/53：tls:// 目前没有真正的 DoT 实现（queryServer
+            // 会退化成明文 TCP 到 853 端口，必然失败），而这一步只用来解析
+            // 「DNS 上游自己的域名」，走明文 53 完全够用且最可靠。
+            Server probe = *server;
+            probe.tls    = false;
+            probe.tcp    = false;
+            probe.port   = 53;
+
+            const QList<QHostAddress> resolved =
+                queryUdp(probe, needle, quint16(ipv6 ? 28 : 1), std::min(timeoutMs, 3000));
+            if (!resolved.isEmpty()) {
+                remember(needle, int(ipv6 ? 28 : 1), resolved, 600);
+                return resolved;
+            }
+        }
+        // AAAA 查不到是常态（多数 DoH / 节点域名只有 A 记录），客户端本来就会
+        // 回落到 A。只有 A 查询失败才值得告警，否则每换一次网络就刷一条假故障。
+        emit logMessage(ipv6 ? QStringLiteral("debug") : QStringLiteral("warning"),
+                        QStringLiteral("无法通过引导服务器解析 DNS 上游域名：%1").arg(needle));
+        return {};
+    }
+
     // 2) hosts 优先
     if (const auto fromHosts = lookupHosts(needle, ipv6)) return {*fromHosts};
 
@@ -756,13 +990,7 @@ QList<QHostAddress> Resolver::resolveImpl(const QString &host, int timeoutMs, bo
     // 4) 缓存
     const int  cacheType = ipv6 ? 28 : 1;
     const QString cacheKey = QStringLiteral("%1|%2").arg(needle.toLower()).arg(cacheType);
-    const auto cacheIt = m_cache.find(cacheKey);
-    if (cacheIt != m_cache.end()) {
-        if (cacheIt.value().expireAtMs > QDateTime::currentMSecsSinceEpoch()) {
-            return cacheIt.value().addresses;
-        }
-        m_cache.erase(cacheIt);
-    }
+    if (const auto cached = cacheLookup(cacheKey)) return cached->addresses;
 
     // 5) 逐服务器查询
     const QStringList servers = selectNameservers(needle, false);
@@ -775,13 +1003,22 @@ QList<QHostAddress> Resolver::resolveImpl(const QString &host, int timeoutMs, bo
                             QStringLiteral("无法解析 DNS 服务器配置：%1").arg(spec));
             continue;
         }
-        // 服务器本身是域名时需要先用 default-nameserver 引导解析
+        // 服务器本身是域名时才需要引导解析；DoH 不需要（走 URL，由 QNAM 自己解）。
+        //
+        // 注意引导必须用**明文 UDP/53**：m_defaultNameservers 通常是
+        // `tls://223.5.5.5`，若照着它的 853 端口发明文 UDP，必然收不到应答，
+        // 每次查询都会白白等满 3 秒超时 —— 这正是「TUN 下网页像打不开」的元凶之一。
         Server effective = *server;
-        if (!IpNet::parseIp(effective.host) && effective.host != QLatin1String("system")) {
-            const auto bootstrap = parseServer(m_defaultNameservers.value(0));
+        if (effective.httpsUrl.isEmpty() && !IpNet::parseIp(effective.host)
+            && effective.host != QLatin1String("system")) {
+            const auto bootstrap = parseServer(defaultNameservers().value(0));
             if (bootstrap) {
-                const auto resolved = queryUdp(*bootstrap, effective.host, 1,
-                                               std::min(timeoutMs, 3000));
+                Server probe = *bootstrap;
+                probe.tls    = false;
+                probe.tcp    = false;
+                probe.port   = 53;
+                const auto resolved = queryUdp(probe, effective.host, 1,
+                                               std::min(timeoutMs, 1500));
                 if (!resolved.isEmpty()) effective.host = resolved.first().toString();
             }
         }
@@ -791,8 +1028,9 @@ QList<QHostAddress> Resolver::resolveImpl(const QString &host, int timeoutMs, bo
     }
 
     // 6) fallback 组（仅在上一步失败时使用，对应参照实现的 fallback 语义）
-    if (result.isEmpty() && !m_fallback.isEmpty()) {
-        for (const QString &spec : m_fallback) {
+    const QStringList fallbacks = fallbackServers();
+    if (result.isEmpty() && !fallbacks.isEmpty()) {
+        for (const QString &spec : fallbacks) {
             const auto server = parseServer(spec);
             if (!server) continue;
             result = queryServer(*server, needle, quint16(cacheType), timeoutMs);
@@ -801,8 +1039,14 @@ QList<QHostAddress> Resolver::resolveImpl(const QString &host, int timeoutMs, bo
     }
 
     if (result.isEmpty()) {
-        emit logMessage(QStringLiteral("warning"),
+        // 同上：AAAA 解析不到不算故障（客户端会回落 A），降为 debug 免得刷假告警
+        emit logMessage(ipv6 ? QStringLiteral("debug") : QStringLiteral("warning"),
                         QStringLiteral("域名解析失败：%1").arg(needle));
+        // 负缓存 30 秒：解析失败的域名会被反复重试，每次都要等 DoH 超时，
+        // 而这条路径跑在 TUN 数据面线程里，会直接卡住所有连接。
+        CacheEntry negative;
+        negative.expireAtMs = QDateTime::currentMSecsSinceEpoch() + 30 * 1000;
+        cacheStore(cacheKey, negative);
     }
     return result;
 }
@@ -814,6 +1058,16 @@ std::optional<QHostAddress> Resolver::resolveOne(const QString &host, int timeou
     return addresses.first();
 }
 
-void Resolver::clearCache() { m_cache.clear(); }
+QStringList Resolver::defaultNameservers() const
+{
+    QMutexLocker locker(&m_mutex);
+    return m_defaultNameservers;
+}
+
+QStringList Resolver::fallbackServers() const
+{
+    QMutexLocker locker(&m_mutex);
+    return m_fallback;
+}
 
 } // namespace core

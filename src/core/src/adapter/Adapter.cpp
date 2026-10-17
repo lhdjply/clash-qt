@@ -3,6 +3,7 @@
 #include "base/Common.h"
 #include "common/JsonUtil.h"
 #include "common/SocketUtil.h"
+#include "tunnel/UdpChannel.h"
 
 #include <QDateTime>
 #include <QEventLoop>
@@ -80,10 +81,13 @@ std::unique_ptr<QTcpSocket> connectTcp(const QString &host, quint16 port, int ti
 
     if (socket->state() != QAbstractSocket::ConnectedState) {
         if (error) {
-            *error = QStringLiteral("连接 %1:%2 失败：%3")
+            // 一定带上错误码：Qt 对很多失败只会给出 "Unknown error"，
+            // 有了 SocketError 才能区分「连接被拒 / 主机不可达 / 超时」
+            *error = QStringLiteral("连接 %1:%2 失败：%3（error=%4）")
                          .arg(host)
                          .arg(port)
-                         .arg(socket->errorString());
+                         .arg(socket->errorString())
+                         .arg(int(socket->error()));
         }
         socket->abort();
         return nullptr;
@@ -168,19 +172,21 @@ DialResult DirectAdapter::dial(const DialContext &context, int timeoutMs)
     }
 
     if (context.network.compare(QLatin1String("udp"), Qt::CaseInsensitive) == 0) {
-        // UDP 直连：创建已连接的 UDP 套接字，后续由 Tunnel 收发数据报
+        // UDP 直连：创建已连接的 UDP 套接字，交给 UdpWorker 收发数据报
         auto socket = std::make_shared<QUdpSocket>();
         const QHostAddress address(host);
         if (address.isNull()) {
             result.error = QStringLiteral("DIRECT UDP 需要字面 IP 目标");
             return result;
         }
-        if (!socket->bind(QHostAddress::AnyIPv4, 0)) {
+        // 绑定到任意本地端口，connectToHost 之后 socket 即处于已连接状态
+        if (!socket->bind(QHostAddress(QHostAddress::AnyIPv4), 0)) {
             result.error = QStringLiteral("UDP 绑定失败：%1").arg(socket->errorString());
             return result;
         }
         socket->connectToHost(address, quint16(context.dstPort));
-        result.udp = socket;
+        result.udp        = socket;
+        result.udpChannel = std::make_shared<SocketUdpChannel>(socket);
         m_alive = true;
         return result;
     }

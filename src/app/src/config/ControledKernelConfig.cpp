@@ -14,13 +14,14 @@
 namespace clashqt {
 namespace {
 
-// TUN 设备名：macOS 需要 utunNNNN，其余平台用 Mihomo
+// TUN 设备名：macOS 需要 utunNNNN，其余平台用本程序的名字
 QString defaultTunDevice()
 {
 #ifdef Q_OS_MACOS
     return QStringLiteral("utun1500");
 #else
-    return QStringLiteral("Mihomo");
+    // 命名与本程序的辅助程序一致（clash-qt-tun），不再沿用参照实现的 Mihomo
+    return QStringLiteral("clash-qt-tun");
 #endif
 }
 
@@ -47,8 +48,11 @@ QJsonObject defaultDns()
     dns.insert(QStringLiteral("ipv6"), false);
     dns.insert(QStringLiteral("enhanced-mode"), QStringLiteral("fake-ip"));
     dns.insert(QStringLiteral("fake-ip-range"), QStringLiteral("198.18.0.1/16"));
+    // 注意：这里**不能**放通配 "*" —— 它会命中所有域名，等于让 fake-ip 完全失效
+    // （没有域名 → 域名规则失效；系统 DNS 的真实 AAAA 会让应用走 IPv6，
+    //   而 TUN 层不支持 IPv6，表现为双栈站点直接打不开）
     dns.insert(QStringLiteral("fake-ip-filter"),
-               QJsonArray::fromStringList({QStringLiteral("*"), QStringLiteral("+.lan"),
+               QJsonArray::fromStringList({QStringLiteral("+.lan"),
                                            QStringLiteral("+.local"),
                                            QStringLiteral("time.*.com"),
                                            QStringLiteral("ntp.*.com"),
@@ -338,6 +342,27 @@ QString ControledKernelConfig::tunDevice() const
 {
     return core::jsonutil::stringValue(m_object.value(QStringLiteral("tun")).toObject(),
                                          QStringLiteral("device"), defaultTunDevice());
+}
+
+bool ControledKernelConfig::tunAutoRoute() const
+{
+    // 默认 true：与参照实现的 tun.auto-route 默认一致
+    return core::jsonutil::boolValue(m_object.value(QStringLiteral("tun")).toObject(),
+                                      QStringLiteral("auto-route"), true);
+}
+
+void ControledKernelConfig::setTunAutoRoute(bool enabled)
+{
+    QJsonObject tun = m_object.value(QStringLiteral("tun")).toObject();
+    tun.insert(QStringLiteral("auto-route"), enabled);
+    m_object.insert(QStringLiteral("tun"), tun);
+}
+
+int ControledKernelConfig::tunMtu() const
+{
+    const QJsonObject tun = m_object.value(QStringLiteral("tun")).toObject();
+    const int mtu = tun.value(QStringLiteral("mtu")).toInt(1500);
+    return (mtu >= 576 && mtu <= 9000) ? mtu : 1500;
 }
 
 bool ControledKernelConfig::dnsEnabled() const

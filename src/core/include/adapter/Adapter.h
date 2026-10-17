@@ -39,6 +39,7 @@
 namespace core {
 
 class Adapter;
+class UdpChannel;
 
 // 一次拨号请求的完整上下文
 struct DialContext {
@@ -56,6 +57,9 @@ struct DialContext {
 struct DialResult {
     std::shared_ptr<OutboundStream> stream;
     std::shared_ptr<QUdpSocket>     udp;
+    // UDP 数据报通道（DIRECT 的已连接 socket / VLESS 的长度前缀分帧流）。
+    // network == "udp" 时以它为准；udp 字段是它的 QUdpSocket 特例，保留兼容。
+    std::shared_ptr<UdpChannel>     udpChannel;
     QString                         error;
     // REJECT-DROP：不建立任何上行连接，但保持客户端连接打开并丢弃数据
     // （对应参照实现的 RejectDrop 语义，直接 reset 会让对端立刻感知）
@@ -66,7 +70,7 @@ struct DialResult {
     // 由 Tunnel 先写入客户端，避免丢包。
     QByteArray                  extraData;
 
-    bool ok() const { return stream != nullptr || udp != nullptr; }
+    bool ok() const { return stream != nullptr || udp != nullptr || udpChannel != nullptr; }
 };
 
 class Adapter {

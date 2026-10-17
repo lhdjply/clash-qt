@@ -172,6 +172,7 @@ set(CORE_PUBLIC_HEADERS
     src/core/include/config/ProxyConfig.h
     src/core/include/component/trie/DomainTrie.h
     src/core/include/component/cidr/IpCidrSet.h
+    src/core/include/component/dns/DnsServer.h
     src/core/include/component/dns/Resolver.h
     src/core/include/rules/Rule.h
     src/core/include/rules/RuleParser.h
@@ -188,6 +189,11 @@ set(CORE_PUBLIC_HEADERS
     src/core/include/tunnel/OutboundStream.h
     src/core/include/tunnel/VisionStream.h
     src/core/include/tunnel/WsStream.h
+    src/core/include/tunnel/FlowWorker.h
+    src/core/include/tunnel/UdpChannel.h
+    src/core/include/tunnel/UdpWorker.h
+    src/core/include/tunnel/TunDevice.h
+    src/core/include/tunnel/TunIpStack.h
     src/core/include/tunnel/Tunnel.h
     src/core/include/hub/Hub.h
 )
@@ -205,6 +211,7 @@ set(CORE_SOURCES
     src/core/src/config/ProxyConfig.cpp
     src/core/src/component/trie/DomainTrie.cpp
     src/core/src/component/cidr/IpCidrSet.cpp
+    src/core/src/component/dns/DnsServer.cpp
     src/core/src/component/dns/Resolver.cpp
     src/core/src/rules/Rule.cpp
     src/core/src/rules/RuleParser.cpp
@@ -217,6 +224,11 @@ set(CORE_SOURCES
     src/core/src/listener/Socks5Listener.cpp
     src/core/src/listener/MixedListener.cpp
     src/core/src/tunnel/ConnectionTracker.cpp
+    src/core/src/tunnel/FlowWorker.cpp
+    src/core/src/tunnel/UdpChannel.cpp
+    src/core/src/tunnel/UdpWorker.cpp
+    src/core/src/tunnel/TunDevice.cpp
+    src/core/src/tunnel/TunIpStack.cpp
     src/core/src/tunnel/Tunnel.cpp
     src/core/src/tunnel/VisionStream.cpp
     src/core/src/tunnel/WsStream.cpp
@@ -275,6 +287,7 @@ set(APP_SOURCES
     src/app/src/utils/AppLogger.cpp
     src/app/src/utils/SafeFile.cpp
     src/app/src/utils/Calc.cpp
+    src/app/src/utils/CrashHandler.cpp
 
     src/app/src/config/AppConfig.cpp
     src/app/src/config/ControledKernelConfig.cpp
@@ -285,6 +298,7 @@ set(APP_SOURCES
     src/app/src/sys/SysProxy.cpp
     src/app/src/sys/AutoRun.cpp
     src/app/src/sys/SingleInstance.cpp
+    src/app/src/sys/TunController.cpp
 
     src/app/src/ui/MainWindow.cpp
     src/app/src/ui/UiFactory.cpp
@@ -305,6 +319,7 @@ set(APP_HEADERS
     src/app/src/utils/AppLogger.h
     src/app/src/utils/SafeFile.h
     src/app/src/utils/Calc.h
+    src/app/src/utils/CrashHandler.h
 
     src/app/src/config/AppConfig.h
     src/app/src/config/ControledKernelConfig.h
@@ -315,6 +330,7 @@ set(APP_HEADERS
     src/app/src/sys/SysProxy.h
     src/app/src/sys/AutoRun.h
     src/app/src/sys/SingleInstance.h
+    src/app/src/sys/TunController.h
 
     src/app/src/ui/MainWindow.h
     src/app/src/ui/UiFactory.h
@@ -360,6 +376,12 @@ target_compile_options(clash-qt PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wno-unused-parameter>
 )
 
+# -rdynamic：把可执行文件的符号导出到动态符号表，崩溃记录器（CrashHandler）
+# 才能用 backtrace_symbols_fd 打印出函数名而不是裸地址
+target_link_options(clash-qt PRIVATE
+    $<$<PLATFORM_ID:Linux>:-rdynamic>
+)
+
 set_target_properties(clash-qt PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
@@ -374,6 +396,32 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 endif()
 
 endif() # CLASHQT_BUILD_APP
+
+# ---------------------------------------------------------------------------
+# TUN 特权辅助程序
+#
+# 建 TUN、配地址、日后接管路由都需要 CAP_NET_ADMIN。参照实现（clash-party）
+# 的做法是把内核二进制 chown root:root + chmod +sx 做成 setuid；本项目内核是
+# 进程内静态库，没法只给内核加 setuid，而让整个 GUI 以 root 跑是明确要避免的，
+# 因此把「必须 root 的动作」单独放进这个极小、零依赖（不含 Qt）的程序：
+#   src/tunhelper/main.cpp
+# 授权由主程序在运行时用 pkexec 完成（chown/chmod），构建期不需要任何特权。
+# 仅 Linux 有意义（用到 linux/if_tun.h）。
+# ---------------------------------------------------------------------------
+if(UNIX AND NOT APPLE AND CLASHQT_BUILD_APP)
+    add_executable(clash-qt-tun src/tunhelper/main.cpp)
+
+    target_compile_options(clash-qt-tun PRIVATE
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wno-unused-parameter>
+    )
+
+    set_target_properties(clash-qt-tun PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+
+    message(STATUS "TUN helper      : build/bin/clash-qt-tun（运行时用 pkexec 授权）")
+endif()
+
 
 message(STATUS "----------------------------------------------------------")
 message(STATUS "clash-qt ${PROJECT_VERSION}")

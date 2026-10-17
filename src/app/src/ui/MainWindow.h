@@ -42,6 +42,8 @@ private slots:
     void onKernelRunningChanged(bool running);
     void onOutboundModeChanged(int index);
     void onSysProxyToggled(bool enabled);
+    // 快捷设置 / 托盘菜单共用的 TUN 开关入口
+    void onTunToggleRequested(bool enabled);
     void onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed);
     void onToast(const QString &type, const QString &message);
     // 桌面深浅色发生变化（仅「跟随系统」时跟随）
@@ -56,6 +58,10 @@ private:
     void buildTray();
     // 刷新托盘图标与菜单状态
     void updateTray();
+    // 按 AppContext 的真实状态同步「快捷设置」与托盘里的 TUN 开关
+    void syncTunUi();
+    // 托盘 tooltip 里的接管状态（系统代理 / TUN / 两者）
+    QString trayStateText() const;
     // 依据配置应用主题
     void applyThemeFromConfig();
     // 刷新导航图标：选中项是实心强调色底，图标取白；其余取正文色
@@ -75,9 +81,11 @@ private:
     QLabel     *m_downloadLabel = nullptr;
     QComboBox  *m_modeCombo = nullptr;
     QCheckBox  *m_sysProxySwitch = nullptr;
+    QCheckBox  *m_tunSwitch = nullptr;
 
     QSystemTrayIcon *m_tray = nullptr;
     QAction  *m_trayToggleSysProxy = nullptr;
+    QAction  *m_trayToggleTun = nullptr;
 };
 
 } // namespace clashqt

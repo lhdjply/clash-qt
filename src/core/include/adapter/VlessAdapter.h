@@ -24,6 +24,10 @@
 //
 //  明确不支持（有清晰的失败原因，而不是静默降级）：
 //    非 vision 的 flow、grpc / httpupgrade 等其它传输
+//
+//  UDP（CMD=0x02）：
+//    隧道内每个数据报加 2 字节大端长度前缀（见 tunnel/UdpChannel.h）。
+//    vision flow 只用于 TCP，UDP 走普通 TLS / WS / 明文传输。
 // ---------------------------------------------------------------------------
 
 #include "adapter/Adapter.h"
@@ -36,7 +40,11 @@ public:
 
     QString     name() const override { return m_config.name; }
     AdapterType type() const override { return AdapterType::Vless; }
-    QStringList supportNetworks() const override { return {QStringLiteral("TCP")}; }
+    // VLESS 支持 UDP 承载（CMD=0x02）：隧道内用长度前缀分帧
+    QStringList supportNetworks() const override
+    {
+        return {QStringLiteral("TCP"), QStringLiteral("UDP")};
+    }
 
     DialResult dial(const DialContext &context, int timeoutMs) override;
 
@@ -45,6 +53,9 @@ public:
 private:
     // 明文 TCP 拨号（ws 无 TLS / 裸 tcp 无 TLS）；TLS 形态走 RealityTlsStream
     std::unique_ptr<QTcpSocket> connectPlainTcp(int timeoutMs, QString *error);
+
+    // UDP 拨号：建立传输 → 发 CMD=2 请求 → 返回长度前缀分帧的 UDP 通道
+    DialResult dialUdp(const DialContext &context, int timeoutMs);
 
     ProxyConfig m_config;
     QString     m_uuid;        // 用户 ID
