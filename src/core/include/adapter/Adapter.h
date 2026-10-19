@@ -33,8 +33,12 @@
 #include <QTcpSocket>
 #include <QUdpSocket>
 
+#include <atomic>
 #include <memory>
 #include <optional>
+
+#include <QMutex>
+#include <QMutexLocker>
 
 namespace core {
 
@@ -94,20 +98,23 @@ public:
     // 拨号。timeoutMs 为总体超时；实现必须保证在超时前返回。
     virtual DialResult dial(const DialContext &context, int timeoutMs) = 0;
 
-    // 健康状态与延迟历史，用于 /proxies 接口
-    virtual bool alive() const { return m_alive; }
-    virtual void setAlive(bool alive) { m_alive = alive; }
+    // 健康状态与延迟历史，用于 /proxies 接口。
+    // 单节点测速跑在独立线程里（见 Hub::testProxyDelayAsync），会与界面读取
+    // 并发：alive 用原子量，history 加锁，否则 QList 在两个线程里读写会崩。
+    virtual bool alive() const { return m_alive.load(std::memory_order_relaxed); }
+    virtual void setAlive(bool alive) { m_alive.store(alive, std::memory_order_relaxed); }
 
     struct DelayRecord {
         QString time;
         int     delay = 0;
     };
-    virtual QList<DelayRecord> history() const { return m_history; }
+    virtual QList<DelayRecord> history() const;
     virtual void               recordDelay(int delayMs);
     virtual void               clearHistory()
     {
+        QMutexLocker locker(&m_historyMutex);
         m_history.clear();
-        m_alive = false;
+        m_alive.store(false, std::memory_order_relaxed);
     }
 
     // /proxies 接口中该节点的 JSON 表示
@@ -117,8 +124,9 @@ public:
     virtual void closeAll() {}
 
 protected:
-    bool                     m_alive = false;
+    std::atomic<bool>        m_alive{false};
     QList<DelayRecord>       m_history;
+    mutable QMutex           m_historyMutex;
 };
 
 using AdapterPtr = std::shared_ptr<Adapter>;

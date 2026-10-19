@@ -27,11 +27,18 @@ void Adapter::recordDelay(int delayMs)
     record.time  = QDateTime::currentDateTime().toString(Qt::ISODate);
     record.delay = delayMs;
 
+    QMutexLocker locker(&m_historyMutex);
     m_history.prepend(record);
     // 只保留最近 10 次，与参照实现的历史记录长度一致
     while (m_history.size() > 10) m_history.removeLast();
 
-    m_alive = delayMs > 0;
+    m_alive.store(delayMs > 0, std::memory_order_relaxed);
+}
+
+QList<Adapter::DelayRecord> Adapter::history() const
+{
+    QMutexLocker locker(&m_historyMutex);
+    return m_history;
 }
 
 QJsonObject Adapter::status() const
@@ -39,13 +46,13 @@ QJsonObject Adapter::status() const
     QJsonObject object;
     object.insert(QStringLiteral("name"), name());
     object.insert(QStringLiteral("type"), toString(type()));
-    object.insert(QStringLiteral("alive"), m_alive);
+    object.insert(QStringLiteral("alive"), alive());
     object.insert(QStringLiteral("udp"), supportUdp());
     object.insert(QStringLiteral("xudp"), false);
     object.insert(QStringLiteral("tfo"), false);
 
     QJsonArray history;
-    for (const DelayRecord &record : m_history) {
+    for (const DelayRecord &record : this->history()) {
         QJsonObject item;
         item.insert(QStringLiteral("time"), record.time);
         item.insert(QStringLiteral("delay"), record.delay);
@@ -714,7 +721,7 @@ QJsonObject ProxyGroup::status() const
     QJsonObject object;
     object.insert(QStringLiteral("name"), m_config.name);
     object.insert(QStringLiteral("type"), toString(m_config.type));
-    object.insert(QStringLiteral("alive"), m_alive);
+    object.insert(QStringLiteral("alive"), alive());
     object.insert(QStringLiteral("udp"), supportUdp());
     object.insert(QStringLiteral("xudp"), false);
     object.insert(QStringLiteral("tfo"), false);
@@ -732,7 +739,7 @@ QJsonObject ProxyGroup::status() const
     object.insert(QStringLiteral("all"), all);
 
     QJsonArray history;
-    for (const DelayRecord &record : m_history) {
+    for (const DelayRecord &record : this->history()) {
         QJsonObject item;
         item.insert(QStringLiteral("time"), record.time);
         item.insert(QStringLiteral("delay"), record.delay);

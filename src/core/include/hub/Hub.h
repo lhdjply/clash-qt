@@ -111,9 +111,18 @@ public:
     QJsonObject selectedProxies() const;
     // 恢复各代理组的手动选择（启动/配置重载后调用）；返回实际恢复的组数。
     int restoreSelectedProxies(const QJsonObject &selections);
-    // 对单个节点或组做延迟测试
+    // 对单个节点或组做延迟测试（同步，会阻塞到握手返回或超时）
     QJsonObject testDelay(const QString &name, const QString &url, int timeoutMs);
     QJsonObject testGroupDelay(const QString &group, const QString &url, int timeoutMs);
+
+    // 单节点测速（异步）：上面的 testDelay 内部要等握手，最长会占满 timeout，
+    // 放在界面线程会让整个窗口卡住，因此丢给独立线程，结果用 delayTested 通知。
+    // 返回 false 表示节点不存在（参数错误，不会有信号）。
+    bool testProxyDelayAsync(const QString &name, const QString &url, int timeoutMs);
+
+    // 一批测速结束后按最新延迟重选各组（仅 URLTest / Fallback，且用户未手动
+    // 固定时）。逐节点测速不会自己触发重选，需要调用方在批量结束时收一次尾。
+    void refreshGroupSelections();
 
     // /rules
     QJsonObject rulesStatus() const;
@@ -150,6 +159,9 @@ signals:
 
     // 配置被运行期修改（模式切换、规则启停等）
     void configChanged();
+
+    // 单节点测速结果：delayMs < 0 表示失败，error 为原因（可能为空）
+    void delayTested(const QString &name, int delayMs, const QString &error);
 
 private slots:
     void onStatisticsTick();

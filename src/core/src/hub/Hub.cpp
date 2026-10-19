@@ -13,7 +13,9 @@
 #include <QDateTime>
 #include <QFile>
 #include <QJsonDocument>
+#include <QPointer>
 #include <QSet>
+#include <QThread>
 
 #ifdef Q_OS_UNIX
 #include <QSocketNotifier>
@@ -667,6 +669,52 @@ QJsonObject Hub::testDelay(const QString &name, const QString &url, int timeoutM
     adapter->recordDelay(elapsed);
     result.insert(QStringLiteral("delay"), elapsed);
     return result;
+}
+
+bool Hub::testProxyDelayAsync(const QString &name, const QString &url, int timeoutMs)
+{
+    // 先用一次同步查找把「节点是否存在」这种参数错误挡在界面线程里，
+    // 否则用户点了不存在的节点会毫无反馈
+    if (!m_registry || !m_registry->resolvePolicy(name)) return false;
+
+    QPointer<Hub> self(this);
+
+    QThread *thread = QThread::create([self, name, url, timeoutMs]() {
+        // 线程启动与对象销毁之间只差一个事件循环，这里再确认一次
+        if (!self) return;
+
+        const QJsonObject result = self->testDelay(name, url, timeoutMs);
+        const int         delay  = result.value(QStringLiteral("delay")).toInt(-1);
+        const QString     error  = result.value(QStringLiteral("message")).toString();
+
+        // 结果必须回到 Hub 所在线程再发：订阅者是界面控件，不能被数据面
+        //（这里是测速线程）直接回调
+        QMetaObject::invokeMethod(
+            self,
+            [self, name, delay, error]() {
+                if (self) emit self->delayTested(name, delay, error);
+            },
+            Qt::QueuedConnection);
+    });
+
+    QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
+    return true;
+}
+
+void Hub::refreshGroupSelections()
+{
+    if (!m_registry) return;
+
+    bool any = false;
+    for (const auto &group : m_registry->groups()) {
+        if (!group) continue;
+        group->selectByDelay(); // 内部只对 URLTest / Fallback 且未手动固定的组生效
+        any = true;
+    }
+
+    // 让界面与托盘重新拉取：节点标记（当前节点）会随选择变化
+    if (any) emit configChanged();
 }
 
 QJsonObject Hub::testGroupDelay(const QString &group, const QString &url, int timeoutMs)
