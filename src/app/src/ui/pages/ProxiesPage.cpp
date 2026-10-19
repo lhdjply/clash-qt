@@ -7,6 +7,7 @@
 #include "utils/AppLogger.h"
 
 #include <QApplication>
+#include <QCollator>
 #include <QComboBox>
 #include <QFont>
 #include <QFontMetrics>
@@ -23,7 +24,12 @@
 #include <QScrollBar>
 #include <QStyle>
 #include <QStyledItemDelegate>
+#include <QVariant>
 #include <QVBoxLayout>
+#include <QVector>
+
+#include <algorithm>
+#include <utility>
 
 #include "hub/Hub.h"
 
@@ -292,6 +298,22 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
     m_summaryLabel = ui::makeHintLabel(QString(), this);
     toolbar->addWidget(m_summaryLabel, 1);
 
+    // ---- 排序：只影响显示顺序，不改变订阅里成员的原始排列 -----------------
+    toolbar->addWidget(new QLabel(QStringLiteral("排序"), this));
+    m_sortCombo = new QComboBox(this);
+    m_sortCombo->addItem(QStringLiteral("默认顺序"), int(SortMode::Default));
+    m_sortCombo->addItem(QStringLiteral("名称"), int(SortMode::Name));
+    m_sortCombo->addItem(QStringLiteral("类型"), int(SortMode::Type));
+    m_sortCombo->addItem(QStringLiteral("延迟"), int(SortMode::Delay));
+    m_sortCombo->setToolTip(
+        QStringLiteral("按名称、协议类型或最近一次测速延迟排列节点。\n"
+                       "延迟按升序，未测与超时排在最后；切换排序不会改变当前选中的节点。"));
+    // 恢复上次的排序选择；配置里没有或值无效时回到默认顺序
+    m_sortMode = sortModeFromKey(m_context->appConfig()->proxySort());
+    const int savedSort = m_sortCombo->findData(int(m_sortMode));
+    m_sortCombo->setCurrentIndex(savedSort >= 0 ? savedSort : 0);
+    toolbar->addWidget(m_sortCombo);
+
     m_testButton = new QPushButton(QStringLiteral("测试本组"), this);
     m_testAllButton = new QPushButton(QStringLiteral("测试全部组"), this);
 
@@ -319,6 +341,8 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
 
     QObject::connect(m_groupCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &ProxiesPage::onGroupChanged);
+    QObject::connect(m_sortCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                     &ProxiesPage::onSortChanged);
     QObject::connect(m_memberList, &QListWidget::itemDoubleClicked, this,
                      &ProxiesPage::onItemActivated);
     QObject::connect(m_testButton, &QPushButton::clicked, this, &ProxiesPage::onTestCurrent);
@@ -464,7 +488,109 @@ void ProxiesPage::onGroupChanged(int index)
         item->setToolTip(tip.join(QLatin1Char('\n')));
     }
 
+    // 排序必须在成员全部建好之后做：比较依据是行里的名称/类型/延迟角色
+    sortRows();
+
     m_memberList->verticalScrollBar()->setValue(scrollValue);
+}
+
+void ProxiesPage::onSortChanged(int index)
+{
+    if (!m_sortCombo || index < 0) return;
+
+    m_sortMode = SortMode(m_sortCombo->itemData(index).toInt());
+
+    // 写入应用配置并立即落盘：重启后仍按上次选择排列
+    if (AppConfig *config = m_context->appConfig()) {
+        config->setProxySort(sortKey(m_sortMode));
+        config->save();
+    }
+
+    // 重建一次列表：这样切回「默认顺序」时能精确回到订阅里的原始排列，
+    // 而不是把上一次排序的结果当成原始顺序。
+    onGroupChanged(m_groupCombo->currentIndex());
+}
+
+QString ProxiesPage::sortKey(SortMode mode)
+{
+    switch (mode) {
+    case SortMode::Name:  return QStringLiteral("name");
+    case SortMode::Type:  return QStringLiteral("type");
+    case SortMode::Delay: return QStringLiteral("delay");
+    case SortMode::Default:
+    default:              return QStringLiteral("default");
+    }
+}
+
+ProxiesPage::SortMode ProxiesPage::sortModeFromKey(const QString &key)
+{
+    const QString normalized = key.trimmed().toLower();
+    if (normalized == QLatin1String("name")) return SortMode::Name;
+    if (normalized == QLatin1String("type")) return SortMode::Type;
+    if (normalized == QLatin1String("delay")) return SortMode::Delay;
+    return SortMode::Default;
+}
+
+void ProxiesPage::sortRows()
+{
+    if (m_sortMode == SortMode::Default) return;
+
+    const int count = m_memberList->count();
+    if (count < 2) return;
+
+    QVector<QListWidgetItem *> rows;
+    rows.reserve(count);
+    while (m_memberList->count() > 0) rows << m_memberList->takeItem(0);
+
+    // 名称按区域规则比较，并开启数字模式：节点 2 排在节点 10 之前
+    QCollator collator;
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+
+    const auto nameOf = [](QListWidgetItem *item) {
+        return item->data(kRoleName).toString();
+    };
+    const auto compareName = [&collator, &nameOf](QListWidgetItem *a, QListWidgetItem *b) {
+        return collator.compare(nameOf(a), nameOf(b));
+    };
+
+    // 延迟排序键：0=有测速值（按毫秒升序），1=未测，2=超时。
+    // 未测与超时没有可比较的大小，统一沉到列表末尾，避免它们在顶部来回跳。
+    const auto delayKey = [](QListWidgetItem *item) {
+        const QVariant value = item->data(kRoleDelay);
+        if (!value.isValid()) return std::pair{1, 0};
+        const int delay = value.toInt();
+        if (delay < 0) return std::pair{2, 0};
+        return std::pair{0, delay};
+    };
+
+    std::stable_sort(rows.begin(), rows.end(), [&](QListWidgetItem *a, QListWidgetItem *b) {
+        switch (m_sortMode) {
+        case SortMode::Name:
+            return compareName(a, b) < 0;
+
+        case SortMode::Type: {
+            const int cmp = collator.compare(a->data(kRoleProtocol).toString(),
+                                             b->data(kRoleProtocol).toString());
+            if (cmp != 0) return cmp < 0;
+            return compareName(a, b) < 0; // 同类型内按名称，结果稳定可预期
+        }
+
+        case SortMode::Delay: {
+            const auto ka = delayKey(a);
+            const auto kb = delayKey(b);
+            if (ka.first != kb.first) return ka.first < kb.first;
+            if (ka.second != kb.second) return ka.second < kb.second;
+            return compareName(a, b) < 0; // 延迟相同按名称
+        }
+
+        case SortMode::Default:
+        default:
+            return false;
+        }
+    });
+
+    for (QListWidgetItem *item : rows) m_memberList->addItem(item);
 }
 
 bool ProxiesPage::eventFilter(QObject *watched, QEvent *event)
@@ -580,6 +706,10 @@ void ProxiesPage::finishTest(const QString &name, int delayMs, const QString &er
             const int ok    = m_batchOk;
             m_batchTotal = 0;
             m_batchOk    = 0;
+
+            // 按延迟排序时，测速结果全部回填后重排一次；批量中途不动列表，
+            // 否则每测完一个节点整张表都会跳一下。
+            if (m_sortMode == SortMode::Delay) sortRows();
 
             m_context->showToast(
                 QStringLiteral("info"),

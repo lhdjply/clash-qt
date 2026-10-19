@@ -108,6 +108,11 @@ public:
     QJsonObject selectedProxies() const;
     void        setSelectedProxies(const QJsonObject &selections);
 
+    // 代理页节点排序方式（default / name / type / delay）。
+    // 同样是界面状态，留在应用配置里，重启后按上次的选择排列。
+    QString proxySort() const;
+    void    setProxySort(const QString &sort);
+
     // 延迟测试
     QString delayTestUrl() const;
     int     delayTestTimeout() const;

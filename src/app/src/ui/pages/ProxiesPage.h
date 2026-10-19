@@ -39,13 +39,24 @@ protected:
 
 private slots:
     void onGroupChanged(int index);
+    void onSortChanged(int index);
     void onItemActivated();
     void onTestCurrent();
     void onTestAll();
 
 private:
+    // 列表排序方式。默认顺序即订阅里成员的原始排列，不做任何重排。
+    enum class SortMode { Default, Name, Type, Delay };
+
+    // 排序方式与配置字符串（default / name / type / delay）互转
+    static QString  sortKey(SortMode mode);
+    static SortMode sortModeFromKey(const QString &key);
+
     // 重新填充组下拉框；尽量保持用户当前选择
     void rebuildGroups();
+
+    // 按 m_sortMode 重排当前列表的成员行（默认顺序直接返回）
+    void sortRows();
 
     // 发起单节点测速（入队，异步执行；失败时行内显示「超时」并弹出原因）
     void testSingleNode(const QString &name);
@@ -64,10 +75,13 @@ private:
 
     AppContext  *m_context = nullptr;
     QComboBox   *m_groupCombo = nullptr;
+    QComboBox   *m_sortCombo = nullptr;
     QListWidget *m_memberList = nullptr;
     QLabel      *m_summaryLabel = nullptr;
     QPushButton *m_testButton = nullptr;
     QPushButton *m_testAllButton = nullptr;
+
+    SortMode m_sortMode = SortMode::Default;
 
     // 当前展示的组名与成员名，与列表行一一对应
     QString m_currentGroup;

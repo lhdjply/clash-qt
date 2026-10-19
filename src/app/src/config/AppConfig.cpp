@@ -141,6 +141,9 @@ QJsonObject AppConfig::defaults()
     // 各代理组的手动选择（由界面写入，用于配置重载/重启后恢复）
     config.insert(QStringLiteral("selectedProxies"), QJsonObject());
 
+    // 代理页节点排序（界面状态：default / name / type / delay）
+    config.insert(QStringLiteral("proxySort"), QStringLiteral("default"));
+
     // 延迟测试
     config.insert(QStringLiteral("delayTestUrl"),
                   QStringLiteral("https://www.gstatic.com/generate_204"));
@@ -382,6 +385,16 @@ void AppConfig::setSelectedProxies(const QJsonObject &selections)
     // 而 patch() 的深合并语义删不掉键。
     m_object.insert(QStringLiteral("selectedProxies"), selections);
     save();
+}
+
+QString AppConfig::proxySort() const
+{
+    return readString(m_object, QStringLiteral("proxySort"), QStringLiteral("default"));
+}
+
+void AppConfig::setProxySort(const QString &sort)
+{
+    m_object.insert(QStringLiteral("proxySort"), sort);
 }
 
 int AppConfig::delayTestTimeout() const { return readInt(m_object, QStringLiteral("delayTestTimeout"), 5000); }
