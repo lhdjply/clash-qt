@@ -11,6 +11,7 @@ clash-party 的 Qt6 / C++ 重写，包含**自研 C++ 内核**（随应用一同
 ```
 clash-qt/
 ├── CMakeLists.txt   顶层唯一构建配置（内核 + 应用，src/ 下不再有 CMakeLists）
+├── VERSION          版本号唯一来源（改版本只改这里）
 ├── src/
 │   ├── core/        自研 C++ 内核（OBJECT 库目标 clashqt_core，编入应用
 │   │                而不单独产出 .a 或可执行文件）
@@ -58,6 +59,12 @@ FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake .
 模板，配置时生成。Debian 包名（`debian/control`）是发行版侧标识，改名时
 仍需单独调整。
 
+**改版本号只改根目录 `VERSION`**：CMake 在配置期读取它作为 `project(VERSION)`，
+再以 `CLASHQT_VERSION` 宏注入，`--version`、日志抬头与订阅 UA 里的版本都来自
+这一处。文件已登记为配置依赖，改完直接构建会自动重跑 CMake，不必手工再
+`cmake .`。Debian 安装包的版本仍只能取 `debian/changelog`（dpkg 的硬约束），
+两者不一致时配置阶段会打一条 WARNING，提醒用 `dch -v <版本>` 同步。
+
 ## 测试
 
 单元测试默认关闭（日常构建不需要 Qt6::Test），单独开启：
@@ -104,7 +111,7 @@ sudo apt install build-essential debhelper cmake ninja-build \
 dpkg-buildpackage -us -uc -b
 
 # 安装
-sudo apt install ../clash-qt_0.1.0_amd64.deb
+sudo apt install ../clash-qt_$(cat VERSION)_amd64.deb
 ```
 
 注意：debhelper 的 clean 步骤会重建 `build/`（`dh_auto_clean` 直接删掉
@@ -274,4 +281,5 @@ VLESS 系列完全不同的一套协议栈，实现位于 `src/core/src/common/H
   四架构打包，不建 Release。
 - 发布走 `debuild -us -uc -b`，不做 GPG 签名（CI 没有密钥）。`debian/source/format`
   是 `3.0 (native)`，版本号直接取 `debian/changelog`（当前 `0.1.0`，不带 Debian
-  修订号）；`-b` 只是为了跳过源码包、只出安装包。
+  修订号）；`-b` 只是为了跳过源码包、只出安装包。发版前记得让 changelog 的
+  上游版本与根目录 `VERSION` 一致（`dch -v $(cat VERSION)`）。

@@ -18,10 +18,47 @@ cmake_minimum_required(VERSION 3.21)
 # 离线构建：第三方依赖全部本地化（git 子模块），配置阶段不联网。
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# 版本号只有一个来源：仓库根目录的 VERSION 文件
+#
+#   file(STRINGS ... LIMIT_COUNT 1) 只取第一行；下面的 string(STRIP) 顺带吃掉
+#   行尾的 \r —— Windows 上若按 CRLF 检出，版本号会带进一个回车，
+#   project(VERSION ...) 会直接解析失败。
+# ---------------------------------------------------------------------------
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" CLASHQT_VERSION_STRING LIMIT_COUNT 1)
+string(STRIP "${CLASHQT_VERSION_STRING}" CLASHQT_VERSION_STRING)
+if(CLASHQT_VERSION_STRING STREQUAL "")
+    message(FATAL_ERROR
+            "无法从 ${CMAKE_CURRENT_SOURCE_DIR}/VERSION 读取版本号（文件缺失或为空）")
+endif()
+
+# file() 只在配置期读一次，CMake 不会自动把它登记成"重配置依赖"：少了这一行，
+# 改完 VERSION 直接构建会继续用旧版本号（必须手工再 configure 一次）。
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+             "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+
 project(clash-qt
-    VERSION 0.1.0
+    VERSION ${CLASHQT_VERSION_STRING}
     DESCRIPTION "Clash Party rewritten in Qt6 / C++"
     LANGUAGES C CXX)
+
+# Debian 打包的版本号只能来自 debian/changelog（dpkg 的硬约束，不能动态生成）。
+# 两份版本号不一致时给个提示：通常意味着改了 VERSION 却忘了 dch。
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/debian/changelog")
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/debian/changelog" CLASHQT_DEB_LINE
+         LIMIT_COUNT 1)
+    if(CLASHQT_DEB_LINE MATCHES "^[^(]+\\(([^)]+)\\)")
+        set(CLASHQT_DEB_VERSION "${CMAKE_MATCH_1}")
+        # 允许 Debian 修订号（0.1.0-1）：只比较上游版本部分
+        string(REGEX REPLACE "-[0-9]+$" "" CLASHQT_DEB_UPSTREAM "${CLASHQT_DEB_VERSION}")
+        if(NOT CLASHQT_DEB_UPSTREAM STREQUAL CLASHQT_VERSION_STRING)
+            message(WARNING
+                    "VERSION（${CLASHQT_VERSION_STRING}）与 debian/changelog"
+                    "（${CLASHQT_DEB_VERSION}）不一致：安装包版本取 changelog，"
+                    "发布前请用 `dch -v ${CLASHQT_VERSION_STRING}` 同步")
+        endif()
+    endif()
+endif()
 
 # ---------------------------------------------------------------------------
 #  应用标识
