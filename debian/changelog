@@ -1,3 +1,15 @@
+clash-qt (1.0.1) unstable; urgency=medium
+
+  * 代理页新增节点排序（名称 / 类型 / 延迟），排序模式写入配置并在重启后保持。
+  * 移除节点自动切换：批量测速重选、无固定选择时自动挑最优、拨号失败换成员
+    三条路径全部删除，节点选择完全手动；不可用时连接直接失败并记日志。
+  * 日志页在页面不可见期间不再丢弃日志，切回时按当前等级补齐。
+  * 修复 TUN 模式下连接页为空、更新日志窗口按 Markdown 解析 HTML 导致排版
+    丢失、检查更新被 GitHub API 403 限流而失败等问题。
+  * 设置页主题下拉框不再响应鼠标滚轮，「关于」卡片补上图标。
+
+ -- Clash Qt Maintainers <lhdjply@users.noreply.github.com>  Mon, 19 Oct 2026 17:15:00 +0800
+
 clash-qt (1.0.0) unstable; urgency=medium
 
   * 首个正式版本：自研内核与 Qt6 界面完成，含系统代理、TUN 模式、
