@@ -97,7 +97,7 @@ const TitleIcon kCardTitles[] = {
     {"快捷设置", "quick"}, {"统计", "stats"},   {"当前状态", "activity"},
     {"速度曲线", "trend"}, {"节点", "server"},  {"日志", "logs"},
     {"配置覆写", "code"},  {"入站端口", "port"}, {"系统集成", "system"},
-    {"订阅信息", "profiles"},
+    {"订阅信息", "profiles"}, {"关于", "info"},
 };
 
 const TitleIcon kNavTitles[] = {
