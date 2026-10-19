@@ -16,6 +16,7 @@
 #include <QtTest>
 
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QTemporaryDir>
@@ -90,6 +91,15 @@ void TestRuleOverride::initTestCase()
     qputenv("XDG_CONFIG_HOME", m_configHome.path().toUtf8());
     QCoreApplication::setApplicationName(QStringLiteral("clash-qt"));
     QCoreApplication::setOrganizationName(QStringLiteral("clash-qt"));
+
+    // 回归：数据目录只能是 <XDG_CONFIG_HOME>/clash-qt。
+    // 曾经用 QStandardPaths::AppConfigLocation 计算，而它会把组织名与应用名
+    // 拼成 <config>/<org>/<app>，两者都叫 clash-qt 时多出一层嵌套。
+    QCOMPARE(paths::dataDir(),
+             m_configHome.path() + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME));
+    QVERIFY(!QFileInfo::exists(m_configHome.path() + QLatin1Char('/')
+                               + QStringLiteral(CLASHQT_APP_NAME) + QLatin1Char('/')
+                               + QStringLiteral(CLASHQT_APP_NAME)));
 
     m_appConfig = std::make_unique<AppConfig>();
     QVERIFY(m_appConfig->load());

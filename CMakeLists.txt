@@ -23,6 +23,27 @@ project(clash-qt
     DESCRIPTION "Clash Party rewritten in Qt6 / C++"
     LANGUAGES C CXX)
 
+# ---------------------------------------------------------------------------
+#  应用标识
+#
+#  源码里不再出现 "clash-qt" 字面量：名字、数据目录、辅助程序、桌面入口
+#  全部由这里的四个变量派生。改软件名只需要改 project() 与显示名。
+# ---------------------------------------------------------------------------
+set(CLASHQT_TARGET          "${PROJECT_NAME}")   # 可执行文件 / CMake 目标名
+set(CLASHQT_APP_NAME        "${PROJECT_NAME}")
+set(CLASHQT_APP_DISPLAY_NAME "Clash Qt")
+set(CLASHQT_TUN_HELPER      "${CLASHQT_APP_NAME}-tun")
+set(CLASHQT_DESKTOP_FILE    "${CLASHQT_APP_NAME}.desktop")
+
+# TUN 接口名受内核限制（IFNAMSIZ，最长 15 字符），不能直接等于软件名：
+# 名字变了也不该把接口名顶到非法长度，所以单独派生、清洗、截断。
+set(CLASHQT_TUN_DEVICE "${CLASHQT_TUN_HELPER}")
+string(REGEX REPLACE "[^A-Za-z0-9_.-]" "-" CLASHQT_TUN_DEVICE "${CLASHQT_TUN_DEVICE}")
+string(LENGTH "${CLASHQT_TUN_DEVICE}" CLASHQT_TUN_DEVICE_LEN)
+if(CLASHQT_TUN_DEVICE_LEN GREATER 15)
+    string(SUBSTRING "${CLASHQT_TUN_DEVICE}" 0 15 CLASHQT_TUN_DEVICE)
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -290,6 +311,17 @@ set_target_properties(clashqt_core PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
+# 应用标识以宏的形式下发给所有使用者（内核、界面、测试）：PUBLIC 让链接
+# clashqt_core 的目标自动获得，不必在每个 target 上重复一遍。
+target_compile_definitions(clashqt_core PUBLIC
+    CLASHQT_VERSION="${PROJECT_VERSION}"
+    CLASHQT_APP_NAME="${CLASHQT_APP_NAME}"
+    CLASHQT_APP_DISPLAY_NAME="${CLASHQT_APP_DISPLAY_NAME}"
+    CLASHQT_TUN_HELPER_NAME="${CLASHQT_TUN_HELPER}"
+    CLASHQT_TUN_DEVICE="${CLASHQT_TUN_DEVICE}"
+    CLASHQT_DESKTOP_FILE="${CLASHQT_DESKTOP_FILE}"
+)
+
 # ===========================================================================
 #  应用（src/app）
 #
@@ -374,13 +406,13 @@ set(APP_RESOURCES
     resources/clash-qt.qrc
 )
 
-qt_add_executable(clash-qt ${APP_SOURCES} ${APP_HEADERS} ${APP_RESOURCES})
+qt_add_executable(${CLASHQT_TARGET} ${APP_SOURCES} ${APP_HEADERS} ${APP_RESOURCES})
 # .qrc 由 AUTORCC 编译出 qrc_*.cpp 参与链接
-set_target_properties(clash-qt PROPERTIES AUTORCC ON)
+set_target_properties(${CLASHQT_TARGET} PROPERTIES AUTORCC ON)
 
-target_include_directories(clash-qt PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app/src")
+target_include_directories(${CLASHQT_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app/src")
 
-target_link_libraries(clash-qt
+target_link_libraries(${CLASHQT_TARGET}
     PRIVATE
         clashqt_core
         Qt6::Widgets
@@ -390,22 +422,17 @@ target_link_libraries(clash-qt
         Qt6::Charts
 )
 
-target_compile_definitions(clash-qt PRIVATE
-    CLASHQT_VERSION="${PROJECT_VERSION}"
-    CLASHQT_APP_NAME="clash-qt"
-)
-
-target_compile_options(clash-qt PRIVATE
+target_compile_options(${CLASHQT_TARGET} PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wno-unused-parameter>
 )
 
 # -rdynamic：把可执行文件的符号导出到动态符号表，崩溃记录器（CrashHandler）
 # 才能用 backtrace_symbols_fd 打印出函数名而不是裸地址
-target_link_options(clash-qt PRIVATE
+target_link_options(${CLASHQT_TARGET} PRIVATE
     $<$<PLATFORM_ID:Linux>:-rdynamic>
 )
 
-set_target_properties(clash-qt PROPERTIES
+set_target_properties(${CLASHQT_TARGET} PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
@@ -414,7 +441,7 @@ set_target_properties(clash-qt PROPERTIES
 # 资源目录路径宏：图标已通过 clash-qt.qrc 内嵌，此宏供需要访问
 # resources/ 原始路径的场景使用（当前无消费者，保留以便扩展）
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources")
-    target_compile_definitions(clash-qt PRIVATE
+    target_compile_definitions(${CLASHQT_TARGET} PRIVATE
         CLASHQT_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
 endif()
 
@@ -428,18 +455,22 @@ endif()
 # 不应该带 setuid；Debian 包由 debian/rules 的 override_dh_fixperms 处理，
 # 运行期权限由应用自己的 pkexec 授权流程兜底（见 TunController）。
 # ---------------------------------------------------------------------------
-install(TARGETS clash-qt
+install(TARGETS ${CLASHQT_TARGET}
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )
 
 # 桌面入口与图标：使用 hicolor 主题的 scalable 目录，图标文件名必须与
-# desktop 文件里的 Icon= 一致（源文件叫 app.svg，安装时改名）
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/clash-qt.desktop"
+# desktop 文件里的 Icon= 一致（源文件叫 app.svg，安装时改名）。
+# desktop 文件是模板：Exec / Icon / StartupWMClass 与显示名都来自上面的
+# 变量，避免改名时漏掉其中一处。
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/resources/clash-qt.desktop.in"
+    "${CMAKE_BINARY_DIR}/${CLASHQT_DESKTOP_FILE}" @ONLY)
+install(FILES "${CMAKE_BINARY_DIR}/${CLASHQT_DESKTOP_FILE}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/app.svg"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
-    RENAME clash-qt.svg
+    RENAME "${CLASHQT_APP_NAME}.svg"
 )
 
 endif() # CLASHQT_BUILD_APP
@@ -456,23 +487,30 @@ endif() # CLASHQT_BUILD_APP
 # 仅 Linux 有意义（用到 linux/if_tun.h）。
 # ---------------------------------------------------------------------------
 if(UNIX AND NOT APPLE AND CLASHQT_BUILD_APP)
-    add_executable(clash-qt-tun src/tunhelper/main.cpp)
+    # 辅助程序名跟随软件名（<app>-tun），源码侧按 CLASHQT_TUN_HELPER_NAME 查找
+    add_executable(${CLASHQT_TUN_HELPER} src/tunhelper/main.cpp)
 
-    target_compile_options(clash-qt-tun PRIVATE
+    target_compile_options(${CLASHQT_TUN_HELPER} PRIVATE
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wno-unused-parameter>
     )
 
-    set_target_properties(clash-qt-tun PROPERTIES
+    # 辅助程序不链接 Qt，拿不到 core 的 PUBLIC 宏，这里单独下发
+    target_compile_definitions(${CLASHQT_TUN_HELPER} PRIVATE
+        CLASHQT_TUN_HELPER_NAME="${CLASHQT_TUN_HELPER}"
+        CLASHQT_APP_DISPLAY_NAME="${CLASHQT_APP_DISPLAY_NAME}"
+    )
+
+    set_target_properties(${CLASHQT_TUN_HELPER} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     )
 
-    # 与主程序同目录：TunController 按 applicationDirPath()/clash-qt-tun 查找，
+    # 与主程序同目录：TunController 按 applicationDirPath()/<app>-tun 查找，
     # 分开放会导致打包后找不到辅助程序
-    install(TARGETS clash-qt-tun
+    install(TARGETS ${CLASHQT_TUN_HELPER}
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
 
-    message(STATUS "TUN helper      : build/bin/clash-qt-tun（运行时用 pkexec 授权）")
+    message(STATUS "TUN helper      : build/bin/${CLASHQT_TUN_HELPER}（运行时用 pkexec 授权）")
 endif()
 
 
@@ -495,7 +533,7 @@ endif()
 
 
 message(STATUS "----------------------------------------------------------")
-message(STATUS "clash-qt ${PROJECT_VERSION}")
+message(STATUS "${CLASHQT_TARGET} ${PROJECT_VERSION}")
 message(STATUS "  Build type      : ${CMAKE_BUILD_TYPE}")
 message(STATUS "  C++ standard    : ${CMAKE_CXX_STANDARD}")
 message(STATUS "  Qt version      : ${Qt6_VERSION}")

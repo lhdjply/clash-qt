@@ -35,4 +35,8 @@ override_dh_auto_configure:
 # 通过 SCM_RIGHTS 传 fd」，主程序始终以普通用户身份运行。
 override_dh_fixperms:
 	dh_fixperms
-	chmod 4755 $(CURDIR)/debian/clash-qt/usr/bin/clash-qt-tun
+	@# 辅助程序名由 CMake 派生（<app>-tun），按实际产物定位：
+	@# 改软件名后不必再回来同步这一行
+	@for f in $(CURDIR)/debian/clash-qt/usr/bin/*-tun; do \
+		[ -e "$$f" ] && chmod 4755 "$$f"; \
+	done

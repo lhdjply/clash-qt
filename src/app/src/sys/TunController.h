@@ -29,7 +29,7 @@ namespace clashqt {
 
 // 一次 open 的参数
 struct TunOptions {
-    QString device  = QStringLiteral("clash-qt-tun");
+    QString device  = QStringLiteral(CLASHQT_TUN_DEVICE);
     QString address = QStringLiteral("172.19.0.1/30");
     int     mtu     = 1500;
     // 是否接管默认路由（须由特权辅助程序执行）

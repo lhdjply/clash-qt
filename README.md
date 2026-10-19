@@ -49,6 +49,15 @@ FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake .
 只挂载子模块的 `include` 目录；因此联网只在首次
 `git submodule update --init --recursive` 时发生，之后配置与编译完全离线。
 
+**改软件名只改 `CMakeLists.txt`**：可执行文件名、CMake 目标名、数据目录
+（`$XDG_CONFIG_HOME/<名称>`）、单实例标识、日志文件名前缀、TUN 辅助程序
+（`<名称>-tun`）、TUN 接口名、桌面入口与图标名，全部由 `project()` 派生
+（`CLASHQT_TARGET` / `CLASHQT_APP_NAME` / `CLASHQT_TUN_HELPER` 等），源码里
+没有 `"clash-qt"` 字面量。显示名（`Clash Qt`）单独放在
+`CLASHQT_APP_DISPLAY_NAME`，桌面入口是 `resources/clash-qt.desktop.in`
+模板，配置时生成。Debian 包名（`debian/control`）是发行版侧标识，改名时
+仍需单独调整。
+
 ## 测试
 
 单元测试默认关闭（日常构建不需要 Qt6::Test），单独开启：
@@ -73,6 +82,7 @@ ctest --test-dir build --output-on-failure
 | `test_yaml` | YAML ↔ JSON 往返、整数不被写成浮点、坏配置报错 |
 | `test_json_util` | 深合并与 `<key>` / `key!` / `+key` 修饰语法 |
 | `test_calc` | 流量格式化、单位进位、窄列收缩 |
+| `test_paths` | 数据目录为 `<XDG_CONFIG_HOME>/<应用名>`（不嵌套）、旧布局迁移 |
 | `test_rule_override` | 覆写页的 prepend / append / delete / disabled 合并语义 |
 
 这些用例只跑纯逻辑：不需要 root、不联网、不弹窗口，全部在 1 秒内跑完。

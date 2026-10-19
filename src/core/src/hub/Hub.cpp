@@ -436,7 +436,7 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
     };
 
     m_tunThread = new QThread(this);
-    m_tunThread->setObjectName(QStringLiteral("clash-qt-tun"));
+    m_tunThread->setObjectName(QStringLiteral(CLASHQT_TUN_HELPER_NAME));
     m_tunDevice = new TunDevice(dialFn, m_resolver, m_dnsServer); // 无 parent，随后 moveToThread
     m_tunDevice->moveToThread(m_tunThread);
 

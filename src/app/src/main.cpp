@@ -44,9 +44,13 @@ int main(int argc, char *argv[])
 {
     // Qt 图形应用必须先构造 QApplication 再创建任何窗口部件
     QApplication app(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("clash-qt"));
-    QApplication::setApplicationDisplayName(QStringLiteral("Clash Qt"));
-    QApplication::setOrganizationName(QStringLiteral("clash-qt"));
+    // 名字全部来自 CMakeLists 的 project()（见 CLASHQT_APP_* 宏），
+    // 源码里不再出现字面量，改软件名只改 CMake
+    QApplication::setApplicationName(QStringLiteral(CLASHQT_APP_NAME));
+    QApplication::setApplicationDisplayName(QStringLiteral(CLASHQT_APP_DISPLAY_NAME));
+    QApplication::setOrganizationName(QStringLiteral(CLASHQT_APP_NAME));
+    // Wayland 按 desktop 文件名关联窗口与桌面入口，不设会导致任务栏图标缺失
+    QGuiApplication::setDesktopFileName(QStringLiteral(CLASHQT_DESKTOP_FILE));
     QApplication::setApplicationVersion(QStringLiteral(CLASHQT_VERSION));
 
     QCommandLineParser parser;
@@ -65,7 +69,7 @@ int main(int argc, char *argv[])
     // ---- 单实例 -----------------------------------------------------------
     // 必须早于 AppContext 初始化：内核运行在界面进程内，第二个实例若继续
     // 初始化会重复启动内核、争抢混合端口并写入同一份配置。
-    clashqt::SingleInstance instance(QStringLiteral("clash-qt"), &app);
+    clashqt::SingleInstance instance(QStringLiteral(CLASHQT_APP_NAME), &app);
     if (!instance.acquire()) {
         clashqt::AppLogger::instance().install();
         clashqt::AppLogger::instance().info(
@@ -80,10 +84,11 @@ int main(int argc, char *argv[])
     const QByteArray crashDir = clashqt::paths::dataDir().toLocal8Bit();
     clashqt::crash::install(crashDir.constData());
     clashqt::AppLogger::instance().info(
-        QStringLiteral("启动 clash-qt %1（%2，silent=%3）")
-            .arg(QApplication::applicationVersion())
-            .arg(clashqt::paths::dataDir())
-            .arg(parser.isSet(silentOption) ? QStringLiteral("true")
+        QStringLiteral("启动 %1 %2（%3，silent=%4）")
+            .arg(QApplication::applicationName(),
+                 QApplication::applicationVersion(),
+                 clashqt::paths::dataDir(),
+                 parser.isSet(silentOption) ? QStringLiteral("true")
                                             : QStringLiteral("false")));
 
     // ---- 应用上下文 -------------------------------------------------------
@@ -142,6 +147,9 @@ int main(int argc, char *argv[])
 
     const int code = app.exec();
 
-    clashqt::AppLogger::instance().info(QStringLiteral("clash-qt 已退出，退出码 %1").arg(code));
+    clashqt::AppLogger::instance().info(
+        QStringLiteral("%1 已退出，退出码 %2")
+            .arg(QApplication::applicationName())
+            .arg(code));
     return code;
 }

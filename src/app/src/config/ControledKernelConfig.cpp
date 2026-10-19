@@ -20,8 +20,9 @@ QString defaultTunDevice()
 #ifdef Q_OS_MACOS
     return QStringLiteral("utun1500");
 #else
-    // 命名与本程序的辅助程序一致（clash-qt-tun），不再沿用参照实现的 Mihomo
-    return QStringLiteral("clash-qt-tun");
+    // 接口名由 CMake 按软件名派生（<app>-tun，并截断到内核允许的 15 字符），
+    // 不再沿用参照实现的 Mihomo
+    return QStringLiteral(CLASHQT_TUN_DEVICE);
 #endif
 }
 

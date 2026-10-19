@@ -59,6 +59,10 @@ clashqt_add_test(test_json_util)     # 深合并与 <key> / key! / +key 修饰�
 clashqt_add_test(test_calc
     "${CMAKE_SOURCE_DIR}/src/app/src/utils/Calc.cpp")
 
+# 数据目录约定：<XDG_CONFIG_HOME>/clash-qt（不能再多一层），以及旧布局的迁移
+clashqt_add_test(test_paths
+    "${CMAKE_SOURCE_DIR}/src/app/src/utils/Paths.cpp")
+
 # 规则覆写合并：需要配置层（AppConfig / ProfileConfig / Factory）。
 # 这些 .cpp 都不依赖 Widgets，直接编进测试目标即可；测试用临时
 # XDG_CONFIG_HOME 隔离，不会碰到用户真实配置。

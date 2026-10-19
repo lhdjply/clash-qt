@@ -11,7 +11,8 @@
 namespace clashqt {
 namespace {
 
-constexpr auto kDesktopFileName = "clash-qt.desktop";
+// 自启动入口的文件名与安装的桌面文件一致（由 CMake 生成）
+constexpr auto kDesktopFileName = CLASHQT_DESKTOP_FILE;
 
 } // namespace
 

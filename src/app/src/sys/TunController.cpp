@@ -22,7 +22,7 @@
 namespace clashqt {
 namespace {
 
-constexpr char kHelperName[] = "clash-qt-tun";
+constexpr char kHelperName[] = CLASHQT_TUN_HELPER_NAME;
 
 // 辅助程序与 pkexec 的路径都按绝对路径使用：绝不让 PATH 决定提权目标
 QString absolutePath(const QString &path)
@@ -135,7 +135,7 @@ bool TunController::start(const TunOptions &options, QString *error)
     // 应用本身有单实例保护（SingleInstance），固定名不会冲突。
     const QString runtimeDir = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
     m_socketPath = QDir(runtimeDir.isEmpty() ? QDir::tempPath() : runtimeDir)
-                       .filePath(QStringLiteral("clash-qt-tun.sock"));
+                       .filePath(QStringLiteral(CLASHQT_TUN_HELPER_NAME ".sock"));
     cleanupSocketFile();
 
     m_listenSocket = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);

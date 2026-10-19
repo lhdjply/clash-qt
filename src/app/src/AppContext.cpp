@@ -57,7 +57,8 @@ QString subscriptionUserAgent(const QString &itemUserAgent, const QString &appUs
 {
     if (!itemUserAgent.isEmpty()) return itemUserAgent;
     if (!appUserAgent.isEmpty()) return appUserAgent;
-    return QStringLiteral("clash-qt/v%1 (clash.meta)").arg(QStringLiteral(CLASHQT_VERSION));
+    return QStringLiteral(CLASHQT_APP_NAME "/v%1 (clash.meta)")
+        .arg(QStringLiteral(CLASHQT_VERSION));
 }
 
 // 读取本地配置文件并校验是合法的 Clash 配置。避免把坏内容写进订阅库后
@@ -426,11 +427,12 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
         QJsonObject tunObj = m_controledConfig->object().value(QStringLiteral("tun")).toObject();
         if (!tunObj.isEmpty()
             && tunObj.value(QStringLiteral("device")).toString() == QLatin1String("Mihomo")) {
-            tunObj.insert(QStringLiteral("device"), QStringLiteral("clash-qt-tun"));
+            tunObj.insert(QStringLiteral("device"), QStringLiteral(CLASHQT_TUN_DEVICE));
             m_controledConfig->patch(QJsonObject{{QStringLiteral("tun"), tunObj}});
             configFixed = true;
             AppLogger::instance().info(
-                QStringLiteral("TUN 设备名已从 Mihomo 改为 clash-qt-tun"));
+                QStringLiteral("TUN 设备名已从 Mihomo 改为 %1")
+                    .arg(QStringLiteral(CLASHQT_TUN_DEVICE)));
         }
     }
 
