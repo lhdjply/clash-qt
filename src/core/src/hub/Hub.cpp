@@ -434,7 +434,15 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
         }
 
         // 5 秒足够（真实代理握手 300~800ms）；原来 8 秒会把数据面堵更久
-        return outcome.adapter->dial(working, 5000);
+        const DialResult result = outcome.adapter->dial(working, 5000);
+
+        // 规则命中与出站链只有这里知道（dispatch 在拨号回调里完成），
+        // 而连接条目是数据面在拨号前登记的 —— 在这里回填，连接页才有内容可显示。
+        if (m_tunnel->tracker() && !context.connectionId.isEmpty()) {
+            m_tunnel->tracker()->updateDispatch(context.connectionId, outcome.ruleType,
+                                                outcome.rulePayload, outcome.chains);
+        }
+        return result;
     };
 
     m_tunThread = new QThread(this);
@@ -448,6 +456,10 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
     m_tunDevice->setTrafficSink([tunnel = m_tunnel](qint64 upload, qint64 download) {
         tunnel->addTraffic(upload, download);
     });
+
+    // 连接页的数据源。TUN 的连接由协议栈自己拨号，不经过 handleStream，
+    // 不注入跟踪器的话连接页在 TUN 模式下永远是空的。
+    m_tunDevice->setConnectionTracker(m_tunnel->tracker());
 
     m_tunDevice->moveToThread(m_tunThread);
 

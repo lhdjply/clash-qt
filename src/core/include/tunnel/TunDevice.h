@@ -35,6 +35,7 @@ namespace core {
 
 class DnsServer;
 class Resolver;
+class ConnectionTracker;
 
 class TunDevice : public QObject {
     Q_OBJECT
@@ -47,6 +48,10 @@ public:
     // 流量出口（TUN 的字节不经过 Tunnel::handleStream，需显式汇总）。
     // 必须在 start() 之前、且在本对象尚未进入工作线程时设置。
     void setTrafficSink(TunIpStack::TrafficSink sink);
+
+    // 连接跟踪器（/connections 的数据源）。同样必须在 start() 之前设置：
+    // 协议栈在 start() 里才创建，之后设置就赶不上已经建立的连接。
+    void setConnectionTracker(std::shared_ptr<ConnectionTracker> tracker);
 
     // 在工作线程中调用：接管 fd 并开始收发
     void start(int fd, int dnsUdpFd, int dnsTcpFd);
@@ -66,6 +71,7 @@ private:
     TunIpStack::DialFn         m_dial;
     std::shared_ptr<Resolver>  m_resolver;
     std::shared_ptr<DnsServer> m_dns;
+    std::shared_ptr<ConnectionTracker> m_tracker;
 
     std::unique_ptr<TunIpStack> m_stack;
     TunIpStack::TrafficSink     m_trafficSink;

@@ -16,6 +16,7 @@
 #include <QJsonObject>
 
 #include "component/dns/Resolver.h"
+#include "tunnel/ConnectionTracker.h"
 #include "tunnel/OutboundStream.h"
 #include "tunnel/TunIpStack.h"
 #include "tunnel/Tunnel.h"
@@ -69,7 +70,9 @@ QByteArray tcp(quint16 srcPort, quint16 dstPort, quint32 seq, quint32 ack, quint
     return segment;
 }
 
+constexpr quint8 kFlagFin = 0x01;
 constexpr quint8 kFlagSyn = 0x02;
+constexpr quint8 kFlagRst = 0x04;
 constexpr quint8 kFlagAck = 0x10;
 constexpr quint8 kFlagPsh = 0x08;
 
@@ -122,6 +125,7 @@ class TestTunTraffic : public QObject
 private slots:
     void initTestCase();
     void tcpTrafficReachesSink();
+    void tcpConnectionIsTracked();
     void tunnelAccumulatesTraffic();
 
 private:
@@ -190,6 +194,61 @@ void TestTunTraffic::tcpTrafficReachesSink()
     // 协议栈自身的累计值同步更新，供排查时对照
     QCOMPARE(stack.uploaded(), qint64(body.size()));
     QCOMPARE(stack.downloaded(), qint64(5));
+}
+
+void TestTunTraffic::tcpConnectionIsTracked()
+{
+    auto tracker = std::make_shared<ConnectionTracker>();
+    auto stream  = std::make_shared<FakeStream>();
+
+    TunIpStack stack(
+        [tracker, stream](const DialContext &context) {
+            // Hub 的拨号回调做的正是这一步：dispatch 结果只有拨号方知道
+            tracker->updateDispatch(context.connectionId, QStringLiteral("DomainSuffix"),
+                                    QStringLiteral("example.com"),
+                                    QStringList{QStringLiteral("节点"), QStringLiteral("DIRECT")});
+            DialResult result;
+            result.stream = stream;
+            return result;
+        },
+        m_resolver, nullptr);
+    stack.setConnectionTracker(tracker);
+
+    // 1) 握手：连接必须在拨号前就登记（连接页在 SYN 之后就应看到它）
+    stack.onPackets(
+        ipv4(kClientIp, kServerIp, 6, tcp(kClientPort, kServerPort, 1000, 0, kFlagSyn)));
+    QCOMPARE(tracker->activeCount(), 1);
+
+    {
+        const QList<ConnectionInfo> snapshot = tracker->snapshot();
+        QCOMPARE(snapshot.size(), 1);
+        const Metadata &metadata = snapshot.first().metadata;
+        QCOMPARE(metadata.inboundType, QStringLiteral("TUN"));
+        QCOMPARE(metadata.network, QStringLiteral("tcp"));
+        QCOMPARE(metadata.srcIp, QStringLiteral("10.0.0.2"));
+        QCOMPARE(metadata.dstPort, int(kServerPort));
+        QCOMPARE(metadata.host, QString()); // 字面 IP 目标，没有域名
+    }
+
+    // 2) 拨号方回填的规则与出站链
+    QTRY_COMPARE_WITH_TIMEOUT(tracker->snapshot().first().rule, QStringLiteral("DomainSuffix"),
+                              5000);
+    QCOMPARE(tracker->snapshot().first().chains,
+             QStringList({QStringLiteral("节点"), QStringLiteral("DIRECT")}));
+
+    // 3) 流量累加到这条连接上
+    const QByteArray body("hello-upload");
+    stack.onPackets(ipv4(kClientIp, kServerIp, 6,
+                         tcp(kClientPort, kServerPort, 1001, 0, kFlagAck | kFlagPsh, body)));
+    QTRY_COMPARE_WITH_TIMEOUT(tracker->snapshot().first().upload, qint64(body.size()), 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(tracker->snapshot().first().download, qint64(5), 5000);
+
+    // 4) 客户端 RST：条目必须消失，流量并入「累计」
+    stack.onPackets(ipv4(kClientIp, kServerIp, 6,
+                         tcp(kClientPort, kServerPort, 1001 + quint32(body.size()), 0, kFlagRst)));
+    QCOMPARE(tracker->activeCount(), 0);
+    QCOMPARE(tracker->totalUpload(), qint64(body.size()));
+    QCOMPARE(tracker->totalDownload(), qint64(5));
 }
 
 void TestTunTraffic::tunnelAccumulatesTraffic()

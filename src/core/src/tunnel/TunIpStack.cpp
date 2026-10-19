@@ -8,6 +8,7 @@
 
 #include "component/dns/DnsServer.h"
 #include "component/dns/Resolver.h"
+#include "tunnel/ConnectionTracker.h"
 #include "tunnel/OutboundStream.h"
 
 #include <QDateTime>
@@ -126,6 +127,9 @@ struct TunIpStack::TunFlow {
     bool dialing        = false;
     bool upstreamClosed = false;
     QByteArray initialPayload; // SYN 携带的数据（TFO），连上后再发
+
+    // /connections 里的连接 id（未注入跟踪器时为空）
+    QString connectionId;
 };
 
 // ---------------------------------------------------------------------------
@@ -153,6 +157,9 @@ struct TunIpStack::UdpFlow {
 
     QList<QByteArray> pending; // 拨号期间缓存的数据报
     int               pendingBytes = 0;
+
+    // /connections 里的连接 id（未注入跟踪器时为空）
+    QString connectionId;
 };
 
 TunIpStack::TunIpStack(DialFn dialFn, std::shared_ptr<Resolver> resolver,
@@ -275,18 +282,25 @@ void TunIpStack::onPackets(const QByteArray &data)
 //  二是把字节数上报给 Hub —— TUN 的字节不经过 Tunnel::handleStream，
 //  少了这一步界面上的上行/下行速度就一直是 0。
 // ---------------------------------------------------------------------------
-void TunIpStack::countUpload(qint64 bytes)
+void TunIpStack::countUpload(qint64 bytes, const QString &connectionId)
 {
     if (bytes <= 0) return;
     m_uploaded += quint64(bytes);
     if (m_trafficSink) m_trafficSink(bytes, 0);
+    if (m_tracker && !connectionId.isEmpty()) m_tracker->addUpload(connectionId, bytes);
 }
 
-void TunIpStack::countDownload(qint64 bytes)
+void TunIpStack::countDownload(qint64 bytes, const QString &connectionId)
 {
     if (bytes <= 0) return;
     m_downloaded += quint64(bytes);
     if (m_trafficSink) m_trafficSink(0, bytes);
+    if (m_tracker && !connectionId.isEmpty()) m_tracker->addDownload(connectionId, bytes);
+}
+
+void TunIpStack::trackClose(const QString &connectionId)
+{
+    if (m_tracker && !connectionId.isEmpty()) m_tracker->closeConnection(connectionId);
 }
 
 void TunIpStack::handlePacket(const quint8 *data, int length)
@@ -635,7 +649,7 @@ void TunIpStack::handleTcp(quint32 srcIp, quint32 dstIp, const quint8 *tcp, int 
             // write() 只写一部分的情况由 FlowWorker 自己重试。
             if (flow->worker && !flow->upstreamClosed) {
                 const QByteArray chunk = payload;
-                countUpload(qint64(chunk.size()));
+                countUpload(qint64(chunk.size()), flow->connectionId);
                 QMetaObject::invokeMethod(flow->worker, "writeData", Qt::QueuedConnection,
                                           Q_ARG(QByteArray, chunk));
             }
@@ -699,7 +713,7 @@ void TunIpStack::forwardUdp(quint32 srcIp, quint32 dstIp, quint16 srcPort, quint
         }
 
         if (flow->established && flow->worker) {
-            countUpload(qint64(payload.size()));
+            countUpload(qint64(payload.size()), flow->connectionId);
             QMetaObject::invokeMethod(flow->worker, "sendDatagram", Qt::QueuedConnection,
                                       Q_ARG(QByteArray, payload));
         } else if (flow->pending.size() < kUdpPendingMax
@@ -790,6 +804,12 @@ void TunIpStack::openUdpFlow(quint32 srcIp, quint32 dstIp, quint16 srcPort, quin
     context.network  = QStringLiteral("udp");
     context.metadata = metadata;
 
+    // 与 TCP 一致：UDP 会话也要出现在连接页（QUIC / DNS / STUN 都走这里）
+    if (m_tracker) {
+        flow->connectionId   = m_tracker->createConnection(metadata);
+        context.connectionId = flow->connectionId;
+    }
+
     auto *thread = new QThread;
     thread->setObjectName(QStringLiteral("tun-udp"));
     thread->setStackSize(256 * 1024);
@@ -854,7 +874,7 @@ void TunIpStack::onUdpConnected(const UdpSessionKey &key)
     // 补发拨号期间缓存的数据报（顺序保持：QUIC 握手依赖首包顺序）
     if (flow->worker) {
         for (const QByteArray &datagram : flow->pending) {
-            countUpload(qint64(datagram.size()));
+            countUpload(qint64(datagram.size()), flow->connectionId);
             QMetaObject::invokeMethod(flow->worker, "sendDatagram", Qt::QueuedConnection,
                                       Q_ARG(QByteArray, datagram));
         }
@@ -870,6 +890,9 @@ void TunIpStack::onUdpFailed(const UdpSessionKey &key, const QString &reason)
 
     const UdpFlowPtr flow = it.value();
     flow->failed          = true;
+
+    // 会话已被判死（后续包直接回 ICMP），连接页不应再显示它
+    trackClose(flow->connectionId);
 
     emit logMessage(QStringLiteral("warning"),
                     QStringLiteral("TUN UDP 拨号失败 %1：%2").arg(flow->targetKey, reason));
@@ -889,7 +912,7 @@ void TunIpStack::onUdpDatagram(const UdpSessionKey &key, const QByteArray &data)
 
     const UdpFlowPtr flow = it.value();
     flow->lastActive      = QDateTime::currentMSecsSinceEpoch();
-    countDownload(qint64(data.size()));
+    countDownload(qint64(data.size()), flow->connectionId);
 
     sendUdpToClient(flow->clientIp, flow->clientPort, flow->ourIp, flow->ourPort, data);
 }
@@ -913,6 +936,8 @@ void TunIpStack::closeUdpFlow(const UdpSessionKey &key, const QString &reason)
 
     const UdpFlowPtr flow = it.value();
     m_udpFlows.erase(it);
+
+    trackClose(flow->connectionId);
 
     if (flow->worker) {
         QMetaObject::invokeMethod(flow->worker, "closeChannel", Qt::QueuedConnection);
@@ -1079,6 +1104,13 @@ void TunIpStack::openFlow(quint32 srcIp, quint32 dstIp, quint16 srcPort, quint16
     flow->initialPayload = payload;
     flow->dialing        = true;
 
+    // 连接跟踪：TUN 自己拨号，不经过 Tunnel::handleStream，必须在这里登记，
+    // 否则连接页在 TUN 模式下永远空白。规则命中与出站链由拨号方（Hub）回填。
+    if (m_tracker) {
+        flow->connectionId   = m_tracker->createConnection(metadata);
+        context.connectionId = flow->connectionId;
+    }
+
     auto *thread = new QThread;
     thread->setObjectName(QStringLiteral("tun-flow"));
     thread->setStackSize(512 * 1024); // 每连接一个线程，不需要默认 8MB 栈
@@ -1125,7 +1157,7 @@ void TunIpStack::onFlowConnected(quint64 key)
 
     // SYN 携带的数据（TFO）
     if (!flow->initialPayload.isEmpty() && flow->worker) {
-        countUpload(qint64(flow->initialPayload.size()));
+        countUpload(qint64(flow->initialPayload.size()), flow->connectionId);
         QMetaObject::invokeMethod(flow->worker, "writeData", Qt::QueuedConnection,
                                   Q_ARG(QByteArray, flow->initialPayload));
         flow->initialPayload.clear();
@@ -1138,6 +1170,8 @@ void TunIpStack::onFlowFailed(quint64 key, const QString &reason)
     if (it == m_flows.end()) return;
     const FlowPtr flow = it.value();
     m_flows.erase(it);
+
+    trackClose(flow->connectionId);
 
     const QString target = flow->host.isEmpty() ? QHostAddress(flow->ourIp).toString() : flow->host;
     emit logMessage(QStringLiteral("warning"),
@@ -1162,7 +1196,7 @@ void TunIpStack::onFlowData(quint64 key, const QByteArray &data)
     const FlowPtr flow = it.value();
 
     flow->lastActive = QDateTime::currentMSecsSinceEpoch();
-    countDownload(qint64(data.size()));
+    countDownload(qint64(data.size()), flow->connectionId);
 
     if (m_trace) {
         emit logMessage(QStringLiteral("debug"),
@@ -1181,6 +1215,9 @@ void TunIpStack::onFlowClosed(quint64 key)
     const FlowPtr flow = it.value();
 
     flow->upstreamClosed = true;
+    // 上游已断：这条连接在代理侧已经结束，连接页不该继续把它算作「活动」。
+    // 客户端剩下的半关闭数据没有出口，后面的 closeFlow 会再兜一次（幂等）。
+    trackClose(flow->connectionId);
     if (!flow->ourFin) {
         flow->ourFin = true;
         sendSegment(flow, kFlagFin | kFlagAck, flow->ourNext, flow->clientNext);
@@ -1279,6 +1316,8 @@ void TunIpStack::closeFlow(quint64 key, bool sendRst, const QString &reason)
 
     FlowPtr flow = it.value();
     m_flows.erase(it);
+
+    trackClose(flow->connectionId);
 
     if (sendRst && flow->established) {
         sendSegment(flow, kFlagRst | kFlagAck, flow->ourNext, flow->clientNext);

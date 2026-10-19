@@ -50,6 +50,7 @@ class QThread; // 全局作用域前向声明（不能在 namespace core 里声�
 
 namespace core {
 
+class ConnectionTracker;
 class DnsServer;
 class FlowWorker;
 class OutboundStream;
@@ -82,6 +83,15 @@ public:
     // 回调在数据面线程里同步执行，实现方只应做原子累加这类无阻塞操作。
     using TrafficSink = std::function<void(qint64 upload, qint64 download)>;
     void setTrafficSink(TrafficSink sink) { m_trafficSink = std::move(sink); }
+
+    // 连接跟踪（/connections 的数据源）。同样是「TUN 不经过 handleStream」
+    // 的直接后果：不注入跟踪器，连接页在 TUN 模式下就永远是空的。
+    // 跟踪器自身用互斥量保护状态，可以在数据面线程里直接调用。
+    // 必须在 start()（也就是开始收包）之前设置。
+    void setConnectionTracker(std::shared_ptr<ConnectionTracker> tracker)
+    {
+        m_tracker = std::move(tracker);
+    }
 
     // 关闭全部流（停用 TUN 时调用）
     void closeAll();
@@ -147,13 +157,17 @@ private:
                      const QByteArray &payload = QByteArray());
 
     // 计数 + 上报。所有收发字节都从这里过，避免某条路径漏报。
-    void countUpload(qint64 bytes);
-    void countDownload(qint64 bytes);
+    // 带 connectionId 时同时累加到对应连接的流量上（连接页的上下行与瞬时速度）。
+    void countUpload(qint64 bytes, const QString &connectionId = QString());
+    void countDownload(qint64 bytes, const QString &connectionId = QString());
     void closeFlow(quint64 key, bool sendRst, const QString &reason);
+    // 关闭跟踪条目（幂等，空 id 直接忽略）
+    void trackClose(const QString &connectionId);
 
     DialFn                    m_dial;
     std::shared_ptr<Resolver> m_resolver;
     std::shared_ptr<DnsServer> m_dns;
+    std::shared_ptr<ConnectionTracker> m_tracker;
 
     QHash<quint64, FlowPtr> m_flows;
     QHash<UdpSessionKey, UdpFlowPtr> m_udpFlows;

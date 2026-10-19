@@ -53,6 +53,11 @@ struct DialContext {
     int     dstPort = 0;
     QString network; // "tcp" / "udp"
     Metadata metadata;
+    // 连接跟踪 id。TUN 数据面在拨号前就登记连接（入站 TCP 走
+    // Tunnel::handleStream，那条路径自己登记），拨号方据此把规则命中与
+    // 出站链回填给 /connections —— 只有拨号方知道 dispatch 的结果。
+    // 为空表示这条拨号无需跟踪。
+    QString connectionId;
 };
 
 // 拨号结果：成功时 stream 非空且可用，error 为空。
