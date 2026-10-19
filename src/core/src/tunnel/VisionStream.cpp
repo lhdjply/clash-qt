@@ -46,6 +46,9 @@ VisionStream::VisionStream(std::shared_ptr<RealityTlsStream> tls, const QByteArr
 {
     m_writeOnceUuid = m_uuid; // 首写携带 UUID
 
+    // 告诉记录层：切换点之后的字节不是 TLS 记录，解不动时保留而不是判死
+    m_tls->setAllowRawTail(true);
+
     QObject::connect(m_tls.get(), &OutboundStream::readyToRead, this, [this]() {
         pumpOut();
         if (!m_out.isEmpty()) emit readyToRead();
@@ -318,11 +321,14 @@ void VisionStream::pumpOut()
             m_readProcess = false;
             continue;
         case PaddingDirect: {
-            // 取净记录层残余明文，再切原始直读
+            // 取净记录层残余明文，再切原始直读。
+            // 注意顺序：先把记录层已解出的明文取完，再 setRawMode；之后缓冲里
+            // 解不动的尾部（内层 TLS 密文）由 takeRaw() 原样交出。
             m_out += m_tlsIn;
             m_tlsIn.clear();
             m_out += m_tls->readAll();
             m_tls->setRawMode();
+            m_out += m_tls->takeRaw();
             m_readRaw     = true;
             m_readProcess = false;
             continue;

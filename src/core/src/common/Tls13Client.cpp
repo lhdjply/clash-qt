@@ -1057,12 +1057,25 @@ bool RealityTlsStream::recvRecord(uchar *recordType, QByteArray *payload,
 
 bool RealityTlsStream::decryptAvailable()
 {
+    // 已经判定「后面不是记录」：不再重试，等 Vision 切成直通后由 takeRaw 取走
+    if (m_decryptStalled) return false;
+
     m_rawInput.append(m_socket->readAll());
     const char *aead = aeadCipherName(m_cipher);
+
+    // Vision 切换点：服务端在最后一帧之后直接发内层 TLS 密文。这些字节的
+    // 前 5 个字节很可能恰好长得像记录头（0x17 0x03 0x03 + 长度），一旦按记录
+    // 解密就会失败。此时不能判死——把字节留在缓冲里，等 Vision 处理完
+    // PaddingDirect 后 takeRaw() 原样交出去。
+    const auto stallForRawTail = [this]() {
+        m_decryptStalled = true;
+        return false;
+    };
 
     while (m_rawInput.size() >= 5) {
         const int len = readBe16(m_rawInput, 3);
         if (len <= 0 || len > 17 * 1024) {
+            if (m_allowRawTail) return stallForRawTail();
             m_closed = true;
             m_error  = QStringLiteral("REALITY 应用记录长度非法");
             emit streamClosed();
@@ -1070,14 +1083,19 @@ bool RealityTlsStream::decryptAvailable()
         }
         if (m_rawInput.size() < 5 + len) break;
 
-        const uchar       type   = uchar(m_rawInput.at(0));
-        const QByteArray  header = m_rawInput.left(5);
-        const QByteArray  body   = m_rawInput.mid(5, len);
+        const uchar      type   = uchar(m_rawInput.at(0));
+        const QByteArray header = m_rawInput.left(5);
+        const QByteArray body   = m_rawInput.mid(5, len);
         m_rawInput.remove(0, 5 + len);
 
         const QByteArray nonce = recordNonce(m_serverApIv, m_serverSeq++);
-        QByteArray inner;
+        QByteArray       inner;
         if (!aeadOpen(aead, m_serverApKey, nonce, header, body, &inner)) {
+            if (m_allowRawTail) {
+                // 放回去（含尚未消费的尾巴），保证 takeRaw() 拿到完整字节流
+                m_rawInput.prepend(header + body);
+                return stallForRawTail();
+            }
             m_closed = true;
             m_error  = QStringLiteral("REALITY 记录解密失败");
             emit streamClosed();
@@ -1094,7 +1112,7 @@ bool RealityTlsStream::decryptAvailable()
             emit streamClosed();
             return false;
         }
-        // 0x16：应用阶段的 NewSessionTicket 等握手消息，忽略
+        // 0x16：应用阶段的 NewSessionTicket / KeyUpdate 等握手消息，忽略
         Q_UNUSED(type);
     }
     return true;
@@ -1107,7 +1125,7 @@ bool RealityTlsStream::decryptAvailable()
 QByteArray RealityTlsStream::readAll()
 {
     if (m_rawMode) return takeRaw();
-    if (m_socket->bytesAvailable() > 0) decryptAvailable();
+    if (m_socket->bytesAvailable() > 0 && !m_decryptStalled) decryptAvailable();
 
     if (!m_expectVlessHeader) {
         const QByteArray out = m_plaintext;
@@ -1207,9 +1225,14 @@ bool RealityTlsStream::waitForData(int timeoutMs)
         return m_socket->waitForReadyRead(timeoutMs);
     }
     if (!m_plaintext.isEmpty()) return true;
+    if (m_decryptStalled) {
+        // 尾部已判定为原始字节：不再等解密结果
+        return m_socket->bytesAvailable() > 0 || !m_rawInput.isEmpty();
+    }
     if (m_socket->bytesAvailable() > 0) {
         decryptAvailable();
         if (!m_plaintext.isEmpty()) return true;
+        if (m_decryptStalled) return true; // 交给 Vision 走直通
     }
     if (!m_socket->waitForReadyRead(timeoutMs)) return false;
     decryptAvailable();

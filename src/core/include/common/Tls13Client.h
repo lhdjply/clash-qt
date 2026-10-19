@@ -72,6 +72,11 @@ public:
     void setLazyVlessResponseHeader(bool enabled) override { m_expectVlessHeader = enabled; }
 
     // ---- Vision 直接拼接支持 -------------------------------------------
+    // Vision 会在首个内层应用数据后让服务端切换成「原样透传」：切换点之后
+    // socket 里的字节是内层 TLS 密文，**不是**外层 TLS 记录。若记录层抢先
+    // 把它们当记录解密，必然失败（表现为随机的「REALITY 记录解密失败」）。
+    // 允许原始尾部后，解不动的字节会留在缓冲里，由 takeRaw() 原样交出去。
+    void setAllowRawTail(bool allowed) { m_allowRawTail = allowed; }
     // 停止 TLS 记录层解析；此后 takeRaw()/writeRaw() 直通原始 socket
     void setRawMode();
     QByteArray takeRaw();               // 读取 socket 原始字节（不解密）
@@ -152,6 +157,9 @@ private:
 
     bool m_established = false;
     bool m_rawMode     = false;
+    // 解到一半发现「不是记录」：保留字节等 Vision 切成直通，不直接判死
+    bool m_allowRawTail   = false;
+    bool m_decryptStalled = false;
     bool m_closed      = false;
     QString m_error;
 };

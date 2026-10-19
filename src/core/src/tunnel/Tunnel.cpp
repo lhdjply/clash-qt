@@ -54,8 +54,25 @@ public:
         QObject::connect(m_remote, &OutboundStream::readyToRead, this,
                          [this]() { pumpRemoteToClient(); });
 
-        QObject::connect(m_client, &QTcpSocket::disconnected, this, [this]() { finish(); });
-        QObject::connect(m_remote, &OutboundStream::streamClosed, this, [this]() { finish(); });
+        QObject::connect(m_client, &QTcpSocket::disconnected, this, [this]() {
+            Logger::instance().debug(
+                LogCategory::Listener,
+                QStringLiteral("连接 %1：客户端断开（上行 %2 / 下行 %3 字节）")
+                    .arg(m_connectionId)
+                    .arg(m_up)
+                    .arg(m_down));
+            finish();
+        });
+        QObject::connect(m_remote, &OutboundStream::streamClosed, this, [this]() {
+            Logger::instance().debug(
+                LogCategory::Listener,
+                QStringLiteral("连接 %1：上游关闭（上行 %2 / 下行 %3 字节）%4")
+                    .arg(m_connectionId)
+                    .arg(m_up)
+                    .arg(m_down)
+                    .arg(m_remote->errorText()));
+            finish();
+        });
 
         // 出错时同样结束，避免连接悬挂
         QObject::connect(m_client, &QTcpSocket::errorOccurred, this,
@@ -82,8 +99,19 @@ private:
     {
         const QByteArray data = m_client->readAll();
         if (data.isEmpty()) return;
+        m_up += data.size();
 
-        m_remote->write(data);
+        const qint64 written = m_remote->write(data);
+        if (written != data.size()) {
+            // 静默丢字节会让内层 TLS 报「bad record mac / unexpected eof」，
+            // 现象与对端故障极像，因此这里必须留下痕迹
+            Logger::instance().warn(
+                LogCategory::Listener,
+                QStringLiteral("连接 %1：上游写入不完整，%2 / %3 字节")
+                    .arg(m_connectionId)
+                    .arg(written)
+                    .arg(data.size()));
+        }
         if (m_tracker) m_tracker->addUpload(m_connectionId, data.size());
         m_tunnelUploadHook(data.size());
     }
@@ -92,6 +120,7 @@ private:
     {
         const QByteArray data = m_remote->readAll();
         if (data.isEmpty()) return;
+        m_down += data.size();
 
         m_client->write(data);
         if (m_tracker) m_tracker->addDownload(m_connectionId, data.size());
@@ -116,6 +145,9 @@ private:
     ConnectionTracker *m_tracker = nullptr;
     QString            m_connectionId;
     Tunnel            *m_tunnel = nullptr;
+
+    qint64 m_up   = 0;
+    qint64 m_down = 0;
 
     std::function<void(qint64)> m_tunnelUploadHook   = [](qint64) {};
     std::function<void(qint64)> m_tunnelDownloadHook = [](qint64) {};
