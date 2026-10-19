@@ -1,5 +1,8 @@
 # Clash Qt
 
+[![构建](https://github.com/lhdjply/clash-qt/actions/workflows/build.yaml/badge.svg)](https://github.com/lhdjply/clash-qt/actions/workflows/build.yaml)
+[![测试](https://github.com/lhdjply/clash-qt/actions/workflows/test.yaml/badge.svg)](https://github.com/lhdjply/clash-qt/actions/workflows/test.yaml)
+
 clash-party 的 Qt6 / C++ 重写，包含**自研 C++ 内核**（随应用一同构建、目标文件直接编入应用、进程内直调）
 与 **Qt6 图形界面**。
 
@@ -213,3 +216,32 @@ VLESS 系列完全不同的一套协议栈，实现位于 `src/core/src/common/H
 - **明文 HTTP 转发**：统一按 `Connection: close` 处理，不做 keep-alive 复用。
 - **线程模型**：入站连接为「每连接一线程 + 独立事件循环」（上限 512），
   后续将改为事件循环线程池 + 异步拨号。
+
+## 持续集成
+
+工作流在 `.github/workflows/`，按职责拆成三个文件：
+
+| 工作流 | 触发 | 做什么 |
+|---|---|---|
+| `build.yaml` | push 到 main/master、PR、手动 | 以 `RelWithDebInfo` 构建（不导出二进制产物） |
+| `test.yaml` | push 到 main/master、PR、手动 | 构建全部目标（含 10 个测试二进制），跑 `ctest`；失败时用 `--rerun-failed -V` 重跑失败用例 |
+| `release.yaml` | push 任意分支或 tag、PR、手动 | 在 deepin crimson 容器里用 QEMU 构建 **amd64 / arm64 / loong64 / riscv64** 四份 `.deb`；非 PR 时创建 GitHub Release 并附上 deb 与 SHA-256 |
+
+几点约定：
+
+- 三个工作流都带 `submodules: recursive`。yaml-cpp 与 ML-KEM 的四个 header-only
+  依赖都是子模块，漏拉一个，CMake 配置阶段就会直接失败。
+- `build.yaml` / `test.yaml` 跑在 `ubuntu-26.04`（Qt >= 6.5）。界面层用到
+  `QStyleHints::colorScheme()`，Qt 6.4 的 `ubuntu-24.04` 会编译失败；工作流里有
+  显式的版本检查，会直接说明「需要 Qt >= 6.5」而不是抛出一堆
+  `no member named 'colorScheme'`。
+- `release.yaml` 用 `linuxdeepin/deepin:crimson*` 镜像构建，保证打包环境与发行版
+  一致（Qt、debhelper 版本都对得上），amd64 原生、其余三架构走 QEMU 仿真。
+- 构建依赖只有 `debian/control` 一个来源：容器内用 `mk-build-deps` 从 control
+  安装，不在工作流里再抄一份包名列表。
+- `release.yaml` 的发布行为：推 tag 出正式 Release；推普通分支或手动触发会覆盖
+  同名的 `continuous_build` 预发布（对应「每次提交都能下载安装包」）；PR 只跑
+  四架构打包，不建 Release。
+- 发布走 `debuild -us -uc -b`，不做 GPG 签名（CI 没有密钥）。`-b` 是必须的：
+  `debian/source/format` 是 `3.0 (quilt)`，不带它会先去构建源码包，而源码包
+  需要 `orig.tar`，CI 里没有。需要签名的包时在本地 `debuild`。

@@ -1,0 +1,174 @@
+name: 发布
+
+on:
+  push:
+    branches: ['*']
+    tags: ['*']
+  pull_request:
+    branches: ['*']
+  workflow_dispatch:
+
+# gh release create/upload 需要写权限；仓库默认 token 可能只有读
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  APP_NAME: "clash-qt"
+  BUILD_TYPE: "Release"
+
+jobs:
+  build-deb:
+    name: 打包 (Linux deb)
+    runs-on: ubuntu-26.04
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # amd64 在 x86_64 runner 上是原生速度；其余三个架构走 QEMU 仿真
+          - platform: amd64
+            image: linuxdeepin/deepin:crimson
+          - platform: arm64
+            image: linuxdeepin/deepin:crimson-arm64
+          - platform: loong64
+            image: linuxdeepin/deepin:crimson-loong64
+          - platform: riscv64
+            image: linuxdeepin/deepin:crimson-riscv64
+    steps:
+      - name: 安装 QEMU
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: ${{ matrix.platform }}
+
+      - name: 安装 Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: 检出代码（含子模块）
+        uses: actions/checkout@v6
+        with:
+          # 容器只挂载工作区，子模块必须在宿主侧先拉好
+          submodules: recursive
+
+      - name: 构建 ${{ matrix.platform }} 安装包
+        run: |
+          docker run --rm --platform linux/${{ matrix.platform }} -v ${{ github.workspace }}:/workspace \
+            ${{ matrix.image }} \
+            bash -c "
+            set -e
+            cd /workspace &&
+            Jobs=\$(nproc) &&
+            echo \"容器内 CPU 数：\$Jobs\" &&
+            apt update &&
+            apt install -y build-essential devscripts dh-make equivs &&
+            mk-build-deps -i -t 'apt-get -y' './debian/control' &&
+            DEB_BUILD_OPTIONS=\"parallel=\$Jobs\" debuild -us -uc -b &&
+            cp ../*.deb ./
+            "
+
+      # 关于上面那个 -b：
+      #   debian/source/format 是 3.0 (quilt)，不带 -b 时 debuild 会先构建
+      #   源码包，而源码包需要 ../clash-qt_<版本>.orig.tar.*；CI 里没有，必然
+      #   失败。这里只出二进制包，与「发布安装包」的目的也一致。
+      #
+      # 关于 parallel=N：
+      #   dh_auto_build 只认 DEB_BUILD_OPTIONS 里的 parallel；debuild 不带 -j
+      #   时是单线程。绝不能写成不带数字的 --parallel —— Make 生成器下 CMake
+      #   会翻译成 `make -j`（无限并发），容器直接卡死。
+
+      - name: 归集 deb 安装包
+        run: |
+          if ls ./*dbgsym*.deb 1> /dev/null 2>&1; then
+            rm ./*dbgsym*.deb
+          fi
+          if ls ./*build-deps*.deb 1> /dev/null 2>&1; then
+            rm ./*build-deps*.deb
+          fi
+
+          mkdir -p deb_package
+          cp ./*.deb deb_package
+          ls -l deb_package
+
+      - name: 上传 deb 产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.APP_NAME }}_linux_deb_${{ matrix.platform }}
+          path: deb_package/*.deb
+          if-no-files-found: error
+
+  create-release:
+    name: 发布 Release
+    runs-on: ubuntu-26.04
+    needs: [build-deb]
+    # PR 只验证四个架构能不能打包，不建 Release
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: 下载构建产物
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: 计算 SHA-256 校验和
+        run: |
+          cd artifacts
+          > hashes.sha256
+          for file in $(find . -type f -name "*.deb"); do
+            filename=$(basename "$file")
+            sha256sum "$file" | awk -v fname="$filename" '{print $1 " *" fname}' >> hashes.sha256
+          done
+          cd ..
+          tree artifacts
+
+      - name: 准备发布信息
+        run: |
+          if [ "${{ github.ref_type }}" == "tag" ]; then
+            echo "PRERELEASE=" >> $GITHUB_ENV
+            echo "RELEASE_NAME=${{ env.APP_NAME }} ${{ github.ref_name }}" >> $GITHUB_ENV
+            echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+            echo "RELEASE_NOTES=--generate-notes" >> $GITHUB_ENV
+          else
+            echo "PRERELEASE=-p" >> $GITHUB_ENV
+            echo "RELEASE_NAME=持续构建" >> $GITHUB_ENV
+            echo "TAG_NAME=continuous_build" >> $GITHUB_ENV
+            echo "RELEASE_NOTES=--notes \"由 CI 自动生成，对应提交 ${{ github.sha }}\"" >> $GITHUB_ENV
+          fi
+
+      - name: 创建 GitHub Release
+        continue-on-error: false
+        run: |
+          deb_files=$(find artifacts -name "*.deb" -print0 | xargs -0 echo)
+          hash_files=$(find artifacts -name "*.sha256" -print0 | xargs -0 echo)
+
+          if [ -z "$deb_files" ]; then
+            echo "::error::没有拿到任何 deb 产物，放弃发布。"
+            exit 1
+          fi
+
+          # 同名 release 已存在就先删掉（continuous_build 连带删 tag）
+          if gh release view ${{ env.TAG_NAME }} --repo $GITHUB_REPOSITORY &> /dev/null; then
+            if [ "${{ env.TAG_NAME }}" == "continuous_build" ]; then
+              gh release delete ${{ env.TAG_NAME }} --repo $GITHUB_REPOSITORY --cleanup-tag --yes
+            else
+              gh release delete ${{ env.TAG_NAME }} --repo $GITHUB_REPOSITORY --yes
+            fi
+            echo "已删除 ${{ env.TAG_NAME }}"
+          fi
+
+          gh release create ${{ env.TAG_NAME }} \
+                            $deb_files \
+                            $hash_files \
+                            ${{ env.PRERELEASE }} \
+                            --repo $GITHUB_REPOSITORY \
+                            --title "${{ env.RELEASE_NAME }}" \
+                            ${{ env.RELEASE_NOTES }}
+
+          echo "已创建 release: ${{ env.TAG_NAME }}"
+          echo "包含产物："
+          echo "$deb_files"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,92 @@
+name: 测试
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 测试本身是 QTEST_GUILESS_MAIN（不需要 QApplication），但少量用例会
+  # 间接构造控件；统一用 offscreen，避免 runner 上没有显示服务时偶发失败。
+  QT_QPA_PLATFORM: offscreen
+
+jobs:
+  test:
+    name: 测试 (Linux)
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: 检出代码（含子模块）
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: 安装系统 Qt 与构建依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates \
+            cmake \
+            ninja-build \
+            g++ \
+            pkg-config \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-charts-dev \
+            qt6-svg-dev \
+            libssl-dev
+
+      - name: 校验 Qt 版本
+        run: |
+          version=$(pkg-config --modversion Qt6Core)
+          echo "Qt6Core $version"
+          dpkg-query -W -f='${Package} ${Version}\n' qt6-base-dev qt6-charts-dev qt6-svg-dev
+
+          major=${version%%.*}
+          rest=${version#*.}
+          minor=${rest%%.*}
+          if [ "$major" -lt 6 ] || { [ "$major" -eq 6 ] && [ "$minor" -lt 5 ]; }; then
+            echo "::error::需要 Qt >= 6.5，当前为 $version。请升级 runner 的 Qt，或改用 jurplel/install-qt-action 安装 6.8。"
+            exit 1
+          fi
+
+      - name: 配置
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCLASHQT_BUILD_TESTS=ON
+
+      # 测试目标不是 EXCLUDE_FROM_ALL，一次构建连同主程序与 10 个测试二进制
+      # 全部编出来；ctest 不会替你编译缺失的目标
+      - name: 构建
+        run: cmake --build build --parallel
+
+      - name: 运行测试
+        run: |
+          # 失败时用 --rerun-failed -V 重跑失败用例：QtTest 的断言位置只在
+          # 详细输出里才有，单看 "Failed" 那一行定位不到代码
+          set +e
+          ctest --test-dir build --output-on-failure 2>&1 | tee build/ctest-run.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo
+            echo "########## 失败用例重跑（详细输出）##########"
+            ctest --test-dir build --rerun-failed -V || true
+            echo "#############################################"
+          fi
+          exit "$status"
+
+      - name: 上传测试日志
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ctest-log
+          path: build/ctest-run.log
+          if-no-files-found: ignore
+          retention-days: 7
