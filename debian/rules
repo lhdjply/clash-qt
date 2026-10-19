@@ -15,9 +15,11 @@
 %:
 	dh $@ --buildsystem=cmake --builddirectory=build
 
+# 不要在这里指定 -G：dh 的 cmake 序列在 build 阶段调用的是 make
+# （dh_auto_build 执行 `make -jN`）。若配置阶段改成 Ninja，build 阶段
+# 就会因为 build 目录里没有 Makefile 而报 "No targets specified"。
 override_dh_auto_configure:
 	dh_auto_configure -- \
-		-G Ninja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCLASHQT_BUILD_TESTS=OFF \
 		-DCLASHQT_USE_CCACHE=OFF

@@ -40,6 +40,8 @@ cmake --build build -j$(nproc)
 支持 C++20 的编译器（GCC 11+ / Clang 13+）。
 
 `yaml-cpp` 的取用顺序：系统已安装（`find_package`）→ 内置子模块 → 报错并提示修复命令。
+0.8 之前的发行版包只导出不带命名空间的 `yaml-cpp` 目标，CMakeLists 里按实际存在的
+目标名选择，两者都能链接。
 
 **配置与编译完全离线**：内核 ML-KEM 所需的 `sha3` / `randomshake` / `subtle`
 三个 header-only 依赖同样是 `third_party/` 下的 git 子模块。CMake **不再使用
@@ -90,7 +92,7 @@ sudo apt install build-essential debhelper cmake ninja-build \
 dpkg-buildpackage -us -uc -b
 
 # 安装
-sudo apt install ../clash-qt_0.1.0-1_amd64.deb
+sudo apt install ../clash-qt_0.1.0_amd64.deb
 ```
 
 注意：debhelper 的 clean 步骤会重建 `build/`（`dh_auto_clean` 直接删掉
@@ -242,6 +244,6 @@ VLESS 系列完全不同的一套协议栈，实现位于 `src/core/src/common/H
 - `release.yaml` 的发布行为：推 tag 出正式 Release；推普通分支或手动触发会覆盖
   同名的 `continuous_build` 预发布（对应「每次提交都能下载安装包」）；PR 只跑
   四架构打包，不建 Release。
-- 发布走 `debuild -us -uc -b`，不做 GPG 签名（CI 没有密钥）。`-b` 是必须的：
-  `debian/source/format` 是 `3.0 (quilt)`，不带它会先去构建源码包，而源码包
-  需要 `orig.tar`，CI 里没有。需要签名的包时在本地 `debuild`。
+- 发布走 `debuild -us -uc -b`，不做 GPG 签名（CI 没有密钥）。`debian/source/format`
+  是 `3.0 (native)`，版本号直接取 `debian/changelog`（当前 `0.1.0`，不带 Debian
+  修订号）；`-b` 只是为了跳过源码包、只出安装包。

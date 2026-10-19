@@ -70,9 +70,8 @@ jobs:
             "
 
       # 关于上面那个 -b：
-      #   debian/source/format 是 3.0 (quilt)，不带 -b 时 debuild 会先构建
-      #   源码包，而源码包需要 ../clash-qt_<版本>.orig.tar.*；CI 里没有，必然
-      #   失败。这里只出二进制包，与「发布安装包」的目的也一致。
+      #   debian/source/format 是 3.0 (native)，不带 -b 也能构建；这里加 -b
+      #   只是跳过源码包，CI 只需要安装包。
       #
       # 关于 parallel=N：
       #   dh_auto_build 只认 DEB_BUILD_OPTIONS 里的 parallel；debuild 不带 -j

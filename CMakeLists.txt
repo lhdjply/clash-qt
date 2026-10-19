@@ -83,6 +83,9 @@ endif()
 set(CLASHQT_THIRD_PARTY "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 set(CLASHQT_YAML_CPP_DIR "${CLASHQT_THIRD_PARTY}/yaml-cpp")
 
+# 不限定版本：发行版提供的 0.7 与内置子模块的 0.9 都直接用。
+# 两者只有 CMake 目标名不同（见各分支里的 TARGET 判断），代码侧用到的
+# API 在 0.7 起就稳定。
 find_package(yaml-cpp QUIET)
 
 add_library(clashqt_thirdparty INTERFACE)
@@ -90,7 +93,18 @@ target_include_directories(clashqt_thirdparty INTERFACE "${CLASHQT_THIRD_PARTY}"
 
 if(yaml-cpp_FOUND)
     message(STATUS "yaml-cpp：使用系统安装的版本 (${yaml-cpp_VERSION})")
-    target_link_libraries(clashqt_thirdparty INTERFACE yaml-cpp::yaml-cpp)
+
+    # 目标名随版本变化：0.8+ 导出带命名空间的 yaml-cpp::yaml-cpp，
+    # 0.7 及更早的发行版包只导出 yaml-cpp。写死前者会让 0.7 在
+    # Generate 阶段报 "target yaml-cpp::yaml-cpp not found"。
+    if(TARGET yaml-cpp::yaml-cpp)
+        target_link_libraries(clashqt_thirdparty INTERFACE yaml-cpp::yaml-cpp)
+    elseif(TARGET yaml-cpp)
+        target_link_libraries(clashqt_thirdparty INTERFACE yaml-cpp)
+    else()
+        message(FATAL_ERROR
+            "已找到 yaml-cpp（${yaml-cpp_VERSION}），但没有可链接的 CMake 目标")
+    endif()
 elseif(EXISTS "${CLASHQT_YAML_CPP_DIR}/CMakeLists.txt")
     message(STATUS "yaml-cpp：使用内置子模块 third_party/yaml-cpp")
 
@@ -102,6 +116,7 @@ elseif(EXISTS "${CLASHQT_YAML_CPP_DIR}/CMakeLists.txt")
     set(YAML_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     add_subdirectory(third_party/yaml-cpp EXCLUDE_FROM_ALL)
 
+    # 内置子模块固定是 0.9，导出带命名空间的目标
     target_link_libraries(clashqt_thirdparty INTERFACE yaml-cpp::yaml-cpp)
 else()
     # 子模块目录存在但为空，通常是克隆时没有加 --recursive
@@ -256,8 +271,10 @@ target_link_libraries(clashqt_core
     PUBLIC
         Qt6::Core
         Qt6::Network
-        # yaml-cpp 在 Yaml.cpp 中被 include，头文件搜索路径需对翻译单元可见
-        yaml-cpp::yaml-cpp
+        # yaml-cpp 的具体目标由 clashqt_thirdparty 按版本选择（系统 0.7 / 0.8
+        # 或内置子模块）。这里不要再写死 yaml-cpp::yaml-cpp：带 0.7 的系统
+        # 上该目标不存在，Generate 阶段会直接失败。
+        clashqt_thirdparty
         # 手工 TLS 1.3（REALITY）使用 OpenSSL EVP 接口
         OpenSSL::SSL
         OpenSSL::Crypto

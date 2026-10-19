@@ -1,4 +1,4 @@
-clash-qt (0.1.0-1) unstable; urgency=medium
+clash-qt (0.1.0) unstable; urgency=medium
 
   * Initial Debian packaging.
   * Ships the GUI client, the setuid TUN helper (clash-qt-tun), a desktop
