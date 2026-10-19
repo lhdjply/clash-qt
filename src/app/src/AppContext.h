@@ -109,6 +109,28 @@ public:
     bool addYamlOverride(const QString &name, const QString &yaml, bool global,
                          QString *error = nullptr);
 
+    // ---- 自定义规则覆写（按订阅保存）--------------------------------------
+    // 写在 <数据目录>/rules/<订阅 id>.yaml，字段与 Factory::applyRuleOverride
+    // 的读取约定一致：
+    //   prepend  自定义规则（插到订阅规则最前，优先生效）
+    //   append   追加到规则列表末尾（注意：若订阅末尾是 MATCH，追加项不会生效）
+    //   delete   按文本精确删除订阅里的同名规则
+    //   disabled 被用户临时停用的自定义规则：仍保留在 prepend 里（不丢内容），
+    //            但应用时跳过，重新启用只需从本列表移除
+    struct RuleOverride {
+        QStringList prepend;
+        QStringList append;
+        QStringList remove;
+        QStringList disabled;
+    };
+
+    // 读取当前订阅的规则覆写（无文件时返回空）
+    RuleOverride ruleOverride() const;
+    // 保存并热重载；失败时 error 带原因
+    bool saveRuleOverride(const RuleOverride &value, QString *error = nullptr);
+    // 当前订阅名称（规则覆写按订阅存储，界面需要标明作用于哪份订阅）
+    QString currentProfileName() const;
+
     // 便捷：内核统计信息（供状态栏）
     core::RawConfig runtimeConfig() const;
 

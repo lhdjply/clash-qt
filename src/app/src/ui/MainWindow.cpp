@@ -9,6 +9,7 @@
 #include "ui/UiFactory.h"
 #include "ui/pages/ConnectionsPage.h"
 #include "ui/pages/LogsPage.h"
+#include "ui/pages/OverridePage.h"
 #include "ui/pages/ProfilesPage.h"
 #include "ui/pages/ProxiesPage.h"
 #include "ui/pages/RulesPage.h"
@@ -289,6 +290,7 @@ QStringList MainWindow::registerPages()
     add(QStringLiteral("订阅"),     new ProfilesPage(m_context, this));
     add(QStringLiteral("连接"),     new ConnectionsPage(m_context, this));
     add(QStringLiteral("规则"),     new RulesPage(m_context, this));
+    add(QStringLiteral("覆写"),     new OverridePage(m_context, this));
     add(QStringLiteral("日志"),     new LogsPage(m_context, this));
     add(QStringLiteral("流量"),     new TrafficPage(m_context, this));
     add(QStringLiteral("设置"),     new SettingsPage(m_context, this));

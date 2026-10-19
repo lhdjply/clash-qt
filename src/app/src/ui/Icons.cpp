@@ -102,8 +102,8 @@ const TitleIcon kCardTitles[] = {
 
 const TitleIcon kNavTitles[] = {
     {"代理", "proxy"},   {"订阅", "profiles"}, {"连接", "connections"},
-    {"规则", "rules"},   {"日志", "logs"},     {"流量", "traffic"},
-    {"设置", "settings"},
+    {"规则", "rules"},   {"覆写", "code"},     {"日志", "logs"},
+    {"流量", "traffic"}, {"设置", "settings"},
 };
 
 QString lookup(const TitleIcon *table, size_t count, const QString &title)

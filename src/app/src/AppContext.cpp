@@ -17,6 +17,8 @@
 #include "utils/Paths.h"
 #include "utils/SafeFile.h"
 
+#include "common/Yaml.h"
+
 #include <QDateTime>
 #include <QEventLoop>
 #include <QFile>
@@ -949,6 +951,149 @@ bool AppContext::addYamlOverride(const QString &name, const QString &yaml, bool 
 
     emit toast(QStringLiteral("info"), QStringLiteral("已添加覆写：%1").arg(item.name));
     return reloadKernel(error);
+}
+
+// ---------------------------------------------------------------------------
+//  自定义规则覆写
+//
+//  为什么单独做一层而不是让用户直接改 running config：订阅每次更新都会
+//  重写 work/config.yaml，手工改的内容必然丢失。规则覆写按订阅 id 存在
+//  rules/<id>.yaml，由 Factory 在每次生成运行配置时重新叠加，订阅更新后
+//  依然生效。
+//
+//  注意 append 的语义：它是「追加到规则列表末尾」。订阅通常以 MATCH 收尾，
+//  追加项会落在 MATCH 之后从而永不匹配 —— 这一点在界面上要明确提示，
+//  引导用户优先用 prepend。
+// ---------------------------------------------------------------------------
+
+AppContext::RuleOverride AppContext::ruleOverride() const
+{
+    RuleOverride result;
+    const QString profileId = m_profileConfig ? m_profileConfig->current() : QString();
+    if (profileId.isEmpty()) return result;
+
+    bool          ok = false;
+    const QString content = safefile::readText(paths::rulePath(profileId), &ok);
+    if (!ok || content.trimmed().isEmpty()) return result;
+
+    QString    parseError;
+    const auto parsed = core::Yaml::parse(content, &parseError);
+    if (!parsed || !parsed->isObject()) {
+        AppLogger::instance().warn(
+            QStringLiteral("规则覆写文件解析失败，已按空处理：%1").arg(parseError));
+        return result;
+    }
+
+    const QJsonObject root = parsed->toObject();
+    const auto        readList = [&root](const QString &key) {
+        QStringList list;
+        for (const QJsonValue &value : root.value(key).toArray()) {
+            if (value.isString()) list << value.toString();
+        }
+        return list;
+    };
+
+    result.prepend = readList(QStringLiteral("prepend"));
+    result.append  = readList(QStringLiteral("append"));
+    result.remove  = readList(QStringLiteral("delete"));
+    result.disabled = readList(QStringLiteral("disabled"));
+    return result;
+}
+
+bool AppContext::saveRuleOverride(const RuleOverride &value, QString *error)
+{
+    const QString profileId = m_profileConfig ? m_profileConfig->current() : QString();
+    if (profileId.isEmpty()) {
+        if (error) *error = QStringLiteral("尚未选择订阅，无法保存自定义规则");
+        return false;
+    }
+
+    // 逐条体检：规则是「A,B,C」形式的单行文本，空行与换行都会让内核解析
+    // 出半截规则；这里拦下来并指出第几条，避免用户把错误带进运行配置。
+    const auto validate = [error](const QStringList &rules, const QString &label) {
+        for (int i = 0; i < rules.size(); ++i) {
+            const QString rule = rules.at(i).trimmed();
+            if (rule.isEmpty()) continue;
+            if (rule.contains(QLatin1Char('\n'))) {
+                if (error) {
+                    *error = QStringLiteral("%1 第 %2 条包含换行（每条规则必须写在一行内）")
+                                 .arg(label)
+                                 .arg(i + 1);
+                }
+                return false;
+            }
+            if (rule.count(QLatin1Char(',')) < 1) {
+                if (error) {
+                    *error = QStringLiteral("%1 第 %2 条不是合法规则（至少需要「类型,目标」）：%3")
+                                 .arg(label)
+                                 .arg(i + 1)
+                                 .arg(rule);
+                }
+                return false;
+            }
+        }
+        return true;
+    };
+    if (!validate(value.prepend, QStringLiteral("自定义规则"))
+        || !validate(value.append, QStringLiteral("兜底规则"))
+        || !validate(value.remove, QStringLiteral("删除规则"))) {
+        return false;
+    }
+
+    const auto clean = [](const QStringList &rules) {
+        QStringList cleaned;
+        for (const QString &rule : rules) {
+            const QString trimmed = rule.trimmed();
+            if (!trimmed.isEmpty()) cleaned << trimmed;
+        }
+        return cleaned;
+    };
+
+    QJsonObject root;
+    if (const QStringList list = clean(value.prepend); !list.isEmpty()) {
+        root.insert(QStringLiteral("prepend"), QJsonArray::fromStringList(list));
+    }
+    if (const QStringList list = clean(value.append); !list.isEmpty()) {
+        root.insert(QStringLiteral("append"), QJsonArray::fromStringList(list));
+    }
+    if (const QStringList list = clean(value.remove); !list.isEmpty()) {
+        root.insert(QStringLiteral("delete"), QJsonArray::fromStringList(list));
+    }
+    // 停用列表只对 prepend 有意义：规则本体仍在 prepend 里，应用时按它跳过
+    if (const QStringList list = clean(value.disabled); !list.isEmpty()) {
+        root.insert(QStringLiteral("disabled"), QJsonArray::fromStringList(list));
+    }
+
+    // 全空时写一个空映射：等价于「没有规则覆写」，同时保留文件以便用户
+    // 继续编辑（不必区分「文件不存在」和「内容为空」两种状态）
+    const QString content = core::Yaml::stringify(QJsonValue(root));
+    QString       writeError;
+    if (!safefile::writeAtomic(paths::rulePath(profileId), content, &writeError)) {
+        if (error) *error = QStringLiteral("自定义规则写入失败：%1").arg(writeError);
+        return false;
+    }
+
+    AppLogger::instance().info(
+        QStringLiteral("自定义规则已保存（订阅 %1）：共 %2 条，其中停用 %3 条，"
+                       "兜底 %4 条 / 删除 %5 条")
+            .arg(profileId)
+            .arg(value.prepend.size())
+            .arg(value.disabled.size())
+            .arg(value.append.size())
+            .arg(value.remove.size()));
+
+    if (!reloadKernel(error)) return false;
+
+    emit toast(QStringLiteral("info"), QStringLiteral("自定义规则已生效"));
+    return true;
+}
+
+QString AppContext::currentProfileName() const
+{
+    if (!m_profileConfig) return QString();
+    const QString id = m_profileConfig->current();
+    if (id.isEmpty()) return QString();
+    return m_profileConfig->item(id).name;
 }
 
 core::RawConfig AppContext::runtimeConfig() const { return m_factory->runtimeConfig(); }

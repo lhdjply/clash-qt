@@ -308,6 +308,7 @@ set(APP_SOURCES
     src/app/src/ui/pages/ConnectionsPage.cpp
     src/app/src/ui/pages/RulesPage.cpp
     src/app/src/ui/pages/LogsPage.cpp
+    src/app/src/ui/pages/OverridePage.cpp
     src/app/src/ui/pages/TrafficPage.cpp
     src/app/src/ui/pages/SettingsPage.cpp
 )
@@ -340,6 +341,7 @@ set(APP_HEADERS
     src/app/src/ui/pages/ConnectionsPage.h
     src/app/src/ui/pages/RulesPage.h
     src/app/src/ui/pages/LogsPage.h
+    src/app/src/ui/pages/OverridePage.h
     src/app/src/ui/pages/TrafficPage.h
     src/app/src/ui/pages/SettingsPage.h
 )

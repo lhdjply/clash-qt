@@ -177,15 +177,28 @@ void Factory::applyRuleOverride(core::RawConfig *config, const QString &profileI
         return list;
     };
 
+    // disabled：被用户在「覆写」页临时停用的自定义规则。
+    // 规则本体仍保留在 prepend/append 里（不丢内容），这里只负责应用时跳过。
+    const QStringList disabledList = readList(QStringLiteral("disabled"));
+    const QSet<QString> disabledSet(disabledList.begin(), disabledList.end());
+    const auto filterDisabled = [&disabledSet](const QStringList &source) {
+        if (disabledSet.isEmpty()) return source;
+        QStringList kept;
+        for (const QString &rule : source) {
+            if (!disabledSet.contains(rule)) kept << rule;
+        }
+        return kept;
+    };
+
     // prepend：支持偏移插入，插到列表前部
-    const QStringList prependList = readList(QStringLiteral("prepend"));
+    const QStringList prependList = filterDisabled(readList(QStringLiteral("prepend")));
     if (!prependList.isEmpty()) {
         const RuleInsertResult result = processRulesWithOffset(prependList, current, false);
         current = result.normal + result.inserted;
     }
 
     // append：插到列表后部
-    const QStringList appendList = readList(QStringLiteral("append"));
+    const QStringList appendList = filterDisabled(readList(QStringLiteral("append")));
     if (!appendList.isEmpty()) {
         const RuleInsertResult result = processRulesWithOffset(appendList, current, true);
         current = result.inserted + result.normal;
