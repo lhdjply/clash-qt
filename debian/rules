@@ -1,0 +1,36 @@
+#!/usr/bin/make -f
+
+# ---------------------------------------------------------------------------
+#  Debian 打包规则
+#
+#  构建目录固定为 build/（与开发时一致），CMake 参数全部在这里显式给出，
+#  不依赖环境变量或调用者的 shell。
+#
+#  不做的事：
+#    * 不跑单元测试（-DCLASHQT_BUILD_TESTS=OFF）—— 测试依赖 Qt6::Test，
+#      与安装内容无关，交给 CI 的 ctest 跑
+#    * 不用 ccache —— 打包环境应可复现，缓存会引入不确定性
+# ---------------------------------------------------------------------------
+
+%:
+	dh $@ --buildsystem=cmake --builddirectory=build
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-G Ninja \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCLASHQT_BUILD_TESTS=OFF \
+		-DCLASHQT_USE_CCACHE=OFF
+
+# clash-qt-tun 要建 TUN、配地址，必须有 CAP_NET_ADMIN，因此保留 setuid 位。
+# dh_fixperms 默认会把所有文件收成 0644，这里单独补回 4755。
+#
+# 这里**不 chown**：debhelper 在 Rules-Requires-Root: no 下用
+# `dpkg-deb --root-owner-group` 打包，包内 owner 一律记为 root:root；
+# 若显式 chown root:root，普通用户构建（没有 fakeroot）时会直接失败。
+#
+# 提权面被刻意压到最小：这个辅助程序不链接 Qt，只做「建 TUN + 配地址 +
+# 通过 SCM_RIGHTS 传 fd」，主程序始终以普通用户身份运行。
+override_dh_fixperms:
+	dh_fixperms
+	chmod 4755 $(CURDIR)/debian/clash-qt/usr/bin/clash-qt-tun

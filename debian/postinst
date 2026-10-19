@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+# 升级或重装后确保辅助程序仍带 setuid 位。
+#
+# 包内本身已经是 4755 root:root（见 debian/rules 的 override_dh_fixperms），
+# 这里只做兜底：某些打包/安装路径（strip、手动 rsync、非 fakeroot 构建）
+# 会把 setuid 位丢掉，而丢了之后首次开启 TUN 会退回到 pkexec 授权流程。
+if [ -f /usr/bin/clash-qt-tun ]; then
+    chown root:root /usr/bin/clash-qt-tun
+    chmod 4755 /usr/bin/clash-qt-tun
+fi
+
+#DEBHELPER#
+
+exit 0

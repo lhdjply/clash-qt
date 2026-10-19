@@ -27,6 +27,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# 安装路径（CMAKE_INSTALL_BINDIR / DATADIR 等），供 `cmake --install`
+# 与 Debian 打包共用；默认即 usr/bin、usr/share
+include(GNUInstallDirs)
+
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
@@ -397,6 +401,30 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources")
         CLASHQT_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
 endif()
 
+# ---------------------------------------------------------------------------
+# 安装规则
+#
+# `cmake --install` 与 Debian 打包（debian/rules 走 dh_auto_configure）共用
+# 这一段，不另外维护 debian/install 清单，避免两处路径不一致。
+#
+# 注意：**不在这里设置 setuid 位**。普通安装（cmake --install 到用户目录）
+# 不应该带 setuid；Debian 包由 debian/rules 的 override_dh_fixperms 处理，
+# 运行期权限由应用自己的 pkexec 授权流程兜底（见 TunController）。
+# ---------------------------------------------------------------------------
+install(TARGETS clash-qt
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+)
+
+# 桌面入口与图标：使用 hicolor 主题的 scalable 目录，图标文件名必须与
+# desktop 文件里的 Icon= 一致（源文件叫 app.svg，安装时改名）
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/clash-qt.desktop"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
+)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/app.svg"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
+    RENAME clash-qt.svg
+)
+
 endif() # CLASHQT_BUILD_APP
 
 # ---------------------------------------------------------------------------
@@ -419,6 +447,12 @@ if(UNIX AND NOT APPLE AND CLASHQT_BUILD_APP)
 
     set_target_properties(clash-qt-tun PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+
+    # 与主程序同目录：TunController 按 applicationDirPath()/clash-qt-tun 查找，
+    # 分开放会导致打包后找不到辅助程序
+    install(TARGETS clash-qt-tun
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
 
     message(STATUS "TUN helper      : build/bin/clash-qt-tun（运行时用 pkexec 授权）")

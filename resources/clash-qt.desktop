@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Clash Qt
+GenericName=Proxy Client
+GenericName[zh_CN]=代理客户端
+Comment=Rule-based proxy client with a built-in kernel
+Comment[zh_CN]=内置内核的规则代理客户端，支持 TUN 透明代理
+Exec=clash-qt
+Icon=clash-qt
+Terminal=false
+Categories=Network;
+Keywords=proxy;clash;vpn;tun;rule;
+Keywords[zh_CN]=代理;规则;透明代理;
+StartupNotify=true
+StartupWMClass=clash-qt

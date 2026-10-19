@@ -1,0 +1,33 @@
+Source: clash-qt
+Section: net
+Priority: optional
+Maintainer: Clash Qt Maintainers <lhdjply@users.noreply.github.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake (>= 3.21),
+ ninja-build,
+ qt6-base-dev,
+ qt6-charts-dev,
+ qt6-svg-dev,
+ libssl-dev,
+ libyaml-cpp-dev,
+Standards-Version: 4.7.0
+Homepage: https://github.com/lhdjply/clash-qt
+Rules-Requires-Root: no
+
+Package: clash-qt
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ qt6-qpa-plugins,
+Recommends:
+ pkexec | policykit-1,
+Description: rule-based proxy client with a built-in kernel
+ Clash Qt is a Qt6 desktop client with its own C++ proxy kernel compiled
+ into the process (no external core binary).
+ .
+ It supports rule-based routing (domain / IP-CIDR / GEOSITE / RULE-SET),
+ VLESS (including REALITY), Hysteria2, HTTP and SOCKS5 inbounds, a fake-IP
+ DNS server, connection tracking, and a TUN mode for transparent proxying
+ of applications that ignore the system proxy settings.

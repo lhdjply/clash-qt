@@ -1,0 +1,40 @@
+clash-qt for Debian
+===================
+
+TUN 模式与 setuid 辅助程序
+--------------------------
+
+包内安装了两个可执行文件：
+
+  /usr/bin/clash-qt        主程序（GUI + 内置内核），以普通用户身份运行
+  /usr/bin/clash-qt-tun    辅助程序，权限 4755 root:root
+
+辅助程序只做三件事：创建 TUN 设备、配置地址与 MTU、通过 SCM_RIGHTS 把
+文件描述符交回主程序。它不链接 Qt，也不接受任意命令，提权面被刻意压到
+最小。主程序本身从不以 root 运行。
+
+如果不希望保留 setuid 位，可以执行：
+
+    sudo chmod 0755 /usr/bin/clash-qt-tun
+
+之后首次开启 TUN 时，程序会调用 pkexec 请求一次系统授权（chown root:root
+与 chmod +sx），授权完成后功能与默认状态一致。此设置会在升级后被
+postinst 恢复为 4755。
+
+配置文件位置
+------------
+
+  ~/.config/clash-qt/          应用配置、订阅、规则覆写
+  ~/.config/clash-qt/work/     生成的内核运行配置（可随时重建）
+
+卸载包不会删除上述目录，以免丢失订阅与自定义规则；需要彻底清理时手动
+删除即可。
+
+系统代理
+--------
+
+系统代理通过 gsettings（GNOME/Cinnamon 系）或 kwriteconfig（KDE 系）写入，
+不依赖 polkit，也不需要额外授权。TUN 模式会修改默认路由与 /etc/resolv.conf，
+退出时会还原（备份文件位于 /run/clash-qt-resolv.conf.bak）。
+
+ -- Clash Qt Maintainers <lhdjply@users.noreply.github.com>

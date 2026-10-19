@@ -12,3 +12,15 @@ compile_commands.json
 
 # 运行时数据（首次启动会在 data/ 下生成）
 /data/
+
+# Debian 打包产物（debhelper 在 debian/ 下生成中间目录，源目录只保留配置）
+/debian/files
+/debian/*.debhelper
+/debian/*.debhelper.log
+/debian/*.substvars
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/clash-qt/
+/*.deb
+/*.buildinfo
+/*.changes

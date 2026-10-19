@@ -1,0 +1,7 @@
+# 建 TUN 需要 CAP_NET_ADMIN：提权动作被隔离在一个不链接 Qt 的极小程序里，
+# 主程序始终以普通用户运行。详见 debian/README.Debian。
+setuid-binary usr/bin/clash-qt-tun 4755 root/root
+
+# 帮助文档以 README.md / debian/README.Debian 提供，未单独维护 man page。
+no-manual-page usr/bin/clash-qt
+no-manual-page usr/bin/clash-qt-tun

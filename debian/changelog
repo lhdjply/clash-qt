@@ -1,0 +1,7 @@
+clash-qt (0.1.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+  * Ships the GUI client, the setuid TUN helper (clash-qt-tun), a desktop
+    entry and a scalable application icon.
+
+ -- Clash Qt Maintainers <lhdjply@users.noreply.github.com>  Mon, 19 Oct 2026 09:20:00 +0800
