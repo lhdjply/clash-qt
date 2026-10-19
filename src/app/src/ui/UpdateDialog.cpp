@@ -9,6 +9,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QTextBrowser>
+#include <QTextDocument>
 #include <QVBoxLayout>
 
 namespace clashqt {
@@ -34,7 +35,7 @@ UpdateDialog::UpdateDialog(const ReleaseInfo &release, QWidget *parent) : QDialo
 
     // 正文：Release 的 body 就是作者写的更新日志。标题在部分发布里为空、也有
     // 与版本号重复的，只在非空且未出现在正文开头时补一行二级标题。
-    QString markdown = release.notes.trimmed();
+    QString notesText = release.notes.trimmed();
     // 标题常常就是版本号本身（GitHub 发布页默认这么填），而版本号已经在
     // 对话框标题里了，重复一遍只会多出一行无意义的「## 0.2.0」。
     const QString title = release.title.trimmed();
@@ -42,19 +43,45 @@ UpdateDialog::UpdateDialog(const ReleaseInfo &release, QWidget *parent) : QDialo
         QRegularExpression(QStringLiteral("^[vV]?\\d+(\\.\\d+)*([-+].*)?$"))
             .match(title)
             .hasMatch();
-    if (!title.isEmpty() && !titleIsVersion && !markdown.startsWith(title)) {
-        markdown = QStringLiteral("## %1\n\n%2").arg(title, markdown);
+    // HTML 正文（Atom 备用源）不能拼 Markdown 标题，否则会原样显示「## …」
+    if (!release.notesIsHtml && !title.isEmpty() && !titleIsVersion
+        && !notesText.startsWith(title)) {
+        notesText = QStringLiteral("## %1\n\n%2").arg(title, notesText);
     }
-    if (markdown.isEmpty()) {
-        markdown = QStringLiteral("（这次发布没有填写更新说明，可直接到发布页查看。）");
+    if (notesText.isEmpty()) {
+        notesText = QStringLiteral("（这次发布没有填写更新说明，可直接到发布页查看。）");
     }
 
     auto *notes = new QTextBrowser(this);
     notes->setObjectName(QStringLiteral("releaseNotes"));
     notes->setOpenExternalLinks(false); // 日志里的链接不自动打开，避免误点
-    notes->setMarkdown(markdown);
 
     const ui::Theme &theme = ui::theme();
+
+    // Release 正文有两种来源：GitHub API 给 Markdown，Atom 备用源给 HTML。
+    // 必须按来源选择解析器——把 HTML 交给 setMarkdown，块级标签会被当作普通
+    // 文本，标题和列表全部丢失，整篇日志挤成一行。
+    if (release.notesIsHtml) {
+        // 标题/代码/链接的颜色要显式写进文档：控件样式表里的 color 只作用于
+        // 默认正文色，不覆盖 HTML 自带格式，深色主题下会退回默认黑字。
+        notes->document()->setDefaultStyleSheet(
+            QStringLiteral("body { color: %1; }"
+                           "h1, h2, h3, h4 { color: %1; margin-top: 12px; margin-bottom: 6px; }"
+                           "h1 { font-size: 20px; }"
+                           "h2 { font-size: 17px; }"
+                           "h3 { font-size: 15px; }"
+                           "h4 { font-size: 14px; }"
+                           "p { margin-top: 4px; margin-bottom: 8px; }"
+                           "ul, ol { margin-top: 4px; margin-bottom: 8px; margin-left: 18px; }"
+                           "li { margin-bottom: 4px; }"
+                           "pre, code { background-color: %2; }"
+                           "a { color: %3; }")
+                .arg(theme.text.name(), theme.button.name(), theme.accent.name()));
+        notes->setHtml(notesText);
+    } else {
+        notes->setMarkdown(notesText);
+    }
+
     notes->setStyleSheet(
         QStringLiteral("QTextBrowser { background:%1; color:%2;"
                        "border:1px solid %3; border-radius:8px; padding:10px; }")
