@@ -136,11 +136,62 @@ AppContext::AppContext(QObject *parent)
 
 AppContext::~AppContext()
 {
+    // 正常退出时 aboutToQuit 已经调用过；这里是兜底（例如某个分支直接
+    // 析构了 context 而没有走事件循环的退出流程）。shutdown() 幂等。
+    shutdown();
+}
+
+void AppContext::shutdown()
+{
+    if (m_shutdownDone) return;
+    m_shutdownDone = true;
+
+    // 顺序不可颠倒：先撤系统代理，再停内核。反过来的话，从停内核到进程退出
+    // 这段时间桌面仍指向一个已经没人监听的本机端口，任何联网操作都会失败。
+    disableSysProxyOnExit();
+
     if (m_hub) m_hub->stop();
 
     // 退出前务必收起 TUN：否则会留下一条指到 TUN 的默认路由（等于断网）
     stopTunInternal();
+}
 
+void AppContext::disableSysProxyOnExit()
+{
+    if (!m_sysProxy || !m_controledConfig || !m_appConfig) return;
+    if (m_sysProxy->backend() == SysProxy::Backend::None) return;
+
+    // 本进程没成功起过内核，桌面上的代理设置就不可能是我们写的
+    // （可能属于别的代理工具，或者是用户自己配的企业代理），一律不动。
+    if (!m_kernelStarted) return;
+
+    // 只认 http / https / socks 全部指向本机端口的情况。候选端口取当前配置
+    // 的三个入站端口 —— 启用后改过端口时，桌面上可能还留着旧值。
+    const int candidates[] = {m_controledConfig->mixedPort(),
+                              m_controledConfig->socksPort(),
+                              m_controledConfig->httpPort()};
+    bool ours = false;
+    for (int port : candidates) {
+        if (port > 0 && m_sysProxy->targets(QStringLiteral("127.0.0.1"), port)) {
+            ours = true;
+            break;
+        }
+    }
+    if (!ours) return;
+
+    QString error;
+    if (!m_sysProxy->disable(&error)) {
+        AppLogger::instance().warn(
+            QStringLiteral("退出时关闭系统代理失败：%1（桌面仍指向本机端口）").arg(error));
+        return;
+    }
+
+    AppLogger::instance().info(
+        QStringLiteral("退出前已关闭系统代理：避免桌面继续指向已停止的本机端口"));
+    if (m_appConfig->sysProxyEnabled()) {
+        m_appConfig->setSysProxyEnabled(false);
+        m_appConfig->save();
+    }
 }
 
 bool AppContext::initialize(QString *error)
@@ -214,6 +265,8 @@ bool AppContext::startKernel(QString *error)
         return false;
     }
 
+    // 退出时据此判断「桌面上的 127.0.0.1:<端口> 是不是我们写的」
+    m_kernelStarted = true;
     emit kernelRunningChanged(true);
     return true;
 }

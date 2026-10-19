@@ -106,6 +106,12 @@ int main(int argc, char *argv[])
     std::signal(SIGINT, handleSignal);
     std::signal(SIGTERM, handleSignal);
 
+    // 退出收尾放在 aboutToQuit：此时事件循环还在，gsettings / kwriteconfig
+    // 这些子进程能正常同步执行（放到析构里就有 QApplication 已在拆的风险）。
+    // 关窗、托盘「退出」、SIGTERM 最终都会走到这里。
+    QObject::connect(&app, &QApplication::aboutToQuit, context,
+                     &clashqt::AppContext::shutdown);
+
     // 内核常驻运行，且与窗口无关：静默启动（--silent / 开机自启动）同样需要
     // 代理可用，因此在创建窗口之前就拉起，避免「没有窗口就没有代理」。
     {

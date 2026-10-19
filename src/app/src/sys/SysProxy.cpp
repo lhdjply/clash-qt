@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QStandardPaths>
 
 namespace clashqt {
@@ -22,6 +23,33 @@ QString kdeConfigPath()
 {
     const QString configHome = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
     return configHome + QStringLiteral("/kioslaverc");
+}
+
+// gsettings get 返回的是 GVariant 字面量（字符串带单引号），比较前先剥掉
+QString unquote(const QString &value)
+{
+    QString text = value.trimmed();
+    if (text.size() >= 2 && text.startsWith(QLatin1Char('\'')) && text.endsWith(QLatin1Char('\''))) {
+        text = text.mid(1, text.size() - 2);
+    }
+    return text;
+}
+
+// KDE 的 kioslaverc 里代理写成 "http://127.0.0.1:7890"（我们写的）或
+// "http://127.0.0.1 7890"（KDE 自身格式），两种都要认
+bool parseKdeProxy(const QString &value, QString *host, int *port)
+{
+    const int schemeEnd = value.indexOf(QLatin1String("://"));
+    if (schemeEnd < 0) return false;
+
+    QString rest = value.mid(schemeEnd + 3).trimmed();
+    const int separator = rest.indexOf(QRegularExpression(QStringLiteral("[:\\s]")));
+    if (separator < 0) return false;
+
+    *host = rest.left(separator).trimmed();
+    bool ok = false;
+    *port = rest.mid(separator + 1).trimmed().toInt(&ok);
+    return ok && !host->isEmpty();
 }
 
 } // namespace
@@ -163,6 +191,30 @@ bool SysProxy::disableGSettings(QString *error)
                error);
 }
 
+// 逐个协议核对 host/port：我们启用时三项都写成同一个 127.0.0.1:port，
+// 所以三项全部吻合才认定「这个手动代理是本程序写的」。
+bool SysProxy::gsettingsTargets(const QString &host, int port) const
+{
+    const QString schema = QStringLiteral("org.gnome.system.proxy");
+    const QString g      = QStringLiteral("gsettings");
+
+    const QString mode = runCapture(g, {QStringLiteral("get"), schema, QStringLiteral("mode")});
+    if (!mode.contains(QLatin1String("manual"))) return false;
+
+    const QStringList groups = {QStringLiteral("http"), QStringLiteral("https"),
+                                QStringLiteral("socks")};
+    for (const QString &group : groups) {
+        const QString node = schema + QLatin1Char('.') + group;
+        const QString currentHost =
+            unquote(runCapture(g, {QStringLiteral("get"), node, QStringLiteral("host")}));
+        const QString currentPort =
+            unquote(runCapture(g, {QStringLiteral("get"), node, QStringLiteral("port")}));
+        if (currentHost.compare(host, Qt::CaseInsensitive) != 0) return false;
+        if (currentPort.toInt() != port) return false;
+    }
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 //  KDE 后端（kioslaverc）
 // ---------------------------------------------------------------------------
@@ -241,9 +293,43 @@ bool SysProxy::disableKde(QString *error)
                error);
 }
 
+bool SysProxy::kdeTargets(const QString &host, int port) const
+{
+    QFile file(kdeConfigPath());
+    if (!file.open(QIODevice::ReadOnly)) return false;
+    const QString content = QString::fromUtf8(file.readAll());
+    if (!content.contains(QLatin1String("ProxyType=1"))) return false;
+
+    const QStringList keys = {QStringLiteral("httpProxy"), QStringLiteral("httpsProxy"),
+                              QStringLiteral("socksProxy")};
+    for (const QString &key : keys) {
+        const QRegularExpression pattern(
+            QStringLiteral("^%1=(.+)$").arg(key), QRegularExpression::MultilineOption);
+        const auto match = pattern.match(content);
+        if (!match.hasMatch()) return false;
+
+        QString currentHost;
+        int     currentPort = 0;
+        if (!parseKdeProxy(match.captured(1).trimmed(), &currentHost, &currentPort)) return false;
+        if (currentHost.compare(host, Qt::CaseInsensitive) != 0) return false;
+        if (currentPort != port) return false;
+    }
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 //  对外接口
 // ---------------------------------------------------------------------------
+
+bool SysProxy::targets(const QString &host, int port) const
+{
+    switch (m_backend) {
+    case Backend::GSettings: return gsettingsTargets(host, port);
+    case Backend::KdeConfig: return kdeTargets(host, port);
+    case Backend::None:      return false;
+    }
+    return false;
+}
 
 bool SysProxy::isEnabled() const
 {

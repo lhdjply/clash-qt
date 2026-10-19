@@ -49,6 +49,11 @@ public:
     // 关闭系统代理并恢复为直连
     bool disable(QString *error = nullptr);
 
+    // 桌面上的手动代理是否正指向 host:port（http / https / socks 三者都指向
+    // 才算）。退出时用它在「这确实是我们写的设置」时才收手，避免误改用户
+    // 自己配置的代理（企业 PAC、局域网代理等）。
+    bool targets(const QString &host, int port) const;
+
     // 检测各后端可用性（构造时自动执行一次）
     void detect();
 
@@ -60,10 +65,12 @@ private:
                          QString *error);
     bool disableGSettings(QString *error);
     bool gsettingsEnabled() const;
+    bool gsettingsTargets(const QString &host, int port) const;
 
     bool enableKde(const QString &host, int port, const QStringList &bypass, QString *error);
     bool disableKde(QString *error);
     bool kdeEnabled() const;
+    bool kdeTargets(const QString &host, int port) const;
 
     // 执行命令并返回是否成功（stderr 写入 error）
     static bool run(const QString &program, const QStringList &arguments, QString *error);

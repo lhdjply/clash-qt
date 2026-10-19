@@ -40,6 +40,13 @@ public:
     // 加载全部配置；返回是否成功（失败时 error 带原因）
     bool initialize(QString *error = nullptr);
 
+    // 退出前收尾（可重复调用）：先把系统代理恢复成直连，再停内核、收 TUN。
+    // 顺序不能反 —— 系统代理指向 127.0.0.1:<mixed-port>，进程一退出这个端口
+    // 就没人监听了，留在桌面上等于把整机网络指向一个死端口。
+    // 由 aboutToQuit 调用（此时事件循环仍在，gsettings 子进程能正常同步执行），
+    // 析构函数里再兜一次。
+    void shutdown();
+
     AppConfig             *appConfig() const { return m_appConfig; }
     ControledKernelConfig *controledConfig() const { return m_controledConfig; }
     ProfileConfig         *profileConfig() const { return m_profileConfig; }
@@ -168,6 +175,13 @@ private:
     // 收集当前配置里代理服务器的 IP，作为 TUN 的旁路路由（防止出站环路）
     QStringList proxyServerIps() const;
     void        stopTunInternal();
+
+    // 退出时撤掉「指向本机端口」的系统代理；不是本程序写的就不动
+    void disableSysProxyOnExit();
+    bool m_shutdownDone  = false;
+    // 本进程是否真的成功启动过内核：只有这种情况，桌面上指向
+    // 127.0.0.1:<端口> 的手动代理才能确定是我们写的
+    bool m_kernelStarted = false;
 };
 
 } // namespace clashqt

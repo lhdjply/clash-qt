@@ -233,6 +233,10 @@ VLESS 系列完全不同的一套协议栈，实现位于 `src/core/src/common/H
 - **流量统计**：系统代理的字节由中继里的钩子累加；TUN 的连接由协议栈自己拨号，
   不经过 `handleStream`，因此由 `TunIpStack` 通过 `setTrafficSink()` 主动上报到
   `Tunnel::addTraffic()`。两条路都汇到同一对原子计数，界面按 1 秒采样算速度。
+- **退出时的系统代理**：程序退出（关窗、托盘退出、SIGTERM）会先把系统代理恢复成
+  直连，再停内核。判断依据是「桌面上的手动代理 http/https/socks 是否全部指向
+  本机入站端口」—— 只有指向自己才动，用户自己的企业代理不会被误改。
+  进程被 `SIGKILL` / 崩溃时来不及收尾，届时桌面上会残留一个指向空端口的代理。
 - **ICMP（ping）**：系统代理模式下 ping 不经过代理（HTTP/SOCKS 没有 ICMP
   语义），能否 ping 通只取决于本机到目标的直连状态；TUN 模式下 ping 域名
   会由协议栈在 fake-ip 上本地应答（RTT 约 0.1ms，**不代表节点质量**），
