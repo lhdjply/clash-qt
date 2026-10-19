@@ -42,7 +42,6 @@ private slots:
     void onItemActivated();
     void onTestCurrent();
     void onTestAll();
-    void onRestoreAuto();
 
 private:
     // 重新填充组下拉框；尽量保持用户当前选择
@@ -69,7 +68,6 @@ private:
     QLabel      *m_summaryLabel = nullptr;
     QPushButton *m_testButton = nullptr;
     QPushButton *m_testAllButton = nullptr;
-    QPushButton *m_autoButton = nullptr;
 
     // 当前展示的组名与成员名，与列表行一一对应
     QString m_currentGroup;

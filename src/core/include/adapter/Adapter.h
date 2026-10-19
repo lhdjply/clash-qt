@@ -147,17 +147,17 @@ public:
 
     DialResult dial(const DialContext &context, int timeoutMs) override;
 
-    // 当前选中的成员名；未选中时返回空
+    // 当前选中的成员名；没有可用成员时返回空。
+    // 选择一旦确定（配置默认值或用户点选）就不会再自行改变：
+    // 本类不按延迟重选，也不在拨号失败时回退到其他成员。
     QString now() const;
     // 用户是否在界面上显式选择过成员。只有显式选择才需要被持久化：
-    // 构造时按配置取的首个成员只是默认展示，不该被当成「用户的选择」写回配置。
+    // 构造时按配置取的首个成员只是默认值，不该被当成「用户的选择」写回配置。
     bool    hasUserSelection() const { return m_userSelected; }
     // 用户显式选定的成员名；未显式选择时返回空
     QString userSelectedMember() const { return m_userSelected ? m_fixed : QString(); }
     // 手动选择成员（Selector 语义）；成员不存在时返回 false
     bool select(const QString &memberName);
-    // 清除手动固定，恢复自动选择（/proxies/{name} 的 DELETE）
-    void unfix();
 
     const ProxyGroupConfig   &config() const { return m_config; }
     const std::vector<AdapterPtr> &members() const { return m_members; }
@@ -166,20 +166,16 @@ public:
 
     QJsonObject status() const override;
 
-    // 按延迟排序并选择（URLTest / Fallback / LoadBalance 的自动策略）
-    void selectByDelay();
-
 private:
-    // 自动选择：URLTest / Fallback 按延迟挑最优，其余取首个成员。
-    // 声明为 const 以便 now() 这类只读查询复用同一逻辑。
-    AdapterPtr autoPick() const;
+    // 配置里的首个可用成员。仅在从未做出任何选择、或原选择已随订阅消失时
+    // 作为兜底，不会因为测速结果或拨号失败而被改写。
+    AdapterPtr defaultMember() const;
 
     ProxyGroupConfig         m_config;
     std::vector<AdapterPtr>  m_members;
-    QString                  m_fixed; // 手动固定选中的成员名
-    // 该固定选择是否来自用户的显式操作（界面点选）。
-    // 构造时按配置取的首个成员只是默认展示，不算用户选择；区分二者的原因：
-    // 拨号失败的回退只应在「自动」状态下记住结果，不能静默改写用户的选择。
+    QString                  m_fixed; // 当前选中的成员名
+    // 该选择是否来自用户的显式操作（界面点选）。用于决定是否写回配置，
+    // 与选择本身是否会被自动改写无关——自动改写逻辑已全部移除。
     bool                     m_userSelected = false;
 };
 

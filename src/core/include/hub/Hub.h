@@ -104,7 +104,6 @@ public:
     QJsonObject proxiesStatus() const;
     // /proxies/{name} 切换选中节点
     bool selectProxy(const QString &group, const QString &proxy, QString *error = nullptr);
-    bool unfixProxy(const QString &group, QString *error = nullptr);
 
     // 导出各代理组的手动选择（组名 -> 成员名），只含用户显式选过的组。
     // 供应用层持久化，使选择能跨「配置重载 / 重启」保留。
@@ -119,10 +118,6 @@ public:
     // 放在界面线程会让整个窗口卡住，因此丢给独立线程，结果用 delayTested 通知。
     // 返回 false 表示节点不存在（参数错误，不会有信号）。
     bool testProxyDelayAsync(const QString &name, const QString &url, int timeoutMs);
-
-    // 一批测速结束后按最新延迟重选各组（仅 URLTest / Fallback，且用户未手动
-    // 固定时）。逐节点测速不会自己触发重选，需要调用方在批量结束时收一次尾。
-    void refreshGroupSelections();
 
     // /rules
     QJsonObject rulesStatus() const;

@@ -13,7 +13,6 @@
 #include <QUdpSocket>
 
 #include <algorithm>
-#include <limits>
 
 namespace core {
 
@@ -568,13 +567,9 @@ QJsonObject UnsupportedAdapter::status() const
 ProxyGroup::ProxyGroup(ProxyGroupConfig config, std::vector<AdapterPtr> members)
     : m_config(std::move(config)), m_members(std::move(members))
 {
-    // 优先采用配置中显式指定的首个成员作为初始展示选择。
-    // 注意：这只是默认值，不代表用户做过选择（m_userSelected 保持 false），
-    // 因此拨号失败时的回退仍然可以记住更合适的成员。
-    if (!m_members.empty()) {
-        m_fixed = m_config.proxies.value(0);
-        if (current() == nullptr) m_fixed.clear();
-    }
+    // 初始选择取配置中显式指定的首个成员（不可用时退回首个可用成员）。
+    // 这只是一次性的默认值：此后选择只由用户点选改变，本类不再自行切换。
+    if (const AdapterPtr member = defaultMember()) m_fixed = member->name();
 }
 
 QStringList ProxyGroup::supportNetworks() const
@@ -590,6 +585,14 @@ QStringList ProxyGroup::supportNetworks() const
     return networks;
 }
 
+AdapterPtr ProxyGroup::defaultMember() const
+{
+    for (const AdapterPtr &member : m_members) {
+        if (member) return member;
+    }
+    return nullptr;
+}
+
 AdapterPtr ProxyGroup::current() const
 {
     if (!m_fixed.isEmpty()) {
@@ -597,16 +600,15 @@ AdapterPtr ProxyGroup::current() const
             if (member && member->name() == m_fixed) return member;
         }
     }
-    return nullptr;
+    // 只有「尚未选择」或「原选择已不存在」才会走到这里：
+    // 给出一个稳定的默认成员，但不会改写 m_fixed。
+    return defaultMember();
 }
 
 QString ProxyGroup::now() const
 {
     const AdapterPtr selected = current();
-    if (selected) return selected->name();
-
-    const AdapterPtr automatic = autoPick();
-    return automatic ? automatic->name() : QString();
+    return selected ? selected->name() : QString();
 }
 
 bool ProxyGroup::select(const QString &memberName)
@@ -614,7 +616,7 @@ bool ProxyGroup::select(const QString &memberName)
     for (const AdapterPtr &member : m_members) {
         if (member && member->name() == memberName) {
             m_fixed        = memberName;
-            m_userSelected = true; // 用户显式选择：此后不再被自动回退改写
+            m_userSelected = true; // 用户显式选择：写回配置，重载后继续使用
             Logger::instance().info(
                 LogCategory::Adapter,
                 QStringLiteral("组 %1 切换到 %2").arg(m_config.name, memberName));
@@ -624,60 +626,9 @@ bool ProxyGroup::select(const QString &memberName)
     return false;
 }
 
-void ProxyGroup::unfix()
-{
-    m_fixed.clear();
-    m_userSelected = false; // 清除固定后回到自动选择
-}
-
-AdapterPtr ProxyGroup::autoPick() const
-{
-    if (m_members.empty()) return nullptr;
-
-    switch (m_config.type) {
-    case GroupType::URLTest:
-    case GroupType::Fallback: {
-        // 选择最近一次测速延迟最低且存活的成员；无测速数据时退回首个成员
-        AdapterPtr best;
-        int        bestDelay = std::numeric_limits<int>::max();
-        for (const AdapterPtr &member : m_members) {
-            if (!member || !member->alive()) continue;
-            const QList<Adapter::DelayRecord> history = member->history();
-            const int delay = history.isEmpty() ? 0 : history.first().delay;
-            if (delay > 0 && delay < bestDelay) {
-                bestDelay = delay;
-                best      = member;
-            }
-        }
-        if (best) return best;
-        break;
-    }
-
-    case GroupType::LoadBalance:
-    case GroupType::Relay:
-    case GroupType::Selector:
-    default:
-        break;
-    }
-    return m_members.front();
-}
-
-void ProxyGroup::selectByDelay()
-{
-    if (m_config.type != GroupType::URLTest && m_config.type != GroupType::Fallback) return;
-
-    // 用户已手动固定成员时，测速只更新延迟数据，不改动选择（「固定优先」语义）。
-    // 否则点一次测速就会把用户的选择冲掉；想回到自动选择用界面上的「恢复自动」。
-    if (m_userSelected) return;
-
-    const AdapterPtr picked = autoPick();
-    if (picked) m_fixed = picked->name();
-}
-
 DialResult ProxyGroup::dial(const DialContext &context, int timeoutMs)
 {
-    AdapterPtr target = current();
-    if (!target) target = autoPick();
+    const AdapterPtr target = current();
 
     if (!target) {
         DialResult result;
@@ -688,30 +639,14 @@ DialResult ProxyGroup::dial(const DialContext &context, int timeoutMs)
     DialResult result = target->dial(context, timeoutMs);
     m_alive = result.ok();
 
-    // URLTest / Fallback：当前成员失败时按顺序回退到下一个成员
-    if (!result.ok() && !result.drop
-        && (m_config.type == GroupType::Fallback || m_config.type == GroupType::URLTest)) {
-        for (const AdapterPtr &member : m_members) {
-            if (!member || member->name() == target->name()) continue;
-            result = member->dial(context, timeoutMs);
-            if (result.ok()) {
-                // 用户手动选定的节点不能因为一次拨号失败就被静默替换掉
-                // （典型表现：选好节点后一开系统代理，选择自己变回列表第一个）。
-                // 因此仅在「自动」状态下记住回退结果，用户固定时只对本次连接生效。
-                if (!m_userSelected) {
-                    m_fixed = member->name();
-                    Logger::instance().info(
-                        LogCategory::Adapter,
-                        QStringLiteral("组 %1 回退到 %2").arg(m_config.name, member->name()));
-                } else {
-                    Logger::instance().info(
-                        LogCategory::Adapter,
-                        QStringLiteral("组 %1 本次连接回退到 %2（手动选择仍为 %3）")
-                            .arg(m_config.name, member->name(), m_fixed));
-                }
-                return result;
-            }
-        }
+    // 只使用当前选中的成员：即使拨号失败也不改选其他成员。
+    // 自动回退会让用户手选的节点被静默换掉（典型表现：选好节点后一开
+    // 系统代理，列表里的选中项自己变了），因此这里只记录失败原因。
+    if (!result.ok()) {
+        Logger::instance().warn(
+            LogCategory::Adapter,
+            QStringLiteral("组 %1 的成员 %2 连接失败：%3")
+                .arg(m_config.name, target->name(), result.error));
     }
     return result;
 }

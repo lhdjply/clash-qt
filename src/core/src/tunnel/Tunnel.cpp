@@ -204,16 +204,7 @@ QStringList Tunnel::expandChains(const AdapterPtr &adapter, int depth) const
     // 若适配器是代理组，继续展开其当前选中的成员
     if (auto group = std::dynamic_pointer_cast<ProxyGroup>(adapter)) {
         const AdapterPtr selected = group->current();
-        if (!selected) {
-            // 未固定时用 autoPick 的结果（通过 now() 的名称再查一次）
-            const std::shared_ptr<TunnelSnapshot> snap = snapshot();
-            if (snap && snap->registry) {
-                const AdapterPtr next = snap->registry->find(group->now());
-                if (next && next != adapter) {
-                    chains << expandChains(next, depth + 1);
-                }
-            }
-        } else if (selected != adapter) {
+        if (selected && selected != adapter) {
             chains << expandChains(selected, depth + 1);
         }
     }

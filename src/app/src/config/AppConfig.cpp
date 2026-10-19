@@ -378,7 +378,7 @@ QJsonObject AppConfig::selectedProxies() const
 
 void AppConfig::setSelectedProxies(const QJsonObject &selections)
 {
-    // 整体替换：取消固定（恢复自动）的组必须从配置里消失，
+    // 整体替换：没有用户显式选择的组必须从配置里消失，
     // 而 patch() 的深合并语义删不掉键。
     m_object.insert(QStringLiteral("selectedProxies"), selections);
     save();

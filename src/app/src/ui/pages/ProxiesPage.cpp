@@ -294,15 +294,11 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
 
     m_testButton = new QPushButton(QStringLiteral("测试本组"), this);
     m_testAllButton = new QPushButton(QStringLiteral("测试全部组"), this);
-    // 清除手动固定、交还给组的自动策略（URLTest/Fallback 按延迟选）
-    m_autoButton = new QPushButton(QStringLiteral("恢复自动"), this);
 
     ui::decorate(m_testButton, QStringLiteral("bolt"));
     ui::decorate(m_testAllButton, QStringLiteral("speed"));
-    ui::decorate(m_autoButton, QStringLiteral("check"));
     toolbar->addWidget(m_testButton);
     toolbar->addWidget(m_testAllButton);
-    toolbar->addWidget(m_autoButton);
 
     root->addLayout(toolbar);
 
@@ -327,7 +323,6 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
                      &ProxiesPage::onItemActivated);
     QObject::connect(m_testButton, &QPushButton::clicked, this, &ProxiesPage::onTestCurrent);
     QObject::connect(m_testAllButton, &QPushButton::clicked, this, &ProxiesPage::onTestAll);
-    QObject::connect(m_autoButton, &QPushButton::clicked, this, &ProxiesPage::onRestoreAuto);
 
     // 内核状态变化时自动刷新（例如切换节点后后端回写）
     QObject::connect(m_context->hub(), &core::Hub::configChanged, this,
@@ -578,16 +573,13 @@ void ProxiesPage::finishTest(const QString &name, int delayMs, const QString &er
     if (m_batchNames.remove(name)) {
         if (delayMs >= 0) ++m_batchOk;
 
-        // 批量任务：中途失败不逐条弹窗（几十个节点会刷屏），只在全部结束时汇总
+        // 批量任务：中途失败不逐条弹窗（几十个节点会刷屏），只在全部结束时汇总。
+        // 批量测速只回填各行的延迟，不改动当前选中的节点，因此不需要重建列表。
         if (m_batchNames.isEmpty()) {
             const int total = m_batchTotal;
             const int ok    = m_batchOk;
             m_batchTotal = 0;
             m_batchOk    = 0;
-
-            // 逐节点测速只写各自的延迟，组不会自动重选；批量结束时统一收尾。
-            // 这一步会发 configChanged，列表会重建一次（滚动位置由 onGroupChanged 保留）
-            m_context->hub()->refreshGroupSelections();
 
             m_context->showToast(
                 QStringLiteral("info"),
@@ -661,25 +653,6 @@ void ProxiesPage::onItemActivated()
 
     m_context->showToast(QStringLiteral("info"),
                           QStringLiteral("%1 已切换到 %2").arg(m_currentGroup, memberName));
-    onGroupChanged(m_groupCombo->currentIndex());
-}
-
-void ProxiesPage::onRestoreAuto()
-{
-    if (m_currentGroup.isEmpty()) return;
-
-    QString error;
-    if (!m_context->hub()->unfixProxy(m_currentGroup, &error)) {
-        m_context->showToast(QStringLiteral("error"),
-                              QStringLiteral("恢复自动选择失败：%1").arg(error));
-        return;
-    }
-
-    // 配置里也要清掉，否则下次重载又把固定选择装回来
-    m_context->saveProxySelections();
-
-    m_context->showToast(QStringLiteral("info"),
-                          QStringLiteral("%1 已恢复自动选择").arg(m_currentGroup));
     onGroupChanged(m_groupCombo->currentIndex());
 }
 

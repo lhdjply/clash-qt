@@ -628,23 +628,6 @@ int Hub::restoreSelectedProxies(const QJsonObject &selections)
     return restored;
 }
 
-bool Hub::unfixProxy(const QString &group, QString *error)
-{
-    const AdapterPtr adapter = m_registry->find(group);
-    if (!adapter) {
-        if (error) *error = QStringLiteral("组 %1 不存在").arg(group);
-        return false;
-    }
-    auto proxyGroup = std::dynamic_pointer_cast<ProxyGroup>(adapter);
-    if (!proxyGroup) {
-        if (error) *error = QStringLiteral("%1 不是代理组").arg(group);
-        return false;
-    }
-    proxyGroup->unfix();
-    emit configChanged();
-    return true;
-}
-
 QJsonObject Hub::testDelay(const QString &name, const QString &url, int timeoutMs)
 {
     QJsonObject result;
@@ -711,21 +694,6 @@ bool Hub::testProxyDelayAsync(const QString &name, const QString &url, int timeo
     return true;
 }
 
-void Hub::refreshGroupSelections()
-{
-    if (!m_registry) return;
-
-    bool any = false;
-    for (const auto &group : m_registry->groups()) {
-        if (!group) continue;
-        group->selectByDelay(); // 内部只对 URLTest / Fallback 且未手动固定的组生效
-        any = true;
-    }
-
-    // 让界面与托盘重新拉取：节点标记（当前节点）会随选择变化
-    if (any) emit configChanged();
-}
-
 QJsonObject Hub::testGroupDelay(const QString &group, const QString &url, int timeoutMs)
 {
     QJsonObject result;
@@ -744,7 +712,7 @@ QJsonObject Hub::testGroupDelay(const QString &group, const QString &url, int ti
             result.insert(member->name(), single.value(QStringLiteral("delay")));
         }
     }
-    proxyGroup->selectByDelay();
+    // 测速只回填各成员的延迟数据，不改动当前选择的成员。
     emit configChanged();
     return result;
 }
