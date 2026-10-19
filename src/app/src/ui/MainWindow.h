@@ -86,6 +86,9 @@ private:
     QSystemTrayIcon *m_tray = nullptr;
     QAction  *m_trayToggleSysProxy = nullptr;
     QAction  *m_trayToggleTun = nullptr;
+    // 托盘图标最近一次设置的状态；用于判断是否需要补发延迟重设
+    int  m_trayIconState   = -1;   // AppIconState 的整数值
+    bool m_trayIconApplied = false;
 };
 
 } // namespace clashqt

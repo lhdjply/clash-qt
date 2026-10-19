@@ -76,6 +76,11 @@ public:
     bool setTunAutoRoute(bool enabled, QString *error = nullptr);
     bool tunAutoRoute() const;
 
+    // 启动时恢复上次的开关状态（系统代理 / TUN）。
+    // 退出时只撤桌面上的系统代理设置、不停用开关，因此这里能如实还原。
+    // 需要事件循环已在运行：TUN 可能要等 pkexec 授权、系统代理要探测端口。
+    void restoreStartupToggles();
+
     // ---- 系统代理 ---------------------------------------------------------
 
     // 启用/关闭系统代理，并同步应用配置中的开关状态

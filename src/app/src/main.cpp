@@ -151,6 +151,11 @@ int main(int argc, char *argv[])
         clashqt::AppLogger::instance().info(QStringLiteral("静默启动：不显示主窗口"));
     }
 
+    // 恢复上次的开关状态（系统代理 / TUN）。放在事件循环启动之后：
+    //   · TUN 未授权时会弹 pkexec 密码框，不能挡在窗口出现之前；
+    //   · 系统代理要先确认监听端口真的起来了（setSysProxyEnabled 内部探测）。
+    QTimer::singleShot(0, context, &clashqt::AppContext::restoreStartupToggles);
+
     const int code = app.exec();
 
     clashqt::AppLogger::instance().info(

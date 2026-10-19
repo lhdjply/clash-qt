@@ -188,10 +188,10 @@ void AppContext::disableSysProxyOnExit()
 
     AppLogger::instance().info(
         QStringLiteral("退出前已关闭系统代理：避免桌面继续指向已停止的本机端口"));
-    if (m_appConfig->sysProxyEnabled()) {
-        m_appConfig->setSysProxyEnabled(false);
-        m_appConfig->save();
-    }
+
+    // 注意：**不清** sysProxy.enable。它是「用户希望开着」的记录，下次启动
+    // 据此重新把桌面代理指回来（见 restoreStartupToggles）。桌面上的设置
+    // 是运行时状态，进程退出后必须撤掉 —— 两者是两回事。
 }
 
 bool AppContext::initialize(QString *error)
@@ -604,6 +604,44 @@ void AppContext::finishTunStart()
     emit tunStateChanged(true);
 }
 
+
+void AppContext::restoreStartupToggles()
+{
+    if (!m_hub || !m_hub->isRunning()) {
+        AppLogger::instance().debug(
+            QStringLiteral("内核未运行，跳过开关状态恢复"));
+        return;
+    }
+
+    // ---- TUN ----
+    // 退出时只停数据面、不动配置里的 tun.enable，所以这里能如实还原。
+    // 未授权时会弹 pkexec 密码框，因此调用点要放在窗口显示之后。
+    if (m_controledConfig && m_controledConfig->tunEnabled() && !m_tunRunning) {
+        QString tunError;
+        if (setTunEnabled(true, &tunError)) {
+            AppLogger::instance().info(QStringLiteral("已按上次的状态恢复 TUN"));
+        } else {
+            AppLogger::instance().warn(
+                QStringLiteral("恢复 TUN 失败：%1").arg(tunError));
+            emit toast(QStringLiteral("warning"),
+                       QStringLiteral("恢复 TUN 模式失败：%1").arg(tunError));
+        }
+    }
+
+    // ---- 系统代理 ----
+    // 桌面上的代理在退出时被撤掉了，这里按开关记录重新指回本机端口。
+    if (m_appConfig && m_appConfig->sysProxyEnabled() && !isSysProxyEnabled()) {
+        QString proxyError;
+        if (setSysProxyEnabled(true, &proxyError)) {
+            AppLogger::instance().info(QStringLiteral("已按上次的状态恢复系统代理"));
+        } else {
+            AppLogger::instance().warn(
+                QStringLiteral("恢复系统代理失败：%1").arg(proxyError));
+            emit toast(QStringLiteral("warning"),
+                       QStringLiteral("恢复系统代理失败：%1").arg(proxyError));
+        }
+    }
+}
 
 bool AppContext::setSysProxyEnabled(bool enabled, QString *error)
 {

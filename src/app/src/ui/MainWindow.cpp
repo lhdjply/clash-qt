@@ -29,6 +29,7 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMenu>
+#include <QTimer>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
@@ -381,6 +382,18 @@ void MainWindow::updateTray()
         state = ui::icons::AppIconState::Active;
     }
     m_tray->setIcon(ui::icons::appIcon(64, state));
+
+    const int stateValue = int(state);
+    if (!m_trayIconApplied || stateValue != m_trayIconState) {
+        m_trayIconState   = stateValue;
+        m_trayIconApplied = true;
+        for (int delayMs : {400, 1600}) {
+            QTimer::singleShot(delayMs, this, [this, state, stateValue]() {
+                if (!m_tray || stateValue != m_trayIconState) return;
+                m_tray->setIcon(ui::icons::appIcon(64, state));
+            });
+        }
+    }
 
     m_tray->setToolTip(QStringLiteral("Clash Qt · %1").arg(trayStateText()));
 
