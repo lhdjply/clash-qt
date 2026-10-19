@@ -294,7 +294,11 @@ void TunIpStack::handlePacket(const quint8 *data, int length)
         handleUdp(srcIp, dstIp, data + ihl, length - ihl, data, length);
         return;
     }
-    // ICMP 等其余协议：不提供 ping 语义，忽略
+    if (protocol == 1) {
+        handleIcmp(srcIp, dstIp, data + ihl, length - ihl, data, length);
+        return;
+    }
+    // 其余协议（GRE / ESP 等）：不涉及，忽略
 }
 
 // ---------------------------------------------------------------------------
@@ -392,8 +396,8 @@ void TunIpStack::handleUdp(quint32 srcIp, quint32 dstIp, const quint8 *udp, int 
 //  ICMP 目的不可达 / 端口不可达（type 3, code 3）
 //  回这个包比静默丢弃好：QUIC 客户端会立即回落 TCP，而不是卡到超时
 // ---------------------------------------------------------------------------
-void TunIpStack::sendIcmpPortUnreachable(quint32 srcIp, quint32 dstIp, const quint8 *originalIp,
-                                         int originalLength)
+void TunIpStack::sendIcmpUnreachable(quint32 srcIp, quint32 dstIp, const quint8 *originalIp,
+                                     int originalLength, quint8 code)
 {
     if (originalLength < kIpHeaderSize) return;
 
@@ -402,7 +406,7 @@ void TunIpStack::sendIcmpPortUnreachable(quint32 srcIp, quint32 dstIp, const qui
 
     QByteArray icmp;
     icmp.append(char(3)); // type: destination unreachable
-    icmp.append(char(3)); // code: port unreachable
+    icmp.append(char(code));
     writeU16(icmp, 0);    // 校验和占位
     writeU16(icmp, 0);    // 未使用
     icmp.append(reinterpret_cast<const char *>(originalIp), quoted);
@@ -431,6 +435,69 @@ void TunIpStack::sendIcmpPortUnreachable(quint32 srcIp, quint32 dstIp, const qui
     packet.append(icmp);
 
     emit packetsReady(packet);
+}
+
+// ---------------------------------------------------------------------------
+//  ICMP echo
+//
+//  TUN 下域名被解析成 fake-ip（198.18.0.0/16），这个地址在真实网络里不存在；
+//  VLESS / Hysteria2 也都不承载 ICMP（没有哪条隧道能转发 ping）。因此：
+//    · fake-ip 目标：由协议栈扮演目的地回 echo reply。ping 域名能立刻得到
+//      「代理链路在工作」的回应，代价是 RTT 只是本机往返（~0.1ms），不代表
+//      节点质量 —— 想看节点延迟用列表里的测速按钮。
+//    · 真实 IP 目标：不代答。否则 ping 8.8.8.8 也会变成 0.1ms 的假结果，
+//      把真正的问题掩盖掉；这里立刻回 host unreachable，让 ping 马上结束，
+//      而不是一声不响地等到超时。
+// ---------------------------------------------------------------------------
+void TunIpStack::handleIcmp(quint32 srcIp, quint32 dstIp, const quint8 *icmp, int length,
+                            const quint8 *originalIp, int originalLength)
+{
+    if (length < 8) return;
+
+    // 只处理 echo request（type 8 / code 0），别的类型（时间戳、traceroute
+    // 用的超时消息等）一律不答
+    if (icmp[0] != 8 || icmp[1] != 0) return;
+
+    if (!m_resolver || !m_resolver->isFakeIp(QHostAddress(dstIp))) {
+        sendIcmpUnreachable(srcIp, dstIp, originalIp, originalLength, 1); // host unreachable
+        return;
+    }
+
+    // echo reply：type/code 改回 0，标识符、序号、载荷原样带回（ping 靠 id+seq 配对）
+    QByteArray reply(reinterpret_cast<const char *>(icmp), length);
+    reply[0] = char(0);
+    reply[1] = char(0);
+    reply[2] = char(0);
+    reply[3] = char(0);
+
+    const quint16 icmpChecksum = foldChecksum(checksumAccumulate(
+        0, reinterpret_cast<const quint8 *>(reply.constData()), reply.size()));
+    reply[2] = char((icmpChecksum >> 8) & 0xFF);
+    reply[3] = char(icmpChecksum & 0xFF);
+
+    QByteArray packet;
+    const int  totalLength = kIpHeaderSize + reply.size();
+    packet.append(char(0x45));
+    packet.append(char(0));
+    writeU16(packet, quint16(totalLength));
+    writeU16(packet, quint16(m_ipId++ & 0xFFFF));
+    writeU16(packet, 0x0000); // 不分片
+    packet.append(char(64));  // TTL
+    packet.append(char(1));   // ICMP
+    writeU16(packet, 0);
+    writeU32(packet, dstIp);  // 源：被 ping 的 fake-ip
+    writeU32(packet, srcIp);  // 目的：客户端
+    const quint16 ipChecksum = foldChecksum(
+        checksumAccumulate(0, reinterpret_cast<const quint8 *>(packet.constData()), kIpHeaderSize));
+    packet[10] = char((ipChecksum >> 8) & 0xFF);
+    packet[11] = char(ipChecksum & 0xFF);
+    packet.append(reply);
+
+    emit packetsReady(packet);
+
+    emit logMessage(QStringLiteral("debug"),
+                    QStringLiteral("TUN：ICMP echo 由本机应答（%1，fake-ip）")
+                        .arg(QHostAddress(dstIp).toString()));
 }
 
 void TunIpStack::handleTcp(quint32 srcIp, quint32 dstIp, const quint8 *tcp, int length)
@@ -605,7 +672,7 @@ void TunIpStack::forwardUdp(quint32 srcIp, quint32 dstIp, quint16 srcPort, quint
         // 流量永久卡死。回 ICMP 才能让它立刻回落 TCP 或换路。
         if (flow->failed) {
             if (originalIp && originalLength > 0) {
-                sendIcmpPortUnreachable(srcIp, dstIp, originalIp, originalLength);
+                sendIcmpUnreachable(srcIp, dstIp, originalIp, originalLength, 3);
             }
             return;
         }
@@ -629,7 +696,7 @@ void TunIpStack::forwardUdp(quint32 srcIp, quint32 dstIp, quint16 srcPort, quint
     const auto created = m_udpFlows.constFind(key);
     if (created != m_udpFlows.constEnd() && created.value()->failed) {
         if (originalIp && originalLength > 0) {
-            sendIcmpPortUnreachable(srcIp, dstIp, originalIp, originalLength);
+            sendIcmpUnreachable(srcIp, dstIp, originalIp, originalLength, 3);
         }
     }
 }

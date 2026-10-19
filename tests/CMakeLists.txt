@@ -52,6 +52,7 @@ clashqt_add_test(test_dns_codec)     # DNS 报文编解码（含名字压缩指�
 clashqt_add_test(test_fakeip)        # fake-ip 池的分配/复用/反查
 clashqt_add_test(test_yaml)          # YAML <-> JSON 往返
 clashqt_add_test(test_json_util)     # 深合并与 <key> / key! / +key 修饰语法
+clashqt_add_test(test_tun_icmp)      # TUN 数据面的 ICMP：fake-ip 应答 / 真实 IP 不可达
 
 # ---- 应用：纯逻辑 ---------------------------------------------------------
 # Calc 与冲突检测等工具函数只依赖 Qt Core，单独把 .cpp 编进测试目标即可，

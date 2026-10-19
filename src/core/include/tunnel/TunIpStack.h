@@ -23,6 +23,9 @@
 //      拨号在独立线程完成，数据面只做封装。会话空闲 120 秒回收；
 //      拨号失败的目标 30 秒内直接回 ICMP，促使 QUIC 立刻回落 TCP
 //    * TCP 上的 DNS：回 RST 让客户端回落到 UDP（stub resolver 本来就走 UDP）
+//    * ICMP：fake-ip 目标（也就是 ping 域名）由本机回 echo reply；真实 IP
+//      回 host unreachable。没有哪条隧道能承载 ICMP，所以 ping 的 RTT 只是
+//      本机往返，不能当作节点质量指标
 //
 //  UDP 53 端口是**劫持**的：直接交给 DnsServer 应答（fake-ip 因此生效），
 //  这是 TUN 模式下名字解析能工作的前提
@@ -98,9 +101,13 @@ private:
     void handleTcp(quint32 srcIp, quint32 dstIp, const quint8 *tcp, int length);
     void handleUdp(quint32 srcIp, quint32 dstIp, const quint8 *udp, int length,
                    const quint8 *originalIp, int originalLength);
-    // 回一条 ICMP 端口不可达（把原始 IP 头 + 8 字节数据带回，符合 RFC 792）
-    void sendIcmpPortUnreachable(quint32 srcIp, quint32 dstIp, const quint8 *originalIp,
-                                 int originalLength);
+    // ICMP：echo request 由本机代答（仅 fake-ip 目标），其余回 host unreachable
+    void handleIcmp(quint32 srcIp, quint32 dstIp, const quint8 *icmp, int length,
+                    const quint8 *originalIp, int originalLength);
+    // 回一条 ICMP 不可达（type 3，code 由调用方给；把原始 IP 头 + 8 字节带回，
+    // 符合 RFC 792）
+    void sendIcmpUnreachable(quint32 srcIp, quint32 dstIp, const quint8 *originalIp,
+                             int originalLength, quint8 code);
     void openFlow(quint32 srcIp, quint32 dstIp, quint16 srcPort, quint16 dstPort,
                   quint32 seq, const QByteArray &payload);
 
