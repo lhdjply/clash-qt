@@ -287,6 +287,14 @@ DispatchOutcome Tunnel::dispatch(const Metadata &metadata) const
     return outcome;
 }
 
+// TUN 数据面把字节汇总进来。TUN 有自己的线程，这里只能做原子加，
+// 不能触碰 m_tracker / m_snapshot 等非线程安全成员。
+void Tunnel::addTraffic(qint64 upload, qint64 download)
+{
+    if (upload > 0) m_uploaded.fetch_add(upload, std::memory_order_relaxed);
+    if (download > 0) m_downloaded.fetch_add(download, std::memory_order_relaxed);
+}
+
 void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
                           const QByteArray &initialPayload)
 {

@@ -85,6 +85,7 @@ ctest --test-dir build --output-on-failure
 | `test_paths` | 数据目录为 `<XDG_CONFIG_HOME>/<应用名>`（不嵌套）、旧布局迁移 |
 | `test_rule_override` | 覆写页的 prepend / append / delete / disabled 合并语义 |
 | `test_tun_icmp` | TUN 下 ICMP：fake-ip 回 echo reply、真实 IP 回 host unreachable |
+| `test_tun_traffic` | TUN 流量统计上报：上下行字节要进 Tunnel 累计（否则界面速度恒为 0） |
 
 这些用例只跑纯逻辑：不需要 root、不联网、不弹窗口，全部在 1 秒内跑完。
 涉及配置目录的用例用临时 `XDG_CONFIG_HOME` 隔离，不会读写用户的真实配置。
@@ -229,6 +230,9 @@ VLESS 系列完全不同的一套协议栈，实现位于 `src/core/src/common/H
 - **明文 HTTP 转发**：统一按 `Connection: close` 处理，不做 keep-alive 复用。
 - **线程模型**：入站连接为「每连接一线程 + 独立事件循环」（上限 512），
   后续将改为事件循环线程池 + 异步拨号。
+- **流量统计**：系统代理的字节由中继里的钩子累加；TUN 的连接由协议栈自己拨号，
+  不经过 `handleStream`，因此由 `TunIpStack` 通过 `setTrafficSink()` 主动上报到
+  `Tunnel::addTraffic()`。两条路都汇到同一对原子计数，界面按 1 秒采样算速度。
 - **ICMP（ping）**：系统代理模式下 ping 不经过代理（HTTP/SOCKS 没有 ICMP
   语义），能否 ping 通只取决于本机到目标的直连状态；TUN 模式下 ping 域名
   会由协议栈在 fake-ip 上本地应答（RTT 约 0.1ms，**不代表节点质量**），

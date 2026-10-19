@@ -44,6 +44,10 @@ public:
               std::shared_ptr<DnsServer> dnsServer, QObject *parent = nullptr);
     ~TunDevice() override;
 
+    // 流量出口（TUN 的字节不经过 Tunnel::handleStream，需显式汇总）。
+    // 必须在 start() 之前、且在本对象尚未进入工作线程时设置。
+    void setTrafficSink(TunIpStack::TrafficSink sink);
+
     // 在工作线程中调用：接管 fd 并开始收发
     void start(int fd, int dnsUdpFd, int dnsTcpFd);
     // 在工作线程中调用：停止并关闭 fd
@@ -64,6 +68,7 @@ private:
     std::shared_ptr<DnsServer> m_dns;
 
     std::unique_ptr<TunIpStack> m_stack;
+    TunIpStack::TrafficSink     m_trafficSink;
     QSocketNotifier            *m_notifier = nullptr;
     int                         m_fd       = -1;
     // 已进入关闭流程：读循环此时报 EBADF 属正常，不再刷警告

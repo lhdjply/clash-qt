@@ -87,6 +87,12 @@ public:
     qint64 uploadedBytes() const { return m_uploaded.load(std::memory_order_relaxed); }
     qint64 downloadedBytes() const { return m_downloaded.load(std::memory_order_relaxed); }
 
+    // TUN 数据面直接累加。TUN 的连接由协议栈自己拨号（FlowWorker），不经过
+    // handleStream，字节数也就不会走 StreamRelay 的钩子；必须由数据面显式
+    // 汇总到这里，否则界面上的速度恒为 0。
+    // 只碰原子计数，可在任意线程调用（TUN 数据面在自己的线程里）。
+    void addTraffic(qint64 upload, qint64 download);
+
     // 关闭指定出站链上的连接
     int closeConnectionsByChain(const QString &chain);
 

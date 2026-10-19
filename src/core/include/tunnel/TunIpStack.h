@@ -77,6 +77,12 @@ public:
     qint64 uploaded() const { return m_uploaded; }
     qint64 downloaded() const { return m_downloaded; }
 
+    // 流量计数出口。TUN 的连接不经过 Tunnel::handleStream（协议栈自己拨号），
+    // 所以字节数必须由这里主动上报，否则 Hub 的采样永远是 0。
+    // 回调在数据面线程里同步执行，实现方只应做原子累加这类无阻塞操作。
+    using TrafficSink = std::function<void(qint64 upload, qint64 download)>;
+    void setTrafficSink(TrafficSink sink) { m_trafficSink = std::move(sink); }
+
     // 关闭全部流（停用 TUN 时调用）
     void closeAll();
 
@@ -139,6 +145,10 @@ private:
     void flushToClient(const FlowPtr &flow);
     void sendSegment(const FlowPtr &flow, quint8 flags, quint32 seq, quint32 ack,
                      const QByteArray &payload = QByteArray());
+
+    // 计数 + 上报。所有收发字节都从这里过，避免某条路径漏报。
+    void countUpload(qint64 bytes);
+    void countDownload(qint64 bytes);
     void closeFlow(quint64 key, bool sendRst, const QString &reason);
 
     DialFn                    m_dial;
@@ -152,6 +162,7 @@ private:
     QHash<QString, qint64>  m_failedTargets;
     quint64                 m_uploaded   = 0;
     quint64                 m_downloaded = 0;
+    TrafficSink             m_trafficSink;
     quint32                 m_ipId       = 1;
     // 重入保护：处理一包时可能进入带局部事件循环的调用（DNS 真实解析 /
     // 出站拨号），若这期间又收到包就会同时改写流表与 fake-ip 池。

@@ -440,6 +440,15 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
     m_tunThread = new QThread(this);
     m_tunThread->setObjectName(QStringLiteral(CLASHQT_TUN_HELPER_NAME));
     m_tunDevice = new TunDevice(dialFn, m_resolver, m_dnsServer); // 无 parent，随后 moveToThread
+
+    // TUN 的字节由协议栈自己收发（FlowWorker 直接拨号），不经过
+    // Tunnel::handleStream 的 StreamRelay，所以统计钩子不会触发。这里把
+    // 数据面的计数接进 Tunnel 的全局累计，界面速度才会有数。
+    // 捕获 shared_ptr 而不是 this：数据面线程可能比 Hub 收尾得更晚。
+    m_tunDevice->setTrafficSink([tunnel = m_tunnel](qint64 upload, qint64 download) {
+        tunnel->addTraffic(upload, download);
+    });
+
     m_tunDevice->moveToThread(m_tunThread);
 
     QObject::connect(m_tunDevice, &TunDevice::logMessage, this,

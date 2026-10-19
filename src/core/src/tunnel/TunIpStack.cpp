@@ -268,6 +268,27 @@ void TunIpStack::onPackets(const QByteArray &data)
     }
 }
 
+// ---------------------------------------------------------------------------
+//  流量计数
+//
+//  协议栈每个收发点都走这里，一是让 m_uploaded / m_downloaded 保持完整，
+//  二是把字节数上报给 Hub —— TUN 的字节不经过 Tunnel::handleStream，
+//  少了这一步界面上的上行/下行速度就一直是 0。
+// ---------------------------------------------------------------------------
+void TunIpStack::countUpload(qint64 bytes)
+{
+    if (bytes <= 0) return;
+    m_uploaded += quint64(bytes);
+    if (m_trafficSink) m_trafficSink(bytes, 0);
+}
+
+void TunIpStack::countDownload(qint64 bytes)
+{
+    if (bytes <= 0) return;
+    m_downloaded += quint64(bytes);
+    if (m_trafficSink) m_trafficSink(0, bytes);
+}
+
 void TunIpStack::handlePacket(const quint8 *data, int length)
 {
     const int ihl = (data[0] & 0x0F) * 4;
@@ -368,7 +389,7 @@ void TunIpStack::handleUdp(quint32 srcIp, quint32 dstIp, const quint8 *udp, int 
         packet[11] = char(ipChecksum & 0xFF);
         packet.append(udpReply);
 
-        m_downloaded += quint64(packet.size());
+        countDownload(qint64(packet.size()));
         emit packetsReady(packet);
         return;
     }
@@ -614,7 +635,7 @@ void TunIpStack::handleTcp(quint32 srcIp, quint32 dstIp, const quint8 *tcp, int 
             // write() 只写一部分的情况由 FlowWorker 自己重试。
             if (flow->worker && !flow->upstreamClosed) {
                 const QByteArray chunk = payload;
-                m_uploaded += quint64(chunk.size());
+                countUpload(qint64(chunk.size()));
                 QMetaObject::invokeMethod(flow->worker, "writeData", Qt::QueuedConnection,
                                           Q_ARG(QByteArray, chunk));
             }
@@ -678,7 +699,7 @@ void TunIpStack::forwardUdp(quint32 srcIp, quint32 dstIp, quint16 srcPort, quint
         }
 
         if (flow->established && flow->worker) {
-            m_uploaded += quint64(payload.size());
+            countUpload(qint64(payload.size()));
             QMetaObject::invokeMethod(flow->worker, "sendDatagram", Qt::QueuedConnection,
                                       Q_ARG(QByteArray, payload));
         } else if (flow->pending.size() < kUdpPendingMax
@@ -833,7 +854,7 @@ void TunIpStack::onUdpConnected(const UdpSessionKey &key)
     // 补发拨号期间缓存的数据报（顺序保持：QUIC 握手依赖首包顺序）
     if (flow->worker) {
         for (const QByteArray &datagram : flow->pending) {
-            m_uploaded += quint64(datagram.size());
+            countUpload(qint64(datagram.size()));
             QMetaObject::invokeMethod(flow->worker, "sendDatagram", Qt::QueuedConnection,
                                       Q_ARG(QByteArray, datagram));
         }
@@ -868,7 +889,7 @@ void TunIpStack::onUdpDatagram(const UdpSessionKey &key, const QByteArray &data)
 
     const UdpFlowPtr flow = it.value();
     flow->lastActive      = QDateTime::currentMSecsSinceEpoch();
-    m_downloaded += quint64(data.size());
+    countDownload(qint64(data.size()));
 
     sendUdpToClient(flow->clientIp, flow->clientPort, flow->ourIp, flow->ourPort, data);
 }
@@ -1104,7 +1125,7 @@ void TunIpStack::onFlowConnected(quint64 key)
 
     // SYN 携带的数据（TFO）
     if (!flow->initialPayload.isEmpty() && flow->worker) {
-        m_uploaded += quint64(flow->initialPayload.size());
+        countUpload(qint64(flow->initialPayload.size()));
         QMetaObject::invokeMethod(flow->worker, "writeData", Qt::QueuedConnection,
                                   Q_ARG(QByteArray, flow->initialPayload));
         flow->initialPayload.clear();
@@ -1141,7 +1162,7 @@ void TunIpStack::onFlowData(quint64 key, const QByteArray &data)
     const FlowPtr flow = it.value();
 
     flow->lastActive = QDateTime::currentMSecsSinceEpoch();
-    m_downloaded += quint64(data.size());
+    countDownload(qint64(data.size()));
 
     if (m_trace) {
         emit logMessage(QStringLiteral("debug"),

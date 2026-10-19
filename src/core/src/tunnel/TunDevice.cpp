@@ -31,6 +31,12 @@ TunDevice::TunDevice(TunIpStack::DialFn dialFn, std::shared_ptr<Resolver> resolv
 
 TunDevice::~TunDevice() { shutdown(); }
 
+void TunDevice::setTrafficSink(TunIpStack::TrafficSink sink)
+{
+    m_trafficSink = std::move(sink);
+    if (m_stack) m_stack->setTrafficSink(m_trafficSink);
+}
+
 void TunDevice::start(int fd, int dnsUdpFd, int dnsTcpFd)
 {
 #ifdef Q_OS_UNIX
@@ -42,6 +48,7 @@ void TunDevice::start(int fd, int dnsUdpFd, int dnsTcpFd)
 
     // 协议栈在本线程构造：它的 QTimer、信号连接都归属本线程
     m_stack = std::make_unique<TunIpStack>(m_dial, m_resolver, m_dns);
+    if (m_trafficSink) m_stack->setTrafficSink(m_trafficSink);
     QObject::connect(m_stack.get(), &TunIpStack::logMessage, this,
                      [this](const QString &level, const QString &message) {
                          emit logMessage(level, message);
