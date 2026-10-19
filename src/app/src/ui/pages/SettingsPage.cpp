@@ -6,8 +6,10 @@
 #include "sys/AutoRun.h"
 #include "sys/SysProxy.h"
 #include "ui/UiFactory.h"
+#include "ui/UpdateDialog.h"
 #include "utils/AppLogger.h"
 #include "utils/Paths.h"
+#include "updater/UpdateChecker.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -146,6 +148,29 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
                                            systemCard));
     root->addWidget(systemCard);
 
+    // ---- 关于 / 检查更新 ---------------------------------------------------
+    auto *aboutCard = ui::makeCard(QStringLiteral("关于"), this);
+    auto *aboutLayout = qobject_cast<QVBoxLayout *>(aboutCard->layout());
+
+    auto *versionLabel =
+        new QLabel(QStringLiteral("当前版本 v%1").arg(QLatin1String(CLASHQT_VERSION)), aboutCard);
+    aboutLayout->addWidget(versionLabel);
+
+    m_checkUpdate = new QPushButton(QStringLiteral("检查更新"), aboutCard);
+    ui::decorate(m_checkUpdate, QStringLiteral("refresh"));
+    auto *updateRow = new QHBoxLayout();
+    updateRow->setContentsMargins(0, 0, 0, 0);
+    updateRow->setSpacing(8);
+    updateRow->addWidget(m_checkUpdate);
+    updateRow->addStretch(1);
+    aboutLayout->addLayout(updateRow);
+
+    aboutLayout->addWidget(ui::makeHintLabel(
+        QStringLiteral("从 GitHub Releases 获取最新版本。有更新时会显示更新日志，"
+                       "可一键在浏览器中打开发布页，下载与安装由你自己决定。"),
+        aboutCard));
+    root->addWidget(aboutCard);
+
     root->addStretch(1);
 
     // ---- 信号 -------------------------------------------------------------
@@ -178,6 +203,32 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     QObject::connect(m_themeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &SettingsPage::onThemeChanged);
     QObject::connect(openDir, &QPushButton::clicked, this, &SettingsPage::onOpenDataDir);
+
+    // ---- 检查更新 ---------------------------------------------------------
+    m_updater = new UpdateChecker(this);
+    QObject::connect(m_checkUpdate, &QPushButton::clicked, this, &SettingsPage::onCheckUpdate);
+
+    QObject::connect(m_updater, &UpdateChecker::updateAvailable, this,
+                     [this](const ReleaseInfo &release) {
+                         setUpdateCheckBusy(false);
+                         UpdateDialog dialog(release, this);
+                         dialog.exec();
+                     });
+    QObject::connect(m_updater, &UpdateChecker::upToDate, this, [this](const QString &current) {
+        setUpdateCheckBusy(false);
+        emit m_context->toast(QStringLiteral("info"),
+                              QStringLiteral("已是最新版本 v%1").arg(current));
+    });
+    QObject::connect(m_updater, &UpdateChecker::failed, this, [this](const QString &reason) {
+        setUpdateCheckBusy(false);
+        // 直连失败时最常见的原因是 GitHub 不可达：把「怎么办」一并说清，
+        // 否则用户只会看到一句 Connection refused
+        const QString hint = m_context->isKernelRunning()
+                                 ? QString()
+                                 : QStringLiteral("（当前内核未运行，请先开启代理再试）");
+        emit m_context->toast(QStringLiteral("error"),
+                              QStringLiteral("检查更新失败：%1%2").arg(reason, hint));
+    });
 
     loadFromConfig();
 }
@@ -355,6 +406,26 @@ void SettingsPage::onThemeChanged(int index)
 void SettingsPage::onOpenDataDir()
 {
     QDesktopServices::openUrl(QUrl::fromLocalFile(paths::dataDir()));
+}
+
+void SettingsPage::onCheckUpdate()
+{
+    if (!m_updater || !m_checkUpdate->isEnabled()) return;
+
+    // 检查走本机混合端口：GitHub 直连在多数网络下不可达，而内核常驻运行，
+    // 混合端口既能代理 HTTP 也能 CONNECT，正好复用用户的节点。
+    const int port = m_context->isKernelRunning() ? m_context->controledConfig()->mixedPort() : 0;
+    setUpdateCheckBusy(true);
+    if (!m_updater->check(port)) {
+        setUpdateCheckBusy(false); // 已有请求在飞（重复点击）
+    }
+}
+
+void SettingsPage::setUpdateCheckBusy(bool busy)
+{
+    if (!m_checkUpdate) return;
+    m_checkUpdate->setEnabled(!busy);
+    m_checkUpdate->setText(busy ? QStringLiteral("检查中…") : QStringLiteral("检查更新"));
 }
 
 } // namespace clashqt

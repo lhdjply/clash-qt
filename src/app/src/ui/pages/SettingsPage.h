@@ -12,11 +12,13 @@
 class QCheckBox;
 class QComboBox;
 class QLabel;
+class QPushButton;
 class QSpinBox;
 
 namespace clashqt {
 
 class AppContext;
+class UpdateChecker;
 
 class SettingsPage : public QWidget {
     Q_OBJECT
@@ -39,6 +41,8 @@ private slots:
     void onTunAutoRouteToggled(bool enabled);
     void onThemeChanged(int index);
     void onOpenDataDir();
+    // 检查更新：按钮进入「检查中」状态，结果通过 UpdateChecker 的信号回来
+    void onCheckUpdate();
 
 private:
     AppContext   *m_context = nullptr;
@@ -55,6 +59,10 @@ private:
     QCheckBox    *m_tunAutoRoute = nullptr;
     QComboBox    *m_themeCombo = nullptr;
     QLabel       *m_dataDirLabel = nullptr;
+    QPushButton  *m_checkUpdate = nullptr;
+    UpdateChecker *m_updater = nullptr;
+
+    void setUpdateCheckBusy(bool busy);
 
     bool m_loading = false; // 回填配置时抑制控件信号
 };

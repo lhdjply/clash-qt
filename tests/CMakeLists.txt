@@ -61,6 +61,11 @@ clashqt_add_test(test_tun_traffic)   # TUN 流量统计上报（否则界面速�
 clashqt_add_test(test_calc
     "${CMAKE_SOURCE_DIR}/src/app/src/utils/Calc.cpp")
 
+# 检查更新：版本号比较决定「有没有更新」，判错会天天提示同一个版本
+clashqt_add_test(test_update_checker
+    "${CMAKE_SOURCE_DIR}/src/app/src/updater/UpdateChecker.cpp")
+target_link_libraries(test_update_checker PRIVATE Qt6::Network)
+
 # 数据目录约定：<XDG_CONFIG_HOME>/clash-qt（不能再多一层），以及旧布局的迁移
 clashqt_add_test(test_paths
     "${CMAKE_SOURCE_DIR}/src/app/src/utils/Paths.cpp")

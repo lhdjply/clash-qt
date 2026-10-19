@@ -385,6 +385,8 @@ set(APP_SOURCES
     src/app/src/config/OverrideConfig.cpp
     src/app/src/config/Factory.cpp
 
+    src/app/src/updater/UpdateChecker.cpp
+
     src/app/src/sys/SysProxy.cpp
     src/app/src/sys/AutoRun.cpp
     src/app/src/sys/SingleInstance.cpp
@@ -393,6 +395,7 @@ set(APP_SOURCES
     src/app/src/ui/MainWindow.cpp
     src/app/src/ui/UiFactory.cpp
     src/app/src/ui/Icons.cpp
+    src/app/src/ui/UpdateDialog.cpp
     src/app/src/ui/pages/ProxiesPage.cpp
     src/app/src/ui/pages/ProfilesPage.cpp
     src/app/src/ui/pages/ConnectionsPage.cpp
@@ -418,6 +421,8 @@ set(APP_HEADERS
     src/app/src/config/OverrideConfig.h
     src/app/src/config/Factory.h
 
+    src/app/src/updater/UpdateChecker.h
+
     src/app/src/sys/SysProxy.h
     src/app/src/sys/AutoRun.h
     src/app/src/sys/SingleInstance.h
@@ -425,6 +430,7 @@ set(APP_HEADERS
 
     src/app/src/ui/MainWindow.h
     src/app/src/ui/UiFactory.h
+    src/app/src/ui/UpdateDialog.h
     src/app/src/ui/Icons.h
     src/app/src/ui/pages/ProxiesPage.h
     src/app/src/ui/pages/ProfilesPage.h
