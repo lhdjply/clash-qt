@@ -151,11 +151,26 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
         return nullptr;
     }
 
-    const QString payload = fields.at(1).trimmed();
-    const QString target  = fields.at(2).trimmed();
+    // 端口 / ASN 类规则的匹配值本身可以写成逗号列表：
+    //     DST-PORT,80,443,DIRECT
+    //     IP-ASN,13335,13336,PROXY
+    // 与 Clash 一致：**最后一段**才是策略，中间全部属于匹配值。按「第二段是
+    // 策略」去切会把 443 当成策略名，规则静默失效（策略名不存在时匹配不上
+    // 任何适配器，日志里也看不出是解析错了）。
+    const bool listPayloadType = *ruleType == RuleType::DstPort
+                                 || *ruleType == RuleType::SrcPort
+                                 || *ruleType == RuleType::InPort
+                                 || *ruleType == RuleType::IpAsn
+                                 || *ruleType == RuleType::SrcIpAsn;
+
+    const QString payload = listPayloadType
+                                ? fields.mid(1, fields.size() - 2).join(QLatin1Char(','))
+                                : fields.at(1).trimmed();
+    const QString target  = (listPayloadType ? fields.last() : fields.at(2)).trimmed();
 
     QStringList params;
-    for (int i = 3; i < fields.size(); ++i) {
+    // 列表型匹配值已占用全部后续字段，不存在额外参数
+    for (int i = listPayloadType ? fields.size() : 3; i < fields.size(); ++i) {
         const QString param = fields.at(i).trimmed();
         if (!param.isEmpty()) params << param;
     }

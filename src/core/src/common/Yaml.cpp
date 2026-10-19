@@ -27,10 +27,13 @@ QJsonValue nodeToJson(const YAML::Node &node)
         const std::string raw = node.Scalar();
         const QString text = QString::fromStdString(raw);
 
-        // 布尔字面量：YAML 1.1 允许 true/false/yes/no/on/off，统一归一为布尔。
-        // 这里只接受 YAML 规范保证会被解析为 bool 的写法，避免把 "no" 这类
-        // 可能是用户真实字符串值的标量误判——yaml-cpp 已提供 Tag() 供判断。
-        if (node.Tag() == "!" || node.Tag() == "!!bool") {
+        // 布尔字面量：只认 yaml-cpp 明确给出 !!bool 的标量。
+        //
+        // 这里**不能**把 "!"（非特定 tag）也算进来：yaml-cpp 用它标记
+        // 带引号的标量，那样 `password: "0"`、`name: "no"` 会被读成布尔，
+        // 写出时又变成裸 false —— 值被改掉，而且每一次「读入→写出」都会
+        // 在字符串与布尔之间反复横跳，配置文件的 diff 永远不收敛。
+        if (node.Tag() == "!!bool") {
             const auto parsed = strutil::parseBool(text);
             if (parsed) return QJsonValue(*parsed);
         }

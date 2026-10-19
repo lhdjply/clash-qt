@@ -425,11 +425,30 @@ if(UNIX AND NOT APPLE AND CLASHQT_BUILD_APP)
 endif()
 
 
+# ---------------------------------------------------------------------------
+# 单元测试
+#
+#  默认关闭：日常构建不需要 Qt6::Test，也不该让 CTest 拖慢打包。
+#  开启方式：
+#      cmake -S . -B build -DCLASHQT_BUILD_TESTS=ON
+#      cmake --build build --target all
+#      ctest --test-dir build --output-on-failure
+#  测试可执行文件在 build/bin/tests/，也可以单独运行某一个。
+# ---------------------------------------------------------------------------
+option(CLASHQT_BUILD_TESTS "Build unit tests (run with ctest)" OFF)
+
+if(CLASHQT_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+
 message(STATUS "----------------------------------------------------------")
 message(STATUS "clash-qt ${PROJECT_VERSION}")
 message(STATUS "  Build type      : ${CMAKE_BUILD_TYPE}")
 message(STATUS "  C++ standard    : ${CMAKE_CXX_STANDARD}")
 message(STATUS "  Qt version      : ${Qt6_VERSION}")
 message(STATUS "  GUI application : ${CLASHQT_BUILD_APP}")
+message(STATUS "  Unit tests      : ${CLASHQT_BUILD_TESTS}")
 message(STATUS "  Output dir      : ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 message(STATUS "----------------------------------------------------------")

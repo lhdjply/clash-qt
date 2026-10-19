@@ -35,11 +35,6 @@ std::optional<IpNet> IpNet::parse(const QString &text)
     QString needle = text.trimmed();
     if (needle.isEmpty()) return std::nullopt;
 
-    // 去掉 IPv6 的方括号写法
-    if (needle.startsWith(QLatin1Char('[')) && needle.endsWith(QLatin1Char(']'))) {
-        needle = needle.mid(1, needle.size() - 2);
-    }
-
     int              defaultPrefix = 0;
     QString          addressPart   = needle;
     std::optional<int> explicitPrefix;
@@ -50,6 +45,13 @@ std::optional<IpNet> IpNet::parse(const QString &text)
         const auto prefixValue = strutil::parseInt(needle.mid(slash + 1));
         if (!prefixValue) return std::nullopt;
         explicitPrefix = *prefixValue;
+    }
+
+    // 去掉 IPv6 的方括号写法。必须放在按 '/' 切分**之后**：
+    // 常见写法是 "[2001:db8::1]/128"，整体并不以 ']' 结尾，
+    // 先判断整体会漏掉，最终把 "[2001:db8::1]" 交给 QHostAddress 而解析失败。
+    if (addressPart.startsWith(QLatin1Char('[')) && addressPart.endsWith(QLatin1Char(']'))) {
+        addressPart = addressPart.mid(1, addressPart.size() - 2);
     }
 
     const auto address = parseIp(addressPart);

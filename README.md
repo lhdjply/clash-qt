@@ -15,6 +15,7 @@ clash-qt/
 │   │   │                config / constant / hub / listener / rules / tunnel
 │   │   └── src/
 │   └── app/         clash-qt —— Qt6 Widgets 图形界面
+├── tests/           单元测试（Qt Test + CTest，默认不参与构建）
 └── third_party/     git 子模块：yaml-cpp、ml-kem、sha3、randomshake、subtle
 ```
 
@@ -42,6 +43,35 @@ cmake --build build -j$(nproc)
 FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake ..` 会一直卡住），
 只挂载子模块的 `include` 目录；因此联网只在首次
 `git submodule update --init --recursive` 时发生，之后配置与编译完全离线。
+
+## 测试
+
+单元测试默认关闭（日常构建不需要 Qt6::Test），单独开启：
+
+```bash
+cmake -S . -B build -DCLASHQT_BUILD_TESTS=ON
+cmake --build build -j$(nproc)
+ctest --test-dir build --output-on-failure
+```
+
+测试可执行文件在 `build/bin/tests/`，也可单独跑某一个，例如
+`./build/bin/tests/test_rules`。
+
+| 用例 | 覆盖内容 |
+|---|---|
+| `test_common` | `IpNet` 解析/包含（含 IPv4 字节序回归）、字符串工具 |
+| `test_domain_trie` | 域名后缀树的精确/后缀匹配、标签边界 |
+| `test_cidr` | CIDR 集合与最长前缀优先 |
+| `test_rules` | 规则解析与匹配、逻辑规则、`no-resolve`、规则集、停用 |
+| `test_dns_codec` | DNS 报文编解码、名字压缩指针、损坏报文 |
+| `test_fakeip` | fake-ip 池分配/复用/反查、回绕 |
+| `test_yaml` | YAML ↔ JSON 往返、整数不被写成浮点、坏配置报错 |
+| `test_json_util` | 深合并与 `<key>` / `key!` / `+key` 修饰语法 |
+| `test_calc` | 流量格式化、单位进位、窄列收缩 |
+| `test_rule_override` | 覆写页的 prepend / append / delete / disabled 合并语义 |
+
+这些用例只跑纯逻辑：不需要 root、不联网、不弹窗口，全部在 1 秒内跑完。
+涉及配置目录的用例用临时 `XDG_CONFIG_HOME` 隔离，不会读写用户的真实配置。
 
 ## 当前实现范围
 
