@@ -144,6 +144,10 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     m_themeCombo->addItem(QStringLiteral("跟随系统"), QStringLiteral("system"));
     m_themeCombo->addItem(QStringLiteral("浅色"), QStringLiteral("light"));
     m_themeCombo->addItem(QStringLiteral("深色"), QStringLiteral("dark"));
+    // 滚轮不参与改值：主题是有明显视觉后果的设置，鼠标划过时被滚轮顺手切走
+    // 很难察觉（尤其「跟随系统 / 深色」之间的差异在某些桌面下并不明显）。
+    // 忽略后事件冒泡给页面滚动区，滚轮照常滚动页面。
+    ui::ignoreWheel(m_themeCombo);
     systemLayout->addWidget(ui::makeFormRow(QStringLiteral("主题"), m_themeCombo, QString(),
                                            systemCard));
     root->addWidget(systemCard);
