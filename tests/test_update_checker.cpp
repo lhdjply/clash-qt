@@ -1,15 +1,18 @@
 // ---------------------------------------------------------------------------
 //  检查更新
 //
-//  三部分：
+//  四部分：
 //    1. 版本号比较 —— 「有没有更新」完全由它决定，判错会天天提示同一个版本；
 //    2. GitHub API 的 JSON 解析与状态码处理；
-//    3. API 被限流（403）时切换到 Atom 备用源 —— 实测走公共节点常撞上。
+//    3. 来源顺序 —— Atom 订阅优先（不受未认证 API 配额限制），API 兜底；
+//    4. 失败处理 —— 偶发抖动重试一次；API 配额用尽后不再白跑。
 //  网络部分用本地 QTcpServer 冒充 GitHub，测试不联网、不依赖仓库是否发过版。
 // ---------------------------------------------------------------------------
 
 #include <QtTest>
 
+#include <QDateTime>
+#include <QElapsedTimer>
 #include <QHash>
 #include <QSignalSpy>
 #include <QTcpServer>
@@ -26,10 +29,20 @@ struct FakeServer {
     struct Response {
         QByteArray status = QByteArrayLiteral("200 OK");
         QByteArray body;
+        QByteArray headers; // 额外的响应头，形如 "X-Test: 1\r\n"
+
+        Response() = default;
+        Response(QByteArray status_, QByteArray body_, QByteArray headers_ = QByteArray())
+            : status(std::move(status_)), body(std::move(body_)), headers(std::move(headers_))
+        {
+        }
     };
 
-    QTcpServer               server;
-    QHash<QString, Response> routes;
+    QTcpServer                        server;
+    QHash<QString, Response>          routes;
+    QHash<QString, int>               drops;  // 该路径接下来 N 次直接断开连接
+    QHash<QString, int>               stalls; // 该路径接下来 N 次只接受连接、不应答
+    mutable QHash<QString, int>       hits;  // 各路径实际收到的请求数
 
     bool start()
     {
@@ -51,6 +64,22 @@ struct FakeServer {
                     const QString path =
                         parts.size() > 1 ? QString::fromLatin1(parts.at(1)) : QString();
 
+                    hits[path] += 1;
+
+                    // 模拟对端还没应答就断开：TLS 停滞 / Connection closed 都长这样
+                    if (drops.value(path) > 0) {
+                        drops[path] -= 1;
+                        socket->abort();
+                        return;
+                    }
+
+                    // 模拟「连接建起来了但一直不回应」：丢包重传卡住时就是这样，
+                    // 唯一能救的是另开一条连接，而不是干等超时
+                    if (stalls.value(path) > 0) {
+                        stalls[path] -= 1;
+                        return;
+                    }
+
                     Response response;
                     if (routes.contains(path)) {
                         response = routes.value(path);
@@ -60,6 +89,7 @@ struct FakeServer {
 
                     QByteArray raw = "HTTP/1.1 " + response.status + "\r\n";
                     raw += "Content-Type: application/octet-stream\r\n";
+                    raw += response.headers;
                     raw += "Content-Length: " + QByteArray::number(response.body.size()) + "\r\n";
                     raw += "Connection: close\r\n\r\n";
                     raw += response.body;
@@ -129,7 +159,11 @@ private slots:
     void sameVersionReportsUpToDate();
     void noReleasesCountsAsUpToDate();
     void serverErrorIsReported();
-    void forbiddenFallsBackToAtom();
+    void atomIsPreferredOverApi();
+    void apiIsUsedWhenAtomFails();
+    void transientFailureIsRetried();
+    void stalledRequestIsHedged();
+    void rateLimitedApiIsSkipped();
 };
 
 // ---------------------------------------------------------------------------
@@ -247,15 +281,16 @@ void TestUpdateChecker::serverErrorIsReported()
              qPrintable(spy.first().at(0).toString()));
 }
 
-void TestUpdateChecker::forbiddenFallsBackToAtom()
+void TestUpdateChecker::atomIsPreferredOverApi()
 {
     FakeServer server;
-    // 未认证 API 配额耗尽时 GitHub 返回 403 —— 实测走公共节点很常见
-    server.routes.insert(QStringLiteral("/latest"),
-                         {QByteArrayLiteral("403 Forbidden"),
-                          QByteArrayLiteral(R"({"message":"API rate limit exceeded"})")});
+    // 两条来源都可用时应当走 Atom：API 的 60 次/小时配额按出口 IP 计，
+    // 走公共节点几乎必然已被别人用光（实测每次都 403）。
     server.routes.insert(QStringLiteral("/releases.atom"),
                          {QByteArrayLiteral("200 OK"), QByteArray(kReleasesAtom)});
+    server.routes.insert(QStringLiteral("/latest"),
+                         {QByteArrayLiteral("200 OK"),
+                          QByteArrayLiteral(R"([{"tag_name":"v1000.0.0","body":"api"}])")});
     QVERIFY(server.start());
 
     UpdateChecker checker(server.url(QStringLiteral("/latest")),
@@ -271,12 +306,136 @@ void TestUpdateChecker::forbiddenFallsBackToAtom()
     QVERIFY(checker.check(0));
     QTRY_COMPARE_WITH_TIMEOUT(count, 1, 5000);
 
-    QCOMPARE(received.tagName, QStringLiteral("v999.0.0"));
     QCOMPARE(received.version, QStringLiteral("999.0.0"));
     QVERIFY(received.notesIsHtml);
     QCOMPARE(received.notes, QStringLiteral("<p>修复了托盘图标</p>"));
-    QCOMPARE(received.pageUrl.toString(),
-             QStringLiteral("https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0"));
+    // 关键：API 一次都没被打扰 —— 那正是会撞上配额的那条路径
+    QCOMPARE(server.hits.value(QStringLiteral("/latest")), 0);
+}
+
+void TestUpdateChecker::apiIsUsedWhenAtomFails()
+{
+    FakeServer server;
+    server.routes.insert(QStringLiteral("/releases.atom"),
+                         {QByteArrayLiteral("500 Internal Server Error"), QByteArray()});
+    server.routes.insert(QStringLiteral("/latest"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kReleaseJson)});
+    QVERIFY(server.start());
+
+    UpdateChecker checker(server.url(QStringLiteral("/latest")),
+                          server.url(QStringLiteral("/releases.atom")));
+    ReleaseInfo  received;
+    int          count = 0;
+    QObject::connect(&checker, &UpdateChecker::updateAvailable,
+                     [&](const ReleaseInfo &info) {
+                         received = info;
+                         ++count;
+                     });
+
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(count, 1, 8000);
+
+    // 兜底过来的结果是 Markdown，对话框要按 notesIsHtml 选解析器
+    QCOMPARE(received.version, QStringLiteral("999.0.0"));
+    QVERIFY(!received.notesIsHtml);
+    QCOMPARE(received.notes, QStringLiteral("- 新增检查更新"));
+    QCOMPARE(server.hits.value(QStringLiteral("/latest")), 1);
+}
+
+void TestUpdateChecker::transientFailureIsRetried()
+{
+    FakeServer server;
+    // 第一次还没应答就断开 —— 实测 TUN 下 TLS 停滞、Connection closed 都是这种形态，
+    // 紧接着重试通常就成功，不该让整次检查失败
+    server.drops.insert(QStringLiteral("/releases.atom"), 1);
+    server.routes.insert(QStringLiteral("/releases.atom"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kReleasesAtom)});
+    QVERIFY(server.start());
+
+    UpdateChecker checker(server.url(QStringLiteral("/latest")),
+                          server.url(QStringLiteral("/releases.atom")));
+    QSignalSpy failedSpy(&checker, &UpdateChecker::failed);
+    ReleaseInfo received;
+    int         count = 0;
+    QObject::connect(&checker, &UpdateChecker::updateAvailable,
+                     [&](const ReleaseInfo &info) {
+                         received = info;
+                         ++count;
+                     });
+
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(count, 1, 8000);
+
+    QCOMPARE(failedSpy.count(), 0);
+    QCOMPARE(received.version, QStringLiteral("999.0.0"));
+    QCOMPARE(server.hits.value(QStringLiteral("/releases.atom")), 2);
+}
+
+void TestUpdateChecker::stalledRequestIsHedged()
+{
+    FakeServer server;
+    // 第一条连接挂住不应答（实测丢包时 TCP 重传会卡 2~5 秒）
+    server.stalls.insert(QStringLiteral("/releases.atom"), 1);
+    server.routes.insert(QStringLiteral("/releases.atom"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kReleasesAtom)});
+    QVERIFY(server.start());
+
+    UpdateChecker  checker(server.url(QStringLiteral("/latest")),
+                           server.url(QStringLiteral("/releases.atom")));
+    QElapsedTimer  clock;
+    clock.start();
+    ReleaseInfo received;
+    int         count = 0;
+    QObject::connect(&checker, &UpdateChecker::updateAvailable,
+                     [&](const ReleaseInfo &info) {
+                         received = info;
+                         ++count;
+                     });
+
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(count, 1, 6000);
+
+    // 关键：结果来自并行的第二条连接，而不是等第一条超时（8 秒）
+    QCOMPARE(received.version, QStringLiteral("999.0.0"));
+    QCOMPARE(server.hits.value(QStringLiteral("/releases.atom")), 2);
+    QVERIFY2(clock.elapsed() < 4000,
+             qPrintable(QStringLiteral("耗时 %1ms，对冲没有生效").arg(clock.elapsed())));
+}
+
+void TestUpdateChecker::rateLimitedApiIsSkipped()
+{
+    FakeServer server;
+    // Atom 也挂了，才会轮到 API；API 的配额已经用尽
+    server.routes.insert(QStringLiteral("/releases.atom"),
+                         {QByteArrayLiteral("500 Internal Server Error"), QByteArray()});
+    const QByteArray reset =
+        QByteArray::number(QDateTime::currentSecsSinceEpoch() + 600);
+    FakeServer::Response forbidden;
+    forbidden.status  = QByteArrayLiteral("403 Forbidden");
+    forbidden.body    = QByteArrayLiteral(R"({"message":"API rate limit exceeded"})");
+    forbidden.headers = "x-ratelimit-limit: 60\r\n"
+                        "x-ratelimit-remaining: 0\r\n"
+                        "x-ratelimit-reset: " + reset + "\r\n";
+    server.routes.insert(QStringLiteral("/latest"), forbidden);
+    QVERIFY(server.start());
+
+    UpdateChecker checker(server.url(QStringLiteral("/latest")),
+                          server.url(QStringLiteral("/releases.atom")));
+
+    QSignalSpy first(&checker, &UpdateChecker::failed);
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(first.count(), 1, 8000);
+    QVERIFY2(first.first().at(0).toString().contains(QStringLiteral("403")),
+             qPrintable(first.first().at(0).toString()));
+    QCOMPARE(server.hits.value(QStringLiteral("/latest")), 1);
+
+    // 配额窗口内再查一次：不该再发一次注定 403 的请求
+    QSignalSpy second(&checker, &UpdateChecker::failed);
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(second.count(), 1, 8000);
+    QVERIFY2(second.first().at(0).toString().contains(QStringLiteral("配额已用尽")),
+             qPrintable(second.first().at(0).toString()));
+    QCOMPARE(server.hits.value(QStringLiteral("/latest")), 1);
 }
 
 QTEST_GUILESS_MAIN(TestUpdateChecker)
