@@ -32,13 +32,21 @@ if(CLASHQT_VERSION_STRING STREQUAL "")
             "无法从 ${CMAKE_CURRENT_SOURCE_DIR}/VERSION 读取版本号（文件缺失或为空）")
 endif()
 
+# 文件里按 tag 的写法带 v 前缀（v1.0.0），但 CMake 的 project(VERSION) 只接受
+# 纯数字；这里剥掉前缀给 CMake 用，原样保留一份给 `--version` 等展示用。
+string(REGEX REPLACE "^[vV]" "" CLASHQT_VERSION_NUMBER "${CLASHQT_VERSION_STRING}")
+if(NOT CLASHQT_VERSION_NUMBER MATCHES "^[0-9]+(\\.[0-9]+)*$")
+    message(FATAL_ERROR
+            "VERSION 里的版本号不合法：'${CLASHQT_VERSION_STRING}'（期望形如 v1.0.0 或 1.0.0）")
+endif()
+
 # file() 只在配置期读一次，CMake 不会自动把它登记成"重配置依赖"：少了这一行，
 # 改完 VERSION 直接构建会继续用旧版本号（必须手工再 configure 一次）。
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
              "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
 
 project(clash-qt
-    VERSION ${CLASHQT_VERSION_STRING}
+    VERSION ${CLASHQT_VERSION_NUMBER}
     DESCRIPTION "Clash Party rewritten in Qt6 / C++"
     LANGUAGES C CXX)
 
@@ -51,11 +59,11 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/debian/changelog")
         set(CLASHQT_DEB_VERSION "${CMAKE_MATCH_1}")
         # 允许 Debian 修订号（0.1.0-1）：只比较上游版本部分
         string(REGEX REPLACE "-[0-9]+$" "" CLASHQT_DEB_UPSTREAM "${CLASHQT_DEB_VERSION}")
-        if(NOT CLASHQT_DEB_UPSTREAM STREQUAL CLASHQT_VERSION_STRING)
+        if(NOT CLASHQT_DEB_UPSTREAM STREQUAL CLASHQT_VERSION_NUMBER)
             message(WARNING
                     "VERSION（${CLASHQT_VERSION_STRING}）与 debian/changelog"
                     "（${CLASHQT_DEB_VERSION}）不一致：安装包版本取 changelog，"
-                    "发布前请用 `dch -v ${CLASHQT_VERSION_STRING}` 同步")
+                    "发布前请用 `dch -v ${CLASHQT_VERSION_NUMBER}` 同步")
         endif()
     endif()
 endif()
@@ -352,6 +360,7 @@ set_target_properties(clashqt_core PROPERTIES
 # clashqt_core 的目标自动获得，不必在每个 target 上重复一遍。
 target_compile_definitions(clashqt_core PUBLIC
     CLASHQT_VERSION="${PROJECT_VERSION}"
+    CLASHQT_VERSION_TAG="${CLASHQT_VERSION_STRING}"
     CLASHQT_APP_NAME="${CLASHQT_APP_NAME}"
     CLASHQT_APP_DISPLAY_NAME="${CLASHQT_APP_DISPLAY_NAME}"
     CLASHQT_TUN_HELPER_NAME="${CLASHQT_TUN_HELPER}"

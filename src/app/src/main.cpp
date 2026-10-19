@@ -51,7 +51,8 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName(QStringLiteral(CLASHQT_APP_NAME));
     // Wayland 按 desktop 文件名关联窗口与桌面入口，不设会导致任务栏图标缺失
     QGuiApplication::setDesktopFileName(QStringLiteral(CLASHQT_DESKTOP_FILE));
-    QApplication::setApplicationVersion(QStringLiteral(CLASHQT_VERSION));
+    // 带 v 前缀，与 Release tag、界面上的显示保持一致
+    QApplication::setApplicationVersion(QStringLiteral(CLASHQT_VERSION_TAG));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("Clash Qt —— Clash Party 的 Qt6/C++ 实现"));

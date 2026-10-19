@@ -59,11 +59,15 @@ FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake .
 模板，配置时生成。Debian 包名（`debian/control`）是发行版侧标识，改名时
 仍需单独调整。
 
-**改版本号只改根目录 `VERSION`**：CMake 在配置期读取它作为 `project(VERSION)`，
-再以 `CLASHQT_VERSION` 宏注入，`--version`、日志抬头与订阅 UA 里的版本都来自
-这一处。文件已登记为配置依赖，改完直接构建会自动重跑 CMake，不必手工再
-`cmake .`。Debian 安装包的版本仍只能取 `debian/changelog`（dpkg 的硬约束），
-两者不一致时配置阶段会打一条 WARNING，提醒用 `dch -v <版本>` 同步。
+**改版本号只改根目录 `VERSION`**：写法与 Release tag 一致，带 `v` 前缀（如
+`v1.0.0`）。CMake 在配置期读取它，剥掉前缀后作为 `project(VERSION)`，并注入两个
+宏：`CLASHQT_VERSION`（纯数字，用于比较与订阅 UA）与 `CLASHQT_VERSION_TAG`
+（带 v，用于 `--version` 与启动日志）。文件已登记为配置依赖，改完直接构建会
+自动重跑 CMake，不必手工再 `cmake .`。
+
+Debian 安装包的版本仍只能取 `debian/changelog`（dpkg 要求以数字开头，所以那里
+写 `1.0.0`）；`CHANGELOG.md` 的小节标题与 `VERSION` 保持一致，写 `## [v1.0.0]`。
+三者对不上时，配置阶段会针对 changelog 打一条 WARNING。
 
 ## 测试
 
@@ -111,7 +115,7 @@ sudo apt install build-essential debhelper cmake ninja-build \
 dpkg-buildpackage -us -uc -b
 
 # 安装
-sudo apt install ../clash-qt_$(cat VERSION)_amd64.deb
+sudo apt install ../clash-qt_$(sed 's/^v//' VERSION)_amd64.deb
 ```
 
 注意：debhelper 的 clean 步骤会重建 `build/`（`dh_auto_clean` 直接删掉
@@ -285,7 +289,14 @@ VLESS 系列完全不同的一套协议栈，实现位于 `src/core/src/common/H
 - `release.yaml` 的发布行为：推 tag 出正式 Release；推普通分支或手动触发会覆盖
   同名的 `continuous_build` 预发布（对应「每次提交都能下载安装包」）；PR 只跑
   四架构打包，不建 Release。
+- Release 正文取 `CHANGELOG.md` 里对应 tag 的那一节（`## [v1.0.0]` 到下一个
+  `## [` 之间），原样贴出；小节标题的 `v` 前缀可有可无，`v1.0.0` 与 `1.0.0`
+  两种 tag 都能匹配。持续构建固定为一段说明 + 指向 `CHANGELOG.md` 的链接。
+- 正式版发布前会对账，任一不满足就**直接失败**（`::error::`），不会发出版本号
+  或更新日志对不上的 Release：
+  * tag 与 `VERSION` 必须同版本（`v1.0.1` 配 `v1.0.0` 会被拦下）；
+  * `CHANGELOG.md` 必须有对应小节（缺了就提示补 `## [v1.0.1]`）。
 - 发布走 `debuild -us -uc -b`，不做 GPG 签名（CI 没有密钥）。`debian/source/format`
-  是 `3.0 (native)`，版本号直接取 `debian/changelog`（当前 `0.1.0`，不带 Debian
+  是 `3.0 (native)`，版本号直接取 `debian/changelog`（当前为 `1.0.0`，不带 Debian
   修订号）；`-b` 只是为了跳过源码包、只出安装包。发版前记得让 changelog 的
-  上游版本与根目录 `VERSION` 一致（`dch -v $(cat VERSION)`）。
+  上游版本与根目录 `VERSION` 一致（`dch -v $(sed 's/^v//' VERSION)`）。

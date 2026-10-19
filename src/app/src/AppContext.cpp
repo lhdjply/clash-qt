@@ -58,7 +58,7 @@ QString subscriptionUserAgent(const QString &itemUserAgent, const QString &appUs
     if (!itemUserAgent.isEmpty()) return itemUserAgent;
     if (!appUserAgent.isEmpty()) return appUserAgent;
     return QStringLiteral(CLASHQT_APP_NAME "/v%1 (clash.meta)")
-        .arg(QStringLiteral(CLASHQT_VERSION));
+        .arg(QStringLiteral(CLASHQT_VERSION_TAG));
 }
 
 // 读取本地配置文件并校验是合法的 Clash 配置。避免把坏内容写进订阅库后

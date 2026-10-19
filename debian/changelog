@@ -1,3 +1,12 @@
+clash-qt (1.0.0) unstable; urgency=medium
+
+  * 首个正式版本：自研内核与 Qt6 界面完成，含系统代理、TUN 模式、
+    订阅与覆写管理、检查更新。
+  * 修复 TUN 下 ICMP、Vision 上传截断、TUN 流量统计、退出时系统代理
+    未撤销等一批问题，详见根目录 CHANGELOG.md。
+
+ -- Clash Qt Maintainers <lhdjply@users.noreply.github.com>  Mon, 19 Oct 2026 14:05:00 +0800
+
 clash-qt (0.1.0) unstable; urgency=medium
 
   * Initial Debian packaging.
