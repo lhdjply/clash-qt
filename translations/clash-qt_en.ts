@@ -4057,5 +4057,20 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <source>Node does not exist: %1</source>
         <translation>Node does not exist: %1</translation>
     </message>
+    <message>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="197"/>
+        <source>The config defines its own GLOBAL group; using it as-is</source>
+        <translation>The config defines its own GLOBAL group; using it as-is</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="231"/>
+        <source>Built the built-in GLOBAL group with %1 member(s)</source>
+        <translation>Built the built-in GLOBAL group with %1 member(s)</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="236"/>
+        <source>The profile has no usable node; the GLOBAL group only contains DIRECT</source>
+        <translation>The profile has no usable node; the GLOBAL group only contains DIRECT</translation>
+    </message>
 </context>
 </TS>

@@ -4057,5 +4057,20 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <source>Node does not exist: %1</source>
         <translation>节点不存在：%1</translation>
     </message>
+    <message>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="197"/>
+        <source>The config defines its own GLOBAL group; using it as-is</source>
+        <translation>配置里已定义 GLOBAL 组，直接沿用</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="231"/>
+        <source>Built the built-in GLOBAL group with %1 member(s)</source>
+        <translation>已合成内置 GLOBAL 组，共 %1 个成员</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="236"/>
+        <source>The profile has no usable node; the GLOBAL group only contains DIRECT</source>
+        <translation>订阅中没有可用节点，GLOBAL 组只包含 DIRECT</translation>
+    </message>
 </context>
 </TS>

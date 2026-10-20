@@ -55,6 +55,9 @@ public:
 private:
     void buildBuiltins();
     std::shared_ptr<Adapter> buildNode(const ProxyConfig &config);
+    // 合成内核固定的 GLOBAL 组（配置里没有定义时）。nodeOrder 为配置中
+    // 节点的书写顺序，决定 GLOBAL 的成员顺序与默认出口。
+    void ensureGlobalGroup(const QStringList &nodeOrder);
 
     std::map<QString, AdapterPtr> m_adapters;
     std::vector<std::shared_ptr<ProxyGroup>> m_groups;

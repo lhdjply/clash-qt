@@ -363,12 +363,19 @@ void ProxiesPage::rebuildGroups()
     const QJsonObject proxies =
         m_context->hub()->proxiesStatus().value(QStringLiteral("proxies")).toObject();
 
+    // GLOBAL 是内核自带的组，只在全局模式下参与路由；规则/直连模式下把它
+    // 列出来只会误导（点它不会影响分流）。核心始终提供它（/proxies 与参照
+    // 实现一致），这里按模式决定是否展示。
+    const bool globalMode = m_context->outboundMode() == QLatin1String("global");
+
     // 收集代理组：含有 all 字段的条目即为组
     QStringList groups;
     for (auto it = proxies.constBegin(); it != proxies.constEnd(); ++it) {
+        const QString name = it.key();
+        if (name == QLatin1String("GLOBAL") && !globalMode) continue;
         const QJsonObject entry = it.value().toObject();
         if (entry.contains(QStringLiteral("all")) && !entry.contains(QStringLiteral("unsupported"))) {
-            groups << it.key();
+            groups << name;
         }
     }
 
@@ -377,7 +384,14 @@ void ProxiesPage::rebuildGroups()
     const int globalIndex = groups.indexOf(QStringLiteral("GLOBAL"));
     if (globalIndex > 0) groups.move(globalIndex, 0);
 
-    const QString previous = m_currentGroup;
+    // 模式切换时把当前组挪到该模式下真正生效的那一个：切进全局模式直接停在
+    // GLOBAL，切回规则/直连模式则回落到第一个配置组（GLOBAL 已不在列表里，
+    // 继续留着 m_currentGroup 会指向一个看不见的组）。
+    QString previous = m_currentGroup;
+    if (globalMode != m_globalModeShown) {
+        m_globalModeShown = globalMode;
+        previous          = globalMode ? QStringLiteral("GLOBAL") : QString();
+    }
 
     // 阻断信号，避免批量填充时反复触发 currentIndexChanged
     m_groupCombo->blockSignals(true);

@@ -73,6 +73,9 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
     clear();
 
     // ---- 第一阶段：出站节点 -------------------------------------------------
+    // nodeOrder 保留配置里的节点顺序：GLOBAL 组的成员按这个顺序排列，
+    // 它同时也是「未点选过全局出口」时的默认成员（第一个节点）。
+    QStringList      nodeOrder;
     const QJsonArray proxies = config.proxies();
     for (const QJsonValue &value : proxies) {
         if (!value.isObject()) {
@@ -94,6 +97,7 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
             continue;
         }
         m_adapters.insert_or_assign(parsed->name, buildNode(*parsed));
+        nodeOrder << parsed->name;
     }
 
     // ---- 第二阶段：代理组 ---------------------------------------------------
@@ -167,12 +171,70 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
         Logger::instance().warn(LogCategory::Adapter, message);
     }
 
+    // ---- 第三阶段：GLOBAL 组 -----------------------------------------------
+    // 必须放在最后：它要引用第一阶段建好的全部节点。
+    ensureGlobalGroup(nodeOrder);
+
     Logger::instance().info(
         LogCategory::Adapter,
         QCoreApplication::translate("clashqt::core", "Adapters loaded: %1 nodes/groups, %2 unimplemented protocols, %3 warnings")
             .arg(m_adapters.size())
             .arg(m_unsupported.size())
             .arg(m_warnings.size()));
+}
+
+// GLOBAL 是参照实现（mihomo）里内核自带的固定组：它不写在 profile 的
+// proxy-groups 段里，全局模式下所有流量都从这里出，界面上也固定排在最前。
+// 订阅通常不会自带这一段，所以必须在加载末尾合成一份——否则切到全局模式后
+// Tunnel::dispatch 找不到名为 GLOBAL 的适配器，直接以「配置里没有 GLOBAL 组」
+// 关闭连接，表现为「全局模式连不上网」。
+void AdapterRegistry::ensureGlobalGroup(const QStringList &nodeOrder)
+{
+    if (find(QStringLiteral("GLOBAL"))) {
+        // 少数订阅会显式定义 GLOBAL（多见于手工整理过的配置），保留它，
+        // 只记一条日志，避免默认成员被订阅里的写法带偏。
+        Logger::instance().info(LogCategory::Adapter,
+                                QCoreApplication::translate("clashqt::core", "The config defines its own GLOBAL group; using it as-is"));
+        return;
+    }
+
+    std::vector<AdapterPtr> members;
+    QStringList             names;
+
+    for (const QString &name : nodeOrder) {
+        const AdapterPtr adapter = find(name);
+        // 协议未实现的节点会留在注册表里供界面标注「暂不支持」，但不进 GLOBAL：
+        // 它是组里的第一个成员时会成为默认出口，必然拨号失败。
+        if (!adapter || std::dynamic_pointer_cast<UnsupportedAdapter>(adapter)) continue;
+        members.push_back(adapter);
+        names << adapter->name();
+    }
+
+    // 全局模式下仍要能把单个应用放直连，DIRECT 必须在成员里；参照实现同样
+    // 把 DIRECT 放在列表末尾。
+    members.push_back(m_direct);
+    names << m_direct->name();
+
+    ProxyGroupConfig config;
+    config.name    = QStringLiteral("GLOBAL");
+    config.type    = GroupType::Selector;
+    config.rawType = QStringLiteral("select");
+    config.proxies = names;
+
+    auto group = std::make_shared<ProxyGroup>(config, std::move(members));
+    m_adapters.insert_or_assign(config.name, group);
+    // 组列表里置顶，与界面「GLOBAL 始终排第一」的展示约定一致
+    m_groups.insert(m_groups.begin(), group);
+
+    Logger::instance().info(
+        LogCategory::Adapter,
+        QCoreApplication::translate("clashqt::core", "Built the built-in GLOBAL group with %1 member(s)").arg(names.size()));
+
+    if (names.size() == 1) {
+        m_warnings << QCoreApplication::translate(
+            "clashqt::core",
+            "The profile has no usable node; the GLOBAL group only contains DIRECT");
+    }
 }
 
 AdapterPtr AdapterRegistry::find(const QString &name) const

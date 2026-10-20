@@ -87,6 +87,10 @@ private:
     QString m_currentGroup;
     QStringList m_memberNames;
 
+    // 上次构建列表时的出站模式是否为全局：用于在模式切换后把焦点从 GLOBAL
+    // 挪进/挪出（见 rebuildGroups）
+    bool m_globalModeShown = false;
+
     // 正在测速（含排队中）的节点：跨组切换保留，切回来仍显示「测试中」
     QSet<QString> m_testing;
     QQueue<QString> m_testQueue;
