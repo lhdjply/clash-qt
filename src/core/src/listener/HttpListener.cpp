@@ -1,4 +1,5 @@
 #include "listener/HttpListener.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 #include "common/SocketUtil.h"
@@ -57,14 +58,14 @@ bool HttpListener::parseRequest(const QByteArray &rawHead, ParsedRequest *reques
 {
     const int firstLineEnd = rawHead.indexOf("\r\n");
     if (firstLineEnd <= 0) {
-        if (error) *error = QStringLiteral("HTTP 请求行缺失");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Missing HTTP request line");
         return false;
     }
 
     const QByteArray requestLine = rawHead.left(firstLineEnd);
     const QList<QByteArray> parts = requestLine.split(' ');
     if (parts.size() < 3) {
-        if (error) *error = QStringLiteral("HTTP 请求行格式错误：%1")
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Malformed HTTP request line: %1")
                                 .arg(QString::fromLatin1(requestLine.left(120)));
         return false;
     }
@@ -131,7 +132,7 @@ void HttpListener::handleConnection(QTcpSocket *clientSocket)
 
     if (!readRequestHead(clientSocket, &rawHead, &body, &error)) {
         Logger::instance().warn(LogCategory::Listener,
-                                QStringLiteral("HTTP 入站读取失败：%1").arg(error));
+                                QCoreApplication::translate("clashqt::core", "HTTP inbound read failed: %1").arg(error));
         clientSocket->abort();
         return;
     }

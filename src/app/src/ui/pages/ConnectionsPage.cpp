@@ -27,8 +27,8 @@ ConnectionsPage::ConnectionsPage(AppContext *context, QWidget *parent)
     root->setSpacing(12);
 
     root->addWidget(ui::makePageHeader(
-        QStringLiteral("连接"),
-        QStringLiteral("当前活动的连接。双击某一行可关闭该连接。")));
+        tr("Connections"),
+        tr("Active connections. Double-click a row to close that connection."), QStringLiteral("connections")));
 
     auto *toolbar = new QHBoxLayout();
     toolbar->setSpacing(8);
@@ -36,12 +36,12 @@ ConnectionsPage::ConnectionsPage(AppContext *context, QWidget *parent)
     m_summary = ui::makeHintLabel(QString(), this);
     toolbar->addWidget(m_summary, 1);
 
-    m_autoRefresh = new QCheckBox(QStringLiteral("自动刷新（1 秒）"), this);
+    m_autoRefresh = new QCheckBox(tr("Auto refresh (1 s)"), this);
     m_autoRefresh->setChecked(true);
     toolbar->addWidget(m_autoRefresh);
 
-    auto *closeSelected = new QPushButton(QStringLiteral("关闭选中"), this);
-    auto *closeAll      = ui::makeDangerButton(QStringLiteral("关闭全部"), this);
+    auto *closeSelected = new QPushButton(tr("Close selected"), this);
+    auto *closeAll      = ui::makeDangerButton(tr("Close all"), this);
 
     ui::decorate(closeSelected, QStringLiteral("close"));
     ui::decorate(closeAll, QStringLiteral("trash"));
@@ -52,10 +52,10 @@ ConnectionsPage::ConnectionsPage(AppContext *context, QWidget *parent)
 
     m_table = new QTableWidget(this);
     m_table->setColumnCount(8);
-    m_table->setHorizontalHeaderLabels({QStringLiteral("主机"), QStringLiteral("规则"),
-                                        QStringLiteral("出站链"), QStringLiteral("网络"),
-                                        QStringLiteral("上传"), QStringLiteral("下载"),
-                                        QStringLiteral("↑速度"), QStringLiteral("↓速度")});
+    m_table->setHorizontalHeaderLabels({tr("Host"), tr("Rules"),
+                                        tr("Outbound chain"), tr("Network"),
+                                        tr("Upload"), tr("Download"),
+                                        tr("↑ Speed"), tr("↓ Speed")});
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -89,7 +89,7 @@ void ConnectionsPage::refresh()
     const QJsonArray   connections = status.value(QStringLiteral("connections")).toArray();
 
     m_summary->setText(
-        QStringLiteral("活动连接 %1 · 累计上传 %2 · 累计下载 %3")
+        tr("%1 active connection(s) · Total up %2 · Total down %3")
             .arg(connections.size())
             .arg(calc::traffic(qint64(status.value(QStringLiteral("uploadTotal")).toDouble())))
             .arg(calc::traffic(qint64(status.value(QStringLiteral("downloadTotal")).toDouble()))));
@@ -144,7 +144,7 @@ void ConnectionsPage::onCloseSelected()
 {
     const int row = m_table->currentRow();
     if (row < 0 || row >= m_connectionIds.size()) {
-        m_context->showToast(QStringLiteral("warning"), QStringLiteral("请先选择一条连接"));
+        m_context->showToast(QStringLiteral("warning"), tr("Select a connection first"));
         return;
     }
     const QString id = m_connectionIds.at(row);
@@ -157,7 +157,7 @@ void ConnectionsPage::onCloseSelected()
 void ConnectionsPage::onCloseAll()
 {
     const int count = m_context->hub()->closeAllConnections();
-    m_context->showToast(QStringLiteral("info"), QStringLiteral("已关闭 %1 条连接").arg(count));
+    m_context->showToast(QStringLiteral("info"), tr("Closed %1 connection(s)").arg(count));
     refresh();
 }
 

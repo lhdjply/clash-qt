@@ -1,4 +1,5 @@
 #include "tunnel/Tunnel.h"
+#include <QCoreApplication>
 
 #include "adapter/Adapters.h"
 #include "base/Common.h"
@@ -57,7 +58,7 @@ public:
         QObject::connect(m_client, &QTcpSocket::disconnected, this, [this]() {
             Logger::instance().debug(
                 LogCategory::Listener,
-                QStringLiteral("连接 %1：客户端断开（上行 %2 / 下行 %3 字节）")
+                QCoreApplication::translate("clashqt::core", "Connection %1: client disconnected (up %2 / down %3 bytes)")
                     .arg(m_connectionId)
                     .arg(m_up)
                     .arg(m_down));
@@ -66,7 +67,7 @@ public:
         QObject::connect(m_remote, &OutboundStream::streamClosed, this, [this]() {
             Logger::instance().debug(
                 LogCategory::Listener,
-                QStringLiteral("连接 %1：上游关闭（上行 %2 / 下行 %3 字节）%4")
+                QCoreApplication::translate("clashqt::core", "Connection %1: upstream closed (up %2 / down %3 bytes) %4")
                     .arg(m_connectionId)
                     .arg(m_up)
                     .arg(m_down)
@@ -107,7 +108,7 @@ private:
             // 现象与对端故障极像，因此这里必须留下痕迹
             Logger::instance().warn(
                 LogCategory::Listener,
-                QStringLiteral("连接 %1：上游写入不完整，%2 / %3 字节")
+                QCoreApplication::translate("clashqt::core", "Connection %1: short upstream write, %2 / %3 bytes")
                     .arg(m_connectionId)
                     .arg(written)
                     .arg(data.size()));
@@ -217,7 +218,7 @@ DispatchOutcome Tunnel::dispatch(const Metadata &metadata) const
 
     const std::shared_ptr<TunnelSnapshot> snap = snapshot();
     if (!snap || !snap->registry) {
-        outcome.error = QStringLiteral("尚未加载配置");
+        outcome.error = QCoreApplication::translate("clashqt::core", "Config not loaded yet");
         return outcome;
     }
 
@@ -225,7 +226,7 @@ DispatchOutcome Tunnel::dispatch(const Metadata &metadata) const
     if (snap->mode == OutboundMode::Global) {
         const AdapterPtr global = snap->registry->find(QStringLiteral("GLOBAL"));
         if (!global) {
-            outcome.error = QStringLiteral("GLOBAL 模式已启用，但配置中不存在 GLOBAL 组");
+            outcome.error = QCoreApplication::translate("clashqt::core", "GLOBAL mode is on, but the config has no GLOBAL group");
             return outcome;
         }
         outcome.matched     = true;
@@ -259,7 +260,7 @@ DispatchOutcome Tunnel::dispatch(const Metadata &metadata) const
         outcome.ruleType   = QStringLiteral("MATCH");
         outcome.adapter    = direct;
         if (direct) outcome.chains = expandChains(direct);
-        outcome.error = QStringLiteral("规则列表中没有 MATCH 兜底规则，已按直连处理");
+        outcome.error = QCoreApplication::translate("clashqt::core", "No MATCH fallback rule in the rule list; treating as DIRECT");
         return outcome;
     }
 
@@ -270,7 +271,7 @@ DispatchOutcome Tunnel::dispatch(const Metadata &metadata) const
 
     outcome.adapter = snap->registry->resolvePolicy(outcome.policyName);
     if (!outcome.adapter) {
-        outcome.error = QStringLiteral("规则 %1 指向了不存在的策略：%2")
+        outcome.error = QCoreApplication::translate("clashqt::core", "Rule %1 points at a policy that does not exist: %2")
                             .arg(matchedRule->description(), outcome.policyName);
         return outcome;
     }
@@ -304,7 +305,7 @@ void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
     QString  host    = working.host.isEmpty() ? working.dstIp : working.host;
 
     if (host.isEmpty() || working.dstPort <= 0) {
-        emit coreLog(QStringLiteral("warning"), QStringLiteral("入站连接缺少目标地址，已关闭"));
+        emit coreLog(QStringLiteral("warning"), QCoreApplication::translate("clashqt::core", "Closed an inbound connection with no target address"));
         client->abort();
         m_tracker->closeConnection(connectionId);
         return;
@@ -325,8 +326,8 @@ void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
 
     if (!outcome.adapter) {
         emit coreLog(QStringLiteral("warning"),
-                     QStringLiteral("无法确定出站策略（%1 -> %2），连接已关闭")
-                         .arg(host, outcome.error.isEmpty() ? QStringLiteral("未知原因")
+                     QCoreApplication::translate("clashqt::core", "Could not determine an outbound policy (%1 -> %2); connection closed")
+                         .arg(host, outcome.error.isEmpty() ? QCoreApplication::translate("clashqt::core", "Unknown reason")
                                                            : outcome.error));
         client->abort();
         m_tracker->closeConnection(connectionId);
@@ -344,7 +345,7 @@ void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
         && !working.host.isEmpty()) {
         if (!snap->resolver) {
             emit coreLog(QStringLiteral("error"),
-                         QStringLiteral("DIRECT 出站需要 DNS 解析，但解析器不可用"));
+                         QCoreApplication::translate("clashqt::core", "The DIRECT outbound needs DNS resolution, but no resolver is available"));
             client->abort();
             m_tracker->closeConnection(connectionId);
             return;
@@ -353,7 +354,7 @@ void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
             snap->resolver->resolveReal(working.host, snap->dialTimeoutMs);
         if (resolved.isEmpty()) {
             emit coreLog(QStringLiteral("warning"),
-                         QStringLiteral("域名解析失败，连接已关闭：%1").arg(working.host));
+                         QCoreApplication::translate("clashqt::core", "DNS resolution failed; connection closed: %1").arg(working.host));
             client->abort();
             m_tracker->closeConnection(connectionId);
             return;
@@ -374,7 +375,7 @@ void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
     // REJECT-DROP：保持客户端连接打开但丢弃数据
     if (dialResult.drop) {
         emit coreLog(QStringLiteral("info"),
-                     QStringLiteral("规则 %1 丢弃连接：%2")
+                     QCoreApplication::translate("clashqt::core", "Rule %1 dropped the connection: %2")
                          .arg(outcome.ruleType, QStringLiteral("%1:%2").arg(host).arg(working.dstPort)));
         // 挂起连接：读走并丢弃所有入站数据，直到客户端主动关闭
         QObject::connect(client, &QTcpSocket::readyRead, client,
@@ -387,7 +388,7 @@ void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
 
     if (!dialResult.ok()) {
         emit coreLog(QStringLiteral("warning"),
-                     QStringLiteral("出站 %1 连接 %2:%3 失败：%4")
+                     QCoreApplication::translate("clashqt::core", "Outbound %1 failed to connect to %2:%3: %4")
                          .arg(outcome.policyName, host)
                          .arg(working.dstPort)
                          .arg(dialResult.error));
@@ -397,7 +398,7 @@ void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
     }
 
     if (!dialResult.stream) {
-        emit coreLog(QStringLiteral("info"), QStringLiteral("UDP 中继尚未实现，连接已关闭"));
+        emit coreLog(QStringLiteral("info"), QCoreApplication::translate("clashqt::core", "UDP relay is not implemented yet; connection closed"));
         client->abort();
         m_tracker->closeConnection(connectionId);
         return;
@@ -423,7 +424,7 @@ void Tunnel::handleStream(QTcpSocket *client, const Metadata &metadata,
     relay->start(dialResult.extraData, initialPayload);
 
     emit coreLog(QStringLiteral("info"),
-                 QStringLiteral("%1 -> %2:%3 经由 %4（规则 %5）")
+                 QCoreApplication::translate("clashqt::core", "%1 -> %2:%3 via %4 (rule %5)")
                      .arg(working.srcIp.isEmpty() ? QStringLiteral("local") : working.srcIp, host)
                      .arg(working.dstPort)
                      .arg(outcome.chains.join(QStringLiteral(" -> ")),

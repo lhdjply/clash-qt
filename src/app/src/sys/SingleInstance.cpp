@@ -1,4 +1,5 @@
 #include "sys/SingleInstance.h"
+#include <QCoreApplication>
 
 #include "utils/AppLogger.h"
 
@@ -49,8 +50,7 @@ bool SingleInstance::acquire()
     if (!m_server->listen(m_key)) {
         // 监听失败（例如运行时目录不可写）不应该让用户打不开程序：
         // 退化为多实例运行，只给出告警。
-        AppLogger::instance().warn(QStringLiteral("单实例守卫启动失败（%1），"
-                                                 "本次将以多实例方式运行：%2")
+        AppLogger::instance().warn(QCoreApplication::translate("clashqt::app", "The single-instance guard failed to start (%1); running as multiple instances this time: %2")
                                        .arg(m_key, m_server->errorString()));
         m_server->deleteLater();
         m_server = nullptr;

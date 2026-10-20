@@ -1,4 +1,5 @@
 #include "AppContext.h"
+#include <QCoreApplication>
 
 #include "sys/TunController.h"
 
@@ -68,7 +69,7 @@ bool readValidatedProfile(const QString &filePath, QString *content, QString *er
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         if (error) {
-            *error = QStringLiteral("无法读取文件 %1：%2").arg(filePath, file.errorString());
+            *error = QCoreApplication::translate("clashqt::app", "Could not read file %1: %2").arg(filePath, file.errorString());
         }
         return false;
     }
@@ -78,7 +79,7 @@ bool readValidatedProfile(const QString &filePath, QString *content, QString *er
     QString    parseError;
     const auto parsed = core::RawConfig::fromYaml(text, &parseError);
     if (!parsed) {
-        if (error) *error = QStringLiteral("不是合法的 Clash 配置：%1").arg(parseError);
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Not a valid Clash config: %1").arg(parseError);
         return false;
     }
 
@@ -182,12 +183,12 @@ void AppContext::disableSysProxyOnExit()
     QString error;
     if (!m_sysProxy->disable(&error)) {
         AppLogger::instance().warn(
-            QStringLiteral("退出时关闭系统代理失败：%1（桌面仍指向本机端口）").arg(error));
+            tr("Failed to turn off the system proxy on exit: %1 (the desktop still points at the local port)").arg(error));
         return;
     }
 
     AppLogger::instance().info(
-        QStringLiteral("退出前已关闭系统代理：避免桌面继续指向已停止的本机端口"));
+        tr("System proxy turned off before exit, so the desktop stops pointing at a stopped local port"));
 
     // 注意：**不清** sysProxy.enable。它是「用户希望开着」的记录，下次启动
     // 据此重新把桌面代理指回来（见 restoreStartupToggles）。桌面上的设置
@@ -202,7 +203,7 @@ bool AppContext::initialize(QString *error)
     m_overrideConfig->load();
 
     if (!appOk || !controledOk) {
-        const QString message = QStringLiteral("配置加载失败，请检查 %1 目录下的文件是否可写")
+        const QString message = tr("Failed to load the config. Check that the files in %1 are writable")
                                     .arg(paths::dataDir());
         AppLogger::instance().error(message);
         if (error) *error = message;
@@ -216,9 +217,9 @@ bool AppContext::initialize(QString *error)
     AppLogger::instance().setCoreLogDisabled(m_appConfig->disableCoreLog());
 
     AppLogger::instance().info(
-        QStringLiteral("数据目录：%1（便携模式：%2）")
-            .arg(paths::dataDir(), paths::isPortable() ? QStringLiteral("是")
-                                                       : QStringLiteral("否")));
+        tr("Data directory: %1 (portable: %2)")
+            .arg(paths::dataDir(), paths::isPortable() ? tr("yes")
+                                                       : tr("no")));
     return true;
 }
 
@@ -231,7 +232,7 @@ bool AppContext::applyGeneratedConfig(QString *error)
     const Factory::Result result = m_factory->generate();
     if (!result.success) {
         if (error) *error = result.error;
-        AppLogger::instance().error(QStringLiteral("配置生成失败：%1").arg(result.error));
+        AppLogger::instance().error(tr("Config generation failed: %1").arg(result.error));
         return false;
     }
 
@@ -260,8 +261,8 @@ bool AppContext::startKernel(QString *error)
     QString startError;
     if (!m_hub->start(&startError)) {
         if (error) *error = startError;
-        AppLogger::instance().error(QStringLiteral("启动失败：%1").arg(startError));
-        emit toast(QStringLiteral("error"), QStringLiteral("启动失败：%1").arg(startError));
+        AppLogger::instance().error(tr("Start failed: %1").arg(startError));
+        emit toast(QStringLiteral("error"), tr("Startup failed: %1").arg(startError));
         return false;
     }
 
@@ -369,7 +370,7 @@ bool AppContext::tunAutoRoute() const
 bool AppContext::setTunAutoRoute(bool enabled, QString *error)
 {
     if (!m_controledConfig) {
-        if (error) *error = QStringLiteral("配置尚未加载");
+        if (error) *error = tr("Config not loaded yet");
         return false;
     }
     if (m_controledConfig->tunAutoRoute() == enabled) return true;
@@ -396,7 +397,7 @@ bool AppContext::setTunAutoRoute(bool enabled, QString *error)
 bool AppContext::setTunEnabled(bool enabled, QString *error)
 {
     if (!m_controledConfig) {
-        if (error) *error = QStringLiteral("配置尚未加载");
+        if (error) *error = tr("Config not loaded yet");
         return false;
     }
     if (enabled == m_tunRunning) return true;
@@ -408,7 +409,7 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
     const bool previousStarting = m_tunStarting;
     if (enabled) m_tunStarting = true;
     AppLogger::instance().debug(
-        QStringLiteral("TUN 启用请求：enabled=%1 running=%2 starting(旧)=%3")
+        tr("TUN enable request: enabled=%1 running=%2 starting(old)=%3")
             .arg(enabled ? 1 : 0)
             .arg(m_tunRunning ? 1 : 0)
             .arg(previousStarting ? 1 : 0));
@@ -419,7 +420,7 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
         m_controledConfig->patch(QJsonObject{
             {QStringLiteral("tun"),
              QJsonObject{{QStringLiteral("enable"), false}}}});
-        emit toast(QStringLiteral("info"), QStringLiteral("TUN 已关闭，系统路由已还原"));
+        emit toast(QStringLiteral("info"), tr("TUN disabled; system routes restored"));
         emit tunStateChanged(false);
         return true;
     }
@@ -428,7 +429,7 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
     if (!m_tun) m_tun = std::make_unique<TunController>();
     if (!m_tun->helperExists()) {
         if (error) {
-            *error = QStringLiteral("找不到 TUN 辅助程序（应与主程序同目录）：%1")
+            *error = tr("TUN helper not found (it should sit next to the main executable): %1")
                          .arg(m_tun->helperPath());
         }
         m_tunStarting = false;
@@ -466,11 +467,9 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
                 dnsObj.insert(QStringLiteral("fake-ip-filter"), cleaned);
                 m_controledConfig->patch(QJsonObject{{QStringLiteral("dns"), dnsObj}});
                 configFixed = true;
-                AppLogger::instance().warn(QStringLiteral(
-                    "已从 fake-ip-filter 移除通配 \"*\"（它会让所有域名都跳过 fake-ip）"));
+                AppLogger::instance().warn(tr("Removed the wildcard \"*\" from fake-ip-filter (it makes every domain skip fake-ip)"));
                 emit toast(QStringLiteral("info"),
-                           QStringLiteral("已修正 DNS 配置：fake-ip-filter 里的 \"*\" 会导致"
-                                          "所有域名都不走 fake-ip，已移除"));
+                           tr("Fixed the DNS config: the \"*\" in fake-ip-filter made every domain skip fake-ip, so it was removed"));
             }
         }
     }
@@ -484,7 +483,7 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
             m_controledConfig->patch(QJsonObject{{QStringLiteral("tun"), tunObj}});
             configFixed = true;
             AppLogger::instance().info(
-                QStringLiteral("TUN 设备名已从 Mihomo 改为 %1")
+                tr("TUN device name changed from Mihomo to %1")
                     .arg(QStringLiteral(CLASHQT_TUN_DEVICE)));
         }
     }
@@ -498,9 +497,9 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
         m_appConfig->save();
         m_hub->setDnsEnabled(true);
         AppLogger::instance().warn(
-            QStringLiteral("TUN 模式需要内核 DNS（fake-ip），已自动开启 DNS 覆写"));
+            tr("TUN mode needs kernel DNS (fake-ip); DNS override was enabled automatically"));
         emit toast(QStringLiteral("info"),
-                   QStringLiteral("TUN 模式需要内核 DNS，已自动开启「DNS 覆写」"));
+                   tr("TUN mode needs kernel DNS; \"DNS override\" was enabled automatically"));
     }
 
     // 配置刚被修正且内核已在运行：必须重载，否则 DnsServer 还用着旧过滤器
@@ -515,7 +514,7 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
     if (!m_hub->isRunning()) {
         if (!startKernel(error)) {
             m_tunStarting = false;
-            if (error && error->isEmpty()) *error = QStringLiteral("内核启动失败，无法启用 TUN");
+            if (error && error->isEmpty()) *error = tr("The kernel failed to start, so TUN cannot be enabled");
             return false;
         }
     }
@@ -538,7 +537,7 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
                          [this](const QString &reason) {
                              stopTunInternal();
                              emit toast(QStringLiteral("error"),
-                                        QStringLiteral("TUN 启用失败：%1").arg(reason));
+                                        tr("Failed to enable TUN: %1").arg(reason));
                              emit tunStateChanged(false);
                          });
         m_tunSignalsConnected = true;
@@ -559,14 +558,14 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
     // 否则界面会永远停在「启用中」——既关不掉、也再打不开。
     QTimer::singleShot(25000, this, [this]() {
         if (!m_tunStarting) return;
-        AppLogger::instance().error(QStringLiteral("TUN 启用超时，已强制复位"));
+        AppLogger::instance().error(tr("Enabling TUN timed out; state was force-reset"));
         m_tunStarting = false;
         stopTunInternal();
-        emit toast(QStringLiteral("error"), QStringLiteral("TUN 启用超时，已复位，请重试"));
+        emit toast(QStringLiteral("error"), tr("Timed out enabling TUN; state was reset, please try again"));
         emit tunStateChanged(false);
     });
 
-    emit toast(QStringLiteral("info"), QStringLiteral("正在启用 TUN…"));
+    emit toast(QStringLiteral("info"), tr("Enabling TUN…"));
     return true;
 }
 
@@ -586,8 +585,8 @@ void AppContext::finishTunStart()
         if (dnsTcp >= 0) ::close(dnsTcp);
         stopTunInternal();
         emit toast(QStringLiteral("error"),
-                   QStringLiteral("TUN 启用失败：%1")
-                       .arg(startError.isEmpty() ? QStringLiteral("无法接管设备") : startError));
+                   tr("Failed to enable TUN: %1")
+                       .arg(startError.isEmpty() ? tr("Could not take over the device") : startError));
         emit tunStateChanged(false);
         return;
     }
@@ -599,8 +598,8 @@ void AppContext::finishTunStart()
 
     emit toast(QStringLiteral("info"),
                m_tunAutoRoutePending
-                   ? QStringLiteral("TUN 已启用（已接管系统路由）")
-                   : QStringLiteral("TUN 已启用（未接管路由）"));
+                   ? tr("TUN enabled (system routes taken over)")
+                   : tr("TUN enabled (routes not taken over)"));
     emit tunStateChanged(true);
 }
 
@@ -609,7 +608,7 @@ void AppContext::restoreStartupToggles()
 {
     if (!m_hub || !m_hub->isRunning()) {
         AppLogger::instance().debug(
-            QStringLiteral("内核未运行，跳过开关状态恢复"));
+            tr("Kernel is not running; skipping switch-state restore"));
         return;
     }
 
@@ -619,12 +618,12 @@ void AppContext::restoreStartupToggles()
     if (m_controledConfig && m_controledConfig->tunEnabled() && !m_tunRunning) {
         QString tunError;
         if (setTunEnabled(true, &tunError)) {
-            AppLogger::instance().info(QStringLiteral("已按上次的状态恢复 TUN"));
+            AppLogger::instance().info(tr("Restored TUN to its previous state"));
         } else {
             AppLogger::instance().warn(
-                QStringLiteral("恢复 TUN 失败：%1").arg(tunError));
+                tr("Failed to restore TUN: %1").arg(tunError));
             emit toast(QStringLiteral("warning"),
-                       QStringLiteral("恢复 TUN 模式失败：%1").arg(tunError));
+                       tr("Failed to restore TUN mode: %1").arg(tunError));
         }
     }
 
@@ -633,12 +632,12 @@ void AppContext::restoreStartupToggles()
     if (m_appConfig && m_appConfig->sysProxyEnabled() && !isSysProxyEnabled()) {
         QString proxyError;
         if (setSysProxyEnabled(true, &proxyError)) {
-            AppLogger::instance().info(QStringLiteral("已按上次的状态恢复系统代理"));
+            AppLogger::instance().info(tr("Restored the system proxy to its previous state"));
         } else {
             AppLogger::instance().warn(
-                QStringLiteral("恢复系统代理失败：%1").arg(proxyError));
+                tr("Failed to restore the system proxy: %1").arg(proxyError));
             emit toast(QStringLiteral("warning"),
-                       QStringLiteral("恢复系统代理失败：%1").arg(proxyError));
+                       tr("Failed to restore the system proxy: %1").arg(proxyError));
         }
     }
 }
@@ -653,7 +652,7 @@ bool AppContext::setSysProxyEnabled(bool enabled, QString *error)
             QString startError;
             if (!startKernel(&startError)) {
                 const QString message =
-                    QStringLiteral("启动失败，未启用系统代理：%1").arg(startError);
+                    tr("Start failed; system proxy not enabled: %1").arg(startError);
                 AppLogger::instance().error(message);
                 if (error) *error = message;
                 emit toast(QStringLiteral("error"), message);
@@ -665,7 +664,7 @@ bool AppContext::setSysProxyEnabled(bool enabled, QString *error)
         const int port = m_controledConfig->mixedPort() > 0 ? m_controledConfig->mixedPort()
                                                             : m_controledConfig->socksPort();
         if (port <= 0) {
-            const QString message = QStringLiteral("没有可用的入站端口，无法设置系统代理");
+            const QString message = tr("No inbound port available; cannot set the system proxy");
             if (error) *error = message;
             emit toast(QStringLiteral("error"), message);
             return false;
@@ -675,8 +674,7 @@ bool AppContext::setSysProxyEnabled(bool enabled, QString *error)
         // 指向一个空端口，表现为「代理已启用但完全无法上网」。
         if (!probeLocalPort(quint16(port), 800)) {
             const QString message =
-                QStringLiteral("本机 127.0.0.1:%1 未在监听，已拒绝启用系统代理"
-                               "（否则整个桌面会因指向空端口而断网）")
+                tr("127.0.0.1:%1 is not listening locally; refusing to enable the system proxy (the whole desktop would lose connectivity by pointing at an empty port)")
                     .arg(port);
             AppLogger::instance().error(message);
             if (error) *error = message;
@@ -688,7 +686,7 @@ bool AppContext::setSysProxyEnabled(bool enabled, QString *error)
                                 &proxyError)) {
             if (error) *error = proxyError;
             emit toast(QStringLiteral("error"),
-                       QStringLiteral("设置系统代理失败：%1").arg(proxyError));
+                       tr("Failed to set the system proxy: %1").arg(proxyError));
             return false;
         }
     } else {
@@ -696,7 +694,7 @@ bool AppContext::setSysProxyEnabled(bool enabled, QString *error)
         if (!m_sysProxy->disable(&proxyError)) {
             if (error) *error = proxyError;
             emit toast(QStringLiteral("error"),
-                       QStringLiteral("关闭系统代理失败：%1").arg(proxyError));
+                       tr("Failed to turn off the system proxy: %1").arg(proxyError));
             return false;
         }
     }
@@ -729,7 +727,7 @@ bool AppContext::setOutboundMode(const QString &mode, QString *error)
     } else if (normalized == QLatin1String("direct")) {
         target = core::OutboundMode::Direct;
     } else if (normalized != QLatin1String("rule")) {
-        if (error) *error = QStringLiteral("未知的出站模式：%1").arg(mode);
+        if (error) *error = tr("Unknown outbound mode: %1").arg(mode);
         return false;
     }
 
@@ -768,16 +766,16 @@ bool AppContext::addLocalProfile(const QString &filePath, const QString &name, Q
     item.updated = QDateTime::currentSecsSinceEpoch();
 
     if (!m_profileConfig->setProfileContent(item.id, content)) {
-        if (error) *error = QStringLiteral("订阅内容写入失败");
+        if (error) *error = tr("Failed to write the profile contents");
         return false;
     }
 
     if (!m_profileConfig->addItem(item, /*switchTo=*/true)) {
-        if (error) *error = QStringLiteral("订阅列表写入失败");
+        if (error) *error = tr("Failed to write the profile list");
         return false;
     }
 
-    emit toast(QStringLiteral("info"), QStringLiteral("已添加本地配置：%1").arg(item.name));
+    emit toast(QStringLiteral("info"), tr("Added local config: %1").arg(item.name));
     return reloadKernel(error);
 }
 
@@ -785,7 +783,7 @@ bool AppContext::replaceProfileContent(const QString &id, const QString &filePat
 {
     const ProfileItem item = m_profileConfig->item(id);
     if (item.id.isEmpty()) {
-        if (error) *error = QStringLiteral("订阅不存在：%1").arg(id);
+        if (error) *error = tr("Profile does not exist: %1").arg(id);
         return false;
     }
 
@@ -793,13 +791,13 @@ bool AppContext::replaceProfileContent(const QString &id, const QString &filePat
     if (!readValidatedProfile(filePath, &content, error)) return false;
 
     if (!m_profileConfig->setProfileContent(id, content)) {
-        if (error) *error = QStringLiteral("订阅内容写入失败");
+        if (error) *error = tr("Failed to write the profile contents");
         return false;
     }
     m_profileConfig->touchUpdated(id);
 
     emit toast(QStringLiteral("info"),
-               QStringLiteral("已替换「%1」的配置文件").arg(item.name));
+               tr("Replaced the config file of \"%1\"").arg(item.name));
 
     // 只有当前生效的订阅才需要重载内核
     if (m_profileConfig->current() != id) return true;
@@ -811,7 +809,7 @@ bool AppContext::addSubscription(const QString &url, const QString &name, QStrin
     const QUrl parsedUrl(url.trimmed());
     if (!parsedUrl.isValid() || (parsedUrl.scheme() != QLatin1String("http")
                                  && parsedUrl.scheme() != QLatin1String("https"))) {
-        if (error) *error = QStringLiteral("订阅地址无效：%1").arg(url);
+        if (error) *error = tr("Invalid profile URL: %1").arg(url);
         return false;
     }
 
@@ -838,14 +836,14 @@ bool AppContext::addSubscription(const QString &url, const QString &name, QStrin
     if (!reply->isFinished()) {
         reply->abort();
         reply->deleteLater();
-        if (error) *error = QStringLiteral("订阅下载超时（%1 ms）").arg(timeoutMs);
+        if (error) *error = tr("Profile download timed out (%1 ms)").arg(timeoutMs);
         return false;
     }
 
     if (reply->error() != QNetworkReply::NoError) {
         const QString reason = reply->errorString();
         reply->deleteLater();
-        if (error) *error = QStringLiteral("订阅下载失败：%1").arg(reason);
+        if (error) *error = tr("Profile download failed: %1").arg(reason);
         return false;
     }
 
@@ -864,7 +862,7 @@ bool AppContext::addSubscription(const QString &url, const QString &name, QStrin
     const auto parsed = core::RawConfig::fromYaml(content, &parseError);
     if (!parsed) {
         if (error) {
-            *error = QStringLiteral("订阅内容不是合法的 Clash 配置：%1").arg(parseError);
+            *error = tr("The profile is not a valid Clash config: %1").arg(parseError);
         }
         return false;
     }
@@ -881,15 +879,15 @@ bool AppContext::addSubscription(const QString &url, const QString &name, QStrin
     if (userInfo) item.extra = userInfo;
 
     if (!m_profileConfig->setProfileContent(item.id, content)) {
-        if (error) *error = QStringLiteral("订阅内容写入失败");
+        if (error) *error = tr("Failed to write the profile contents");
         return false;
     }
     if (!m_profileConfig->addItem(item, /*switchTo=*/true)) {
-        if (error) *error = QStringLiteral("订阅列表写入失败");
+        if (error) *error = tr("Failed to write the profile list");
         return false;
     }
 
-    emit toast(QStringLiteral("info"), QStringLiteral("已添加订阅：%1").arg(item.name));
+    emit toast(QStringLiteral("info"), tr("Added profile: %1").arg(item.name));
     return reloadKernel(error);
 }
 
@@ -897,11 +895,11 @@ bool AppContext::updateSubscription(const QString &id, QString *error)
 {
     const ProfileItem item = m_profileConfig->item(id);
     if (item.id.isEmpty()) {
-        if (error) *error = QStringLiteral("订阅不存在：%1").arg(id);
+        if (error) *error = tr("Profile does not exist: %1").arg(id);
         return false;
     }
     if (item.type != QLatin1String("remote") || item.url.isEmpty()) {
-        if (error) *error = QStringLiteral("订阅「%1」不是远程订阅，无需更新").arg(item.name);
+        if (error) *error = tr("Profile \"%1\" is not a remote profile; nothing to update").arg(item.name);
         return false;
     }
 
@@ -928,13 +926,13 @@ bool AppContext::updateSubscription(const QString &id, QString *error)
     if (!reply->isFinished()) {
         reply->abort();
         reply->deleteLater();
-        if (error) *error = QStringLiteral("更新「%1」超时").arg(item.name);
+        if (error) *error = tr("Updating \"%1\" timed out").arg(item.name);
         return false;
     }
     if (reply->error() != QNetworkReply::NoError) {
         const QString reason = reply->errorString();
         reply->deleteLater();
-        if (error) *error = QStringLiteral("更新「%1」失败：%2").arg(item.name, reason);
+        if (error) *error = tr("Failed to update \"%1\": %2").arg(item.name, reason);
         return false;
     }
 
@@ -952,14 +950,14 @@ bool AppContext::updateSubscription(const QString &id, QString *error)
     const auto parsed = core::RawConfig::fromYaml(content, &parseError);
     if (!parsed) {
         if (error) {
-            *error = QStringLiteral("更新「%1」返回的内容不合法，已保留原配置：%2")
+            *error = tr("The update for \"%1\" returned invalid content; the old config was kept: %2")
                          .arg(item.name, parseError);
         }
         return false;
     }
 
     if (!m_profileConfig->setProfileContent(id, content)) {
-        if (error) *error = QStringLiteral("订阅内容写入失败");
+        if (error) *error = tr("Failed to write the profile contents");
         return false;
     }
 
@@ -973,7 +971,7 @@ bool AppContext::updateSubscription(const QString &id, QString *error)
         m_profileConfig->updateItem(id, QJsonObject{{QStringLiteral("extra"), extra}});
     }
 
-    emit toast(QStringLiteral("info"), QStringLiteral("订阅已更新：%1").arg(item.name));
+    emit toast(QStringLiteral("info"), tr("Profile updated: %1").arg(item.name));
 
     // 仅当更新的是当前订阅时才需要重载内核
     if (m_profileConfig->current() == id) return reloadKernel(error);
@@ -1000,12 +998,12 @@ int AppContext::updateAllSubscriptions(QStringList *errors)
 bool AppContext::switchProfile(const QString &id, QString *error)
 {
     if (!m_profileConfig->setCurrent(id)) {
-        if (error) *error = QStringLiteral("订阅不存在：%1").arg(id);
+        if (error) *error = tr("Profile does not exist: %1").arg(id);
         return false;
     }
 
     const ProfileItem item = m_profileConfig->item(id);
-    emit toast(QStringLiteral("info"), QStringLiteral("已切换到订阅：%1").arg(item.name));
+    emit toast(QStringLiteral("info"), tr("Switched to profile: %1").arg(item.name));
     return reloadKernel(error);
 }
 
@@ -1020,29 +1018,29 @@ bool AppContext::addYamlOverride(const QString &name, const QString &yaml, bool 
     const auto parsed = core::Yaml::parse(yaml, &parseError);
     if (!parsed || !parsed->isObject()) {
         if (error) {
-            *error = QStringLiteral("覆写内容必须是 YAML 映射：%1").arg(parseError);
+            *error = tr("Override content must be a YAML mapping: %1").arg(parseError);
         }
         return false;
     }
 
     OverrideItem item;
     item.id     = m_overrideConfig->generateId();
-    item.name   = name.trimmed().isEmpty() ? QStringLiteral("未命名覆写") : name.trimmed();
+    item.name   = name.trimmed().isEmpty() ? tr("Unnamed override") : name.trimmed();
     item.type   = QStringLiteral("local");
     item.ext    = QStringLiteral("yaml");
     item.global = global;
     item.updated = QDateTime::currentSecsSinceEpoch();
 
     if (!m_overrideConfig->setContent(item.id, QStringLiteral("yaml"), yaml)) {
-        if (error) *error = QStringLiteral("覆写内容写入失败");
+        if (error) *error = tr("Failed to write the override contents");
         return false;
     }
     if (!m_overrideConfig->addItem(item)) {
-        if (error) *error = QStringLiteral("覆写列表写入失败");
+        if (error) *error = tr("Failed to write the override list");
         return false;
     }
 
-    emit toast(QStringLiteral("info"), QStringLiteral("已添加覆写：%1").arg(item.name));
+    emit toast(QStringLiteral("info"), tr("Added override: %1").arg(item.name));
     return reloadKernel(error);
 }
 
@@ -1073,7 +1071,7 @@ AppContext::RuleOverride AppContext::ruleOverride() const
     const auto parsed = core::Yaml::parse(content, &parseError);
     if (!parsed || !parsed->isObject()) {
         AppLogger::instance().warn(
-            QStringLiteral("规则覆写文件解析失败，已按空处理：%1").arg(parseError));
+            tr("Failed to parse the rule-override file; treating it as empty: %1").arg(parseError));
         return result;
     }
 
@@ -1097,7 +1095,7 @@ bool AppContext::saveRuleOverride(const RuleOverride &value, QString *error)
 {
     const QString profileId = m_profileConfig ? m_profileConfig->current() : QString();
     if (profileId.isEmpty()) {
-        if (error) *error = QStringLiteral("尚未选择订阅，无法保存自定义规则");
+        if (error) *error = tr("No profile selected; cannot save custom rules");
         return false;
     }
 
@@ -1109,7 +1107,7 @@ bool AppContext::saveRuleOverride(const RuleOverride &value, QString *error)
             if (rule.isEmpty()) continue;
             if (rule.contains(QLatin1Char('\n'))) {
                 if (error) {
-                    *error = QStringLiteral("%1 第 %2 条包含换行（每条规则必须写在一行内）")
+                    *error = tr("%1 entry %2 contains a line break (each rule must stay on one line)")
                                  .arg(label)
                                  .arg(i + 1);
                 }
@@ -1117,7 +1115,7 @@ bool AppContext::saveRuleOverride(const RuleOverride &value, QString *error)
             }
             if (rule.count(QLatin1Char(',')) < 1) {
                 if (error) {
-                    *error = QStringLiteral("%1 第 %2 条不是合法规则（至少需要「类型,目标」）：%3")
+                    *error = tr("%1 entry %2 is not a valid rule (expected at least \"type,target\"): %3")
                                  .arg(label)
                                  .arg(i + 1)
                                  .arg(rule);
@@ -1127,9 +1125,9 @@ bool AppContext::saveRuleOverride(const RuleOverride &value, QString *error)
         }
         return true;
     };
-    if (!validate(value.prepend, QStringLiteral("自定义规则"))
-        || !validate(value.append, QStringLiteral("兜底规则"))
-        || !validate(value.remove, QStringLiteral("删除规则"))) {
+    if (!validate(value.prepend, tr("Custom rules"))
+        || !validate(value.append, tr("Fallback rules"))
+        || !validate(value.remove, tr("Removal rules"))) {
         return false;
     }
 
@@ -1162,13 +1160,12 @@ bool AppContext::saveRuleOverride(const RuleOverride &value, QString *error)
     const QString content = core::Yaml::stringify(QJsonValue(root));
     QString       writeError;
     if (!safefile::writeAtomic(paths::rulePath(profileId), content, &writeError)) {
-        if (error) *error = QStringLiteral("自定义规则写入失败：%1").arg(writeError);
+        if (error) *error = tr("Failed to write custom rules: %1").arg(writeError);
         return false;
     }
 
     AppLogger::instance().info(
-        QStringLiteral("自定义规则已保存（订阅 %1）：共 %2 条，其中停用 %3 条，"
-                       "兜底 %4 条 / 删除 %5 条")
+        tr("Custom rules saved (profile %1): %2 total, %3 disabled, %4 fallback / %5 removal")
             .arg(profileId)
             .arg(value.prepend.size())
             .arg(value.disabled.size())
@@ -1177,7 +1174,7 @@ bool AppContext::saveRuleOverride(const RuleOverride &value, QString *error)
 
     if (!reloadKernel(error)) return false;
 
-    emit toast(QStringLiteral("info"), QStringLiteral("自定义规则已生效"));
+    emit toast(QStringLiteral("info"), tr("Custom rules applied"));
     return true;
 }
 

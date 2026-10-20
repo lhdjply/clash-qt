@@ -1,4 +1,5 @@
 #include "component/cidr/IpCidrSet.h"
+#include <QCoreApplication>
 
 namespace core {
 
@@ -8,7 +9,7 @@ bool IpCidrSet::insert(const QString &cidr, const QString &payload)
     if (!net) {
         Logger::instance().warn(
             LogCategory::Rule,
-            QStringLiteral("忽略非法的 CIDR 规则项：%1").arg(cidr));
+            QCoreApplication::translate("clashqt::core", "Ignoring an invalid CIDR rule entry: %1").arg(cidr));
         return false;
     }
     return insert(*net, payload);

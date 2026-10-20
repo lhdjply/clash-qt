@@ -433,7 +433,7 @@ void TestUpdateChecker::rateLimitedApiIsSkipped()
     QSignalSpy second(&checker, &UpdateChecker::failed);
     QVERIFY(checker.check(0));
     QTRY_COMPARE_WITH_TIMEOUT(second.count(), 1, 8000);
-    QVERIFY2(second.first().at(0).toString().contains(QStringLiteral("配额已用尽")),
+    QVERIFY2(second.first().at(0).toString().contains(QStringLiteral("Rate limit exhausted")),
              qPrintable(second.first().at(0).toString()));
     QCOMPARE(server.hits.value(QStringLiteral("/latest")), 1);
 }

@@ -1,4 +1,5 @@
 #include "tunnel/FlowWorker.h"
+#include <QCoreApplication>
 
 #include "tunnel/OutboundStream.h"
 
@@ -22,13 +23,13 @@ FlowWorker::~FlowWorker()
 void FlowWorker::start()
 {
     if (!m_dial) {
-        emit failed(QStringLiteral("没有可用的拨号实现"));
+        emit failed(QCoreApplication::translate("clashqt::core", "No dialer implementation available"));
         return;
     }
 
     DialResult result = m_dial(m_context);
     if (!result.ok() || !result.stream) {
-        emit failed(result.error.isEmpty() ? QStringLiteral("拨号失败") : result.error);
+        emit failed(result.error.isEmpty() ? QCoreApplication::translate("clashqt::core", "Dial failed") : result.error);
         return;
     }
 

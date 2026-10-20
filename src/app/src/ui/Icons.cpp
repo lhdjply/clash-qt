@@ -1,4 +1,5 @@
 #include "ui/Icons.h"
+#include <QCoreApplication>
 
 #include "utils/AppLogger.h"
 
@@ -49,7 +50,7 @@ const QByteArray &svgSource(const QString &name)
         if (!reported.contains(name)) {
             reported.insert(name);
             AppLogger::instance().warn(
-                QStringLiteral("图标资源缺失：%1（检查 resources/clash-qt.qrc）")
+                QCoreApplication::translate("clashqt::app", "Icon resource missing: %1 (check resources/clash-qt.qrc)")
                     .arg(file.fileName()));
         }
     } else {
@@ -84,36 +85,6 @@ QIcon renderSvg(const QByteArray &svg, int size)
 
     image.setDevicePixelRatio(ratio);
     return QIcon(QPixmap::fromImage(image));
-}
-
-// 标题 → 图标名。卡片与导航项的标题在页面里是稳定的中文短语，因此直接按标题
-// 映射：既让既有 makeCard(标题) 调用自动获得图标，也免去在每个页面重复写图标名。
-struct TitleIcon {
-    const char *title;
-    const char *icon;
-};
-
-const TitleIcon kCardTitles[] = {
-    {"快捷设置", "quick"}, {"统计", "stats"},   {"当前状态", "activity"},
-    {"速度曲线", "trend"}, {"节点", "server"},  {"日志", "logs"},
-    {"配置覆写", "code"},  {"入站端口", "port"}, {"系统集成", "system"},
-    {"订阅信息", "profiles"}, {"关于", "info"},
-};
-
-const TitleIcon kNavTitles[] = {
-    {"代理", "proxy"},   {"订阅", "profiles"}, {"连接", "connections"},
-    {"规则", "rules"},   {"覆写", "code"},     {"日志", "logs"},
-    {"流量", "traffic"}, {"设置", "settings"},
-};
-
-QString lookup(const TitleIcon *table, size_t count, const QString &title)
-{
-    for (size_t i = 0; i < count; ++i) {
-        if (title == QString::fromUtf8(table[i].title)) {
-            return QString::fromUtf8(table[i].icon);
-        }
-    }
-    return {};
 }
 
 } // namespace
@@ -204,28 +175,6 @@ QIcon appIcon(int size, AppIconState state)
     const QIcon icon = renderSvg(svg, size);
     iconCache().insert(key, icon);
     return icon;
-}
-
-QString cardIconName(const QString &title)
-{
-    return lookup(kCardTitles, std::size(kCardTitles), title);
-}
-
-QString navIconName(const QString &title)
-{
-    return lookup(kNavTitles, std::size(kNavTitles), title);
-}
-
-QIcon forCardTitle(const QString &title, const QColor &color, int size)
-{
-    const QString name = cardIconName(title);
-    return name.isEmpty() ? QIcon() : get(name, color, size);
-}
-
-QIcon forNavTitle(const QString &title, const QColor &color, int size)
-{
-    const QString name = navIconName(title);
-    return name.isEmpty() ? QIcon() : get(name, color, size);
 }
 
 } // namespace icons

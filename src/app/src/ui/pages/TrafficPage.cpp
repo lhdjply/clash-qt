@@ -60,17 +60,17 @@ TrafficPage::TrafficPage(AppContext *context, QWidget *parent) : QWidget(parent)
     root->setSpacing(12);
 
     root->addWidget(ui::makePageHeader(
-        QStringLiteral("流量"),
-        QStringLiteral("实时上下行速度与累计流量统计，曲线为最近 2 分钟的每秒采样。")));
+        tr("Traffic"),
+        tr("Live upload/download speed and cumulative traffic; the chart shows 1-second samples from the last 2 minutes."), QStringLiteral("traffic")));
 
     // ---- 统计卡片 ---------------------------------------------------------
-    auto *statsCard = ui::makeCard(QStringLiteral("当前状态"), this);
+    auto *statsCard = ui::makeCard(tr("Status"), this, QStringLiteral("activity"));
     auto *statsLayout = qobject_cast<QVBoxLayout *>(statsCard->layout());
 
     m_uploadLabel = new QLabel(QStringLiteral("↑ 0 B/s"), statsCard);
     m_downloadLabel = new QLabel(QStringLiteral("↓ 0 B/s"), statsCard);
-    m_totalLabel = new QLabel(QStringLiteral("累计 0 B / 0 B"), statsCard);
-    m_connectionLabel = new QLabel(QStringLiteral("活动连接 0"), statsCard);
+    m_totalLabel = new QLabel(tr("Total 0 B / 0 B"), statsCard);
+    m_connectionLabel = new QLabel(tr("0 active connections"), statsCard);
 
     for (QLabel *label : {m_uploadLabel, m_downloadLabel, m_totalLabel, m_connectionLabel}) {
         label->setStyleSheet(QStringLiteral("font-size: 15px; padding: 2px 0;"));
@@ -79,7 +79,7 @@ TrafficPage::TrafficPage(AppContext *context, QWidget *parent) : QWidget(parent)
     root->addWidget(statsCard);
 
     // ---- 速度曲线 ---------------------------------------------------------
-    auto *chartCard = ui::makeCard(QStringLiteral("速度曲线"), this);
+    auto *chartCard = ui::makeCard(tr("Speed chart"), this, QStringLiteral("trend"));
     auto *chartLayout = qobject_cast<QVBoxLayout *>(chartCard->layout());
 
     m_uploadSeries = new QLineSeries(chartCard);
@@ -93,7 +93,7 @@ TrafficPage::TrafficPage(AppContext *context, QWidget *parent) : QWidget(parent)
 
     auto *axisX = new QValueAxis(m_chart);
     axisX->setRange(0, kMaxSamples);
-    axisX->setTitleText(QStringLiteral("秒"));
+    axisX->setTitleText(tr("s"));
     axisX->setLabelFormat(QStringLiteral("%d"));
 
     auto *axisY = new QValueAxis(m_chart);
@@ -185,12 +185,12 @@ void TrafficPage::onTrafficUpdated(qint64 uploadSpeed, qint64 downloadSpeed)
     m_totalUpload += uploadSpeed;
     m_totalDownload += downloadSpeed;
     m_totalLabel->setText(
-        QStringLiteral("窗口累计 ↑ %1 · ↓ %2")
+        tr("Session total ↑ %1 · ↓ %2")
             .arg(calc::traffic(m_totalUpload), calc::traffic(m_totalDownload)));
 
     const QJsonObject stats = m_context->hub()->statistics();
     m_connectionLabel->setText(
-        QStringLiteral("活动连接 %1 · 内存 %2")
+        tr("%1 active connection(s) · Memory %2")
             .arg(stats.value(QStringLiteral("connectionCount")).toInt())
             .arg(calc::traffic(qint64(stats.value(QStringLiteral("memoryInUse")).toDouble()))));
 
@@ -239,8 +239,8 @@ void TrafficPage::updateAxisUnit()
 void TrafficPage::applyUnitLabels(const calc::SpeedUnit &unit)
 {
     m_axisY->setTitleText(unit.name);
-    m_uploadSeries->setName(QStringLiteral("上传 (%1)").arg(unit.name));
-    m_downloadSeries->setName(QStringLiteral("下载 (%1)").arg(unit.name));
+    m_uploadSeries->setName(tr("Upload (%1)").arg(unit.name));
+    m_downloadSeries->setName(tr("Download (%1)").arg(unit.name));
 }
 
 void TrafficPage::updateAxisRange()

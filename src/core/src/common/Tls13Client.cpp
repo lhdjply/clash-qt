@@ -1,4 +1,5 @@
 #include "common/Tls13Client.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 #include "common/JsonUtil.h"
@@ -457,7 +458,7 @@ std::shared_ptr<RealityTlsStream> RealityTlsStream::connect(const RealityConfig 
 
         if (socket->state() != QAbstractSocket::ConnectedState) {
             if (error) {
-                *error = QStringLiteral("REALITY 连接 %1:%2 失败：%3")
+                *error = QCoreApplication::translate("clashqt::core", "REALITY connection to %1:%2 failed: %3")
                              .arg(config.server)
                              .arg(config.port)
                              .arg(socket->errorString());
@@ -483,7 +484,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
     //                       salt=ClientHello.random[:20], info="REALITY")
     // 对应参照实现：ecdheKey.ECDH(realityConfig.PublicKey) + hkdf(...)
     if (!x25519Keygen(&m_km.ourPriv, &m_km.ourPub)) {
-        if (error) *error = QStringLiteral("X25519 密钥生成失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "X25519 key generation failed");
         return false;
     }
 
@@ -504,20 +505,20 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
         m_mlkemSk.assign(seckey.begin(), seckey.end());
     }
     if (!x25519Keygen(&m_mlkemXPriv, &m_mlkemXPub)) {
-        if (error) *error = QStringLiteral("X25519 密钥生成失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "X25519 key generation failed");
         return false;
     }
 
     const QByteArray ecdhStatic = x25519Ecdh(m_km.ourPriv, config.publicKey);
     if (ecdhStatic.size() != 32) {
-        if (error) *error = QStringLiteral("REALITY 静态 ECDH 失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "REALITY static ECDH failed");
         return false;
     }
 
     // ---- 2. ClientHello（session_id 区域先全零） ---------------------------
     m_km.clientRandom = secureRandom(32);
     if (!buildClientHello(config, error)) {
-        if (error && error->isEmpty()) *error = QStringLiteral("ClientHello 构造失败");
+        if (error && error->isEmpty()) *error = QCoreApplication::translate("clashqt::core", "Failed to build ClientHello");
         return false;
     }
 
@@ -548,7 +549,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
                                            m_km.clientRandom.mid(20), m_km.rawHello,
                                            sid.left(16));
         if (sealed.size() != 32) {
-            if (error) *error = QStringLiteral("REALITY 认证数据生成失败");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to generate REALITY authentication data");
             return false;
         }
         m_km.rawHello.replace(39, 32, sealed);
@@ -567,7 +568,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
     }
     if (recordType != 0x16 || recordPayload.isEmpty() || uchar(recordPayload.at(0)) != 0x02) {
         if (error) {
-            *error = QStringLiteral("REALITY 未收到 ServerHello（记录类型=%1 长度=%2 内容=%3）")
+            *error = QCoreApplication::translate("clashqt::core", "REALITY received no ServerHello (record type=%1 length=%2 content=%3)")
                          .arg(recordType)
                          .arg(recordPayload.size())
                          .arg(QString::fromLatin1(recordPayload.left(24).toHex()));
@@ -578,7 +579,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
 
     const QByteArray &sh    = recordPayload;
     if (sh.size() < 43) {
-        if (error) *error = QStringLiteral("ServerHello 截断");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Truncated ServerHello");
         return false;
     }
     const int sidLen = uchar(sh.at(38));
@@ -614,13 +615,13 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
         pos += extLen;
     }
     if (serverX25519Pub.size() != 32) {
-        if (error) *error = QStringLiteral("ServerHello 未包含可用的 key_share");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "ServerHello contains no usable key_share");
         return false;
     }
 
     Logger::instance().debug(
         LogCategory::Adapter,
-        QStringLiteral("TLS 协商：密码套件=0x%1 密钥交换组=%2")
+        QCoreApplication::translate("clashqt::core", "TLS negotiated: cipher=0x%1 key-exchange group=%2")
             .arg(suite, 4, 16, QLatin1Char('0'))
             .arg(serverGroup == ServerGroup::X25519Mlkem768
                      ? QStringLiteral("X25519MLKEM768")
@@ -632,7 +633,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
     case 0x1303: m_cipher = Cipher::ChaCha20Poly1305Sha256; m_hashLen = 32; m_keyLen = 32; break;
     default:
         if (error) {
-            *error = QStringLiteral("REALITY 服务器协商了不支持的套件 0x%1")
+            *error = QCoreApplication::translate("clashqt::core", "The REALITY server negotiated an unsupported cipher 0x%1")
                          .arg(suite, 4, 16, QLatin1Char('0'));
         }
         return false;
@@ -700,7 +701,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
         }
         if (recordType != 0x16 && recordType != 0x17) {
             if (error) {
-                *error = QStringLiteral("REALITY 握手中出现意外记录类型 %1").arg(recordType);
+                *error = QCoreApplication::translate("clashqt::core", "Unexpected record type %1 during the REALITY handshake").arg(recordType);
             }
             return false;
         }
@@ -709,11 +710,11 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
         if (!aeadOpen(aead, m_serverHsKey, nonce, recordHeader, recordPayload, &inner)) {
             Logger::instance().warn(
                 LogCategory::Adapter,
-                QStringLiteral("REALITY 握手记录解密失败（记录类型=%1 长度=%2 序号=%3）")
+                QCoreApplication::translate("clashqt::core", "Failed to decrypt a REALITY handshake record (type=%1 length=%2 seq=%3)")
                     .arg(recordType)
                     .arg(recordPayload.size())
                     .arg(m_serverSeq - 1));
-            if (error) *error = QStringLiteral("REALITY 握手记录解密失败");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to decrypt a REALITY handshake record");
             return false;
         }
         // 去尾部零填充与内容类型字节
@@ -764,7 +765,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
     if (!config.reality) {
         // 普通 TLS：标准证书链校验（系统根证书）+ 主机名匹配
         if (!gotCert) {
-            if (error) *error = QStringLiteral("服务器未返回证书");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "The server returned no certificate");
             return false;
         }
         if (!config.skipVerify) {
@@ -795,17 +796,17 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
             X509_free(leaf);
             if (ok != 1 || hostOk != 1) {
                 if (error) {
-                    *error = QStringLiteral("TLS 证书校验失败（链=%1 主机名=%2）")
-                                 .arg(ok == 1 ? QStringLiteral("通过")
-                                              : QStringLiteral("不通过"),
-                                      hostOk == 1 ? QStringLiteral("匹配")
-                                                  : QStringLiteral("不匹配"));
+                    *error = QCoreApplication::translate("clashqt::core", "TLS certificate verification failed (chain=%1 hostname=%2)")
+                                 .arg(ok == 1 ? QCoreApplication::translate("clashqt::core", "Pass")
+                                              : QCoreApplication::translate("clashqt::core", "Fail"),
+                                      hostOk == 1 ? QCoreApplication::translate("clashqt::core", "Match")
+                                                  : QCoreApplication::translate("clashqt::core", "No match"));
                 }
                 return false;
             }
         } else {
             Logger::instance().warn(LogCategory::Adapter,
-                QStringLiteral("节点 %1 跳过 TLS 证书校验")
+                QCoreApplication::translate("clashqt::core", "Node %1 skips TLS certificate verification")
                     .arg(config.serverName));
         }
     } else {
@@ -814,9 +815,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
             hmacOneShot("SHA512", m_km.authKey, realityCert.ed25519Pub);
         if (!gotCert || !realityCertOk || expect != realityCert.signature) {
             if (error) {
-                *error = QStringLiteral(
-                    "REALITY 认证失败（对端是借用站点本身而非 REALITY 服务器，"
-                    "或 public-key / short-id 配置错误）");
+                *error = QCoreApplication::translate("clashqt::core", "REALITY authentication failed (the peer is the borrowed site itself rather than a REALITY server, or public-key / short-id is misconfigured)");
             }
             return false;
         }
@@ -828,7 +827,7 @@ bool RealityTlsStream::handshake(const RealityConfig &config, int timeoutMs, QSt
         const QByteArray fk =
             expandLabel(m_serverHsSecret, "finished", QByteArray(), m_hashLen);
         if (hmacOneShot(hash, fk, thCv) != serverFinishedVerify) {
-            if (error) *error = QStringLiteral("服务器 Finished 校验失败");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Server Finished verification failed");
             return false;
         }
     }
@@ -991,7 +990,7 @@ bool RealityTlsStream::sendRecord(uchar recordType, const QByteArray &payload, Q
     header.append(be16(payload.size()));
     m_socket->write(header + payload);
     if (!m_socket->flush()) {
-        if (error) *error = QStringLiteral("REALITY 发送失败：%1").arg(m_socket->errorString());
+        if (error) *error = QCoreApplication::translate("clashqt::core", "REALITY send failed: %1").arg(m_socket->errorString());
         return false;
     }
     return true;
@@ -1006,7 +1005,7 @@ bool RealityTlsStream::sendEncryptedRecord(uchar recordType, const QByteArray &e
     header.append(be16(encryptedBody.size()));
     m_socket->write(header + encryptedBody);
     if (!m_socket->flush()) {
-        if (error) *error = QStringLiteral("REALITY 发送失败：%1").arg(m_socket->errorString());
+        if (error) *error = QCoreApplication::translate("clashqt::core", "REALITY send failed: %1").arg(m_socket->errorString());
         return false;
     }
     return true;
@@ -1020,13 +1019,13 @@ bool RealityTlsStream::recvRecord(uchar *recordType, QByteArray *payload,
     auto pump = [&]() -> bool {
         const qint64 remaining = deadline - QDateTime::currentMSecsSinceEpoch();
         if (remaining <= 0) {
-            if (error) *error = QStringLiteral("REALITY 读取记录超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Timed out reading a REALITY record");
             return false;
         }
         if (!m_socket->waitForReadyRead(int(remaining))) {
             if (m_socket->bytesAvailable() == 0) {
                 if (error) {
-                    *error = QStringLiteral("REALITY 读取记录失败：%1")
+                    *error = QCoreApplication::translate("clashqt::core", "REALITY failed to read a record: %1")
                                  .arg(m_socket->errorString());
                 }
                 return false;
@@ -1042,7 +1041,7 @@ bool RealityTlsStream::recvRecord(uchar *recordType, QByteArray *payload,
     const uchar type  = uchar(m_rawInput.at(0));
     const int    len  = readBe16(m_rawInput, 3);
     if (len <= 0 || len > 17 * 1024) {
-        if (error) *error = QStringLiteral("REALITY 记录长度非法 %1").arg(len);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Invalid REALITY record length %1").arg(len);
         return false;
     }
     while (m_rawInput.size() < 5 + len) {
@@ -1077,7 +1076,7 @@ bool RealityTlsStream::decryptAvailable()
         if (len <= 0 || len > 17 * 1024) {
             if (m_allowRawTail) return stallForRawTail();
             m_closed = true;
-            m_error  = QStringLiteral("REALITY 应用记录长度非法");
+            m_error  = QCoreApplication::translate("clashqt::core", "Invalid REALITY application-record length");
             emit streamClosed();
             return false;
         }
@@ -1097,7 +1096,7 @@ bool RealityTlsStream::decryptAvailable()
                 return stallForRawTail();
             }
             m_closed = true;
-            m_error  = QStringLiteral("REALITY 记录解密失败");
+            m_error  = QCoreApplication::translate("clashqt::core", "Failed to decrypt a REALITY record");
             emit streamClosed();
             return false;
         }
@@ -1249,12 +1248,12 @@ bool RealityTlsStream::readExact(int n, QByteArray *out, int timeoutMs, QString 
             if (m_plaintext.isEmpty()) {
                 const qint64 remaining = deadline - QDateTime::currentMSecsSinceEpoch();
                 if (remaining <= 0) {
-                    if (error) *error = QStringLiteral("读取应答超时");
+                    if (error) *error = QCoreApplication::translate("clashqt::core", "Timed out reading the response");
                     return false;
                 }
                 if (!m_socket->waitForReadyRead(int(remaining))) {
                     if (m_closed) {
-                        if (error) *error = QStringLiteral("连接在读取时关闭");
+                        if (error) *error = QCoreApplication::translate("clashqt::core", "Connection closed while reading");
                         return false;
                     }
                     continue;

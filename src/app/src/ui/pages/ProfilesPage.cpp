@@ -7,6 +7,7 @@
 #include "utils/Calc.h"
 
 #include <QCheckBox>
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDialog>
 #include <QFileDialog>
@@ -34,9 +35,9 @@ QString formatExpire(qint64 timestamp)
     if (timestamp <= 0) return QStringLiteral("-");
     const QDateTime expire = QDateTime::fromSecsSinceEpoch(timestamp);
     const QDateTime now    = QDateTime::currentDateTime();
-    if (expire < now) return QStringLiteral("已过期");
+    if (expire < now) return QCoreApplication::translate("clashqt::ProfilesPage", "Expired");
     return expire.toString(QStringLiteral("yyyy-MM-dd"))
-           + QStringLiteral("（%1 天）").arg(now.daysTo(expire));
+           + QCoreApplication::translate("clashqt::ProfilesPage", "(%1 days)").arg(now.daysTo(expire));
 }
 
 QString formatUsage(const std::optional<SubscriptionUserInfo> &info)
@@ -70,7 +71,7 @@ public:
         m_remote          = adding || m_item.type == QLatin1String("remote");
 
         setObjectName(QStringLiteral("subscriptionDialog"));
-        setWindowTitle(adding ? QStringLiteral("添加订阅") : QStringLiteral("编辑订阅"));
+        setWindowTitle(adding ? QCoreApplication::translate("clashqt::SubscriptionDialog", "Add profile") : QCoreApplication::translate("clashqt::SubscriptionDialog", "Edit profile"));
         setMinimumWidth(560);
 
         auto *root = new QVBoxLayout(this);
@@ -79,23 +80,23 @@ public:
 
         root->addWidget(ui::makeDialogHeader(
             adding ? QStringLiteral("plus") : QStringLiteral("edit"),
-            adding ? QStringLiteral("添加订阅") : QStringLiteral("编辑订阅"),
-            adding ? QStringLiteral("填写订阅链接，程序会立即下载并切换到这个订阅。")
+            adding ? QCoreApplication::translate("clashqt::SubscriptionDialog", "Add profile") : QCoreApplication::translate("clashqt::SubscriptionDialog", "Edit profile"),
+            adding ? QCoreApplication::translate("clashqt::SubscriptionDialog", "Enter the subscription URL; it will be downloaded and activated immediately.")
                    : (m_remote
-                          ? QStringLiteral("修改名称或订阅链接。链接变更后，若它是当前订阅，"
-                                           "会立即按新链接重新拉取。")
-                          : QStringLiteral("本地订阅的内容来自导入的配置文件，可在下面替换。")),
+                          ? QCoreApplication::translate("clashqt::SubscriptionDialog", "Change the name or subscription URL. If this is the active profile, a changed URL is fetched again immediately.")
+                          : QCoreApplication::translate("clashqt::SubscriptionDialog", "A local profile uses an imported config file, which you can replace below.")),
             this));
 
-        auto *card       = ui::makeCard(QStringLiteral("订阅信息"), this);
+        auto *card       = ui::makeCard(QCoreApplication::translate("clashqt::SubscriptionDialog", "Profile info"),
+                                      this, QStringLiteral("profiles"));
         auto *cardLayout = qobject_cast<QVBoxLayout *>(card->layout());
 
         m_name = new QLineEdit(item.name, card);
         m_name->setClearButtonEnabled(true);
         if (adding) {
-            m_name->setPlaceholderText(QStringLiteral("可留空，默认按订阅域名命名"));
+            m_name->setPlaceholderText(QCoreApplication::translate("clashqt::SubscriptionDialog", "Optional; defaults to the subscription's domain"));
         }
-        cardLayout->addWidget(ui::makeFormRow(QStringLiteral("名称"), m_name, QString(), card));
+        cardLayout->addWidget(ui::makeFormRow(QCoreApplication::translate("clashqt::SubscriptionDialog", "Name"), m_name, QString(), card));
 
         if (m_remote) {
             m_url = new QLineEdit(item.url, card);
@@ -104,14 +105,14 @@ public:
             // 链接通常很长，默认把光标停在行首，免得一进来只看到尾巴
             m_url->setCursorPosition(0);
             cardLayout->addWidget(
-                ui::makeFormRow(QStringLiteral("订阅链接"), m_url, QString(), card));
+                ui::makeFormRow(QCoreApplication::translate("clashqt::SubscriptionDialog", "Subscription URL"), m_url, QString(), card));
 
-            m_autoUpdate = new QCheckBox(QStringLiteral("启动时自动更新该订阅"), card);
+            m_autoUpdate = new QCheckBox(QCoreApplication::translate("clashqt::SubscriptionDialog", "Update this profile on startup"), card);
             // 新增时与 AppContext::addSubscription 的默认一致（默认开启）
             m_autoUpdate->setChecked(adding ? true : item.autoUpdate);
             cardLayout->addWidget(ui::makeFormRow(
                 QString(), m_autoUpdate,
-                QStringLiteral("开启后，程序启动时会自动下载该订阅的最新配置。"), card));
+                QCoreApplication::translate("clashqt::SubscriptionDialog", "When enabled, the profile is refreshed automatically at startup."), card));
         } else {
             auto *fileRow  = new QWidget(card);
             auto *fileLine = new QHBoxLayout(fileRow);
@@ -123,19 +124,19 @@ public:
             m_fileLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
             fileLine->addWidget(m_fileLabel, 1);
 
-            auto *pick = new QPushButton(QStringLiteral("重新选择配置"), fileRow);
+            auto *pick = new QPushButton(QCoreApplication::translate("clashqt::SubscriptionDialog", "Choose another file"), fileRow);
             ui::decorate(pick, QStringLiteral("folder"));
             fileLine->addWidget(pick);
 
             cardLayout->addWidget(ui::makeFormRow(
-                QStringLiteral("配置文件"), fileRow,
-                QStringLiteral("选择新文件后会替换该订阅的内容，id 与「当前订阅」状态保持不变。"),
+                QCoreApplication::translate("clashqt::SubscriptionDialog", "Config file"), fileRow,
+                QCoreApplication::translate("clashqt::SubscriptionDialog", "Picking a new file replaces this profile's content; its id and active state are preserved."),
                 card));
 
             QObject::connect(pick, &QPushButton::clicked, this, [this]() {
                 const QString path = QFileDialog::getOpenFileName(
-                    this, QStringLiteral("选择配置文件"), QString(),
-                    QStringLiteral("Clash 配置 (*.yaml *.yml);;所有文件 (*)"));
+                    this, QCoreApplication::translate("clashqt::SubscriptionDialog", "Choose a config file"), QString(),
+                    QCoreApplication::translate("clashqt::SubscriptionDialog", "Clash config (*.yaml *.yml);;All files (*)"));
                 if (path.isEmpty()) return;
                 m_replacementFile = path;
                 m_fileLabel->setText(QFileInfo(path).fileName());
@@ -149,10 +150,10 @@ public:
         actions->setSpacing(8);
         actions->addStretch(1);
 
-        auto *cancel = new QPushButton(QStringLiteral("取消"), this);
+        auto *cancel = new QPushButton(QCoreApplication::translate("clashqt::SubscriptionDialog", "Cancel"), this);
         ui::decorate(cancel, QStringLiteral("close"));
         auto *confirm = ui::makePrimaryButton(
-            adding ? QStringLiteral("添加") : QStringLiteral("保存"), this);
+            adding ? QCoreApplication::translate("clashqt::SubscriptionDialog", "Add") : QCoreApplication::translate("clashqt::SubscriptionDialog", "Save"), this);
         ui::decorate(confirm, adding ? QStringLiteral("plus") : QStringLiteral("check"));
         confirm->setDefault(true);
 
@@ -189,8 +190,8 @@ public:
     {
         // 添加时名称可以留空（后端会按订阅域名生成），编辑时不允许清空
         if (name().isEmpty() && m_mode == Mode::Edit) {
-            QMessageBox::warning(this, QStringLiteral("名称不能为空"),
-                                 QStringLiteral("请给这个订阅起一个名称。"));
+            QMessageBox::warning(this, QCoreApplication::translate("clashqt::SubscriptionDialog", "Name required"),
+                                 QCoreApplication::translate("clashqt::SubscriptionDialog", "Give this profile a name."));
             return;
         }
         if (m_remote) {
@@ -199,10 +200,10 @@ public:
                 || (parsed.scheme() != QLatin1String("http")
                     && parsed.scheme() != QLatin1String("https"))) {
                 QMessageBox::warning(
-                    this, QStringLiteral("订阅链接无效"),
+                    this, QCoreApplication::translate("clashqt::SubscriptionDialog", "Invalid subscription URL"),
                     m_mode == Mode::Add
-                        ? QStringLiteral("请填写以 http/https 开头的订阅链接。")
-                        : QStringLiteral("订阅链接需要以 http/https 开头，请检查后重试。"));
+                        ? QCoreApplication::translate("clashqt::SubscriptionDialog", "Enter a subscription URL starting with http/https.")
+                        : QCoreApplication::translate("clashqt::SubscriptionDialog", "The subscription URL must start with http/https."));
                 return;
             }
         }
@@ -231,19 +232,19 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
     root->setSpacing(12);
 
     root->addWidget(ui::makePageHeader(
-        QStringLiteral("订阅"),
-        QStringLiteral("管理配置来源。当前选中的订阅会与「配置覆写」合并后生效。")));
+        tr("Profiles"),
+        tr("Manage config sources. The active profile is merged with \"Config overrides\" before use."), QStringLiteral("profiles")));
 
     auto *toolbar = new QHBoxLayout();
     toolbar->setSpacing(8);
 
-    auto *addRemote = ui::makePrimaryButton(QStringLiteral("添加订阅"), this);
-    auto *addLocal  = new QPushButton(QStringLiteral("导入本地配置"), this);
-    auto *editBtn   = new QPushButton(QStringLiteral("编辑"), this);
-    auto *update    = new QPushButton(QStringLiteral("更新选中"), this);
-    auto *updateAll = new QPushButton(QStringLiteral("更新全部"), this);
-    auto *switchBtn = new QPushButton(QStringLiteral("设为当前"), this);
-    auto *removeBtn = ui::makeDangerButton(QStringLiteral("删除"), this);
+    auto *addRemote = ui::makePrimaryButton(tr("Add profile"), this);
+    auto *addLocal  = new QPushButton(tr("Import local config"), this);
+    auto *editBtn   = new QPushButton(tr("Edit"), this);
+    auto *update    = new QPushButton(tr("Update selected"), this);
+    auto *updateAll = new QPushButton(tr("Update all"), this);
+    auto *switchBtn = new QPushButton(tr("Set active"), this);
+    auto *removeBtn = ui::makeDangerButton(tr("Delete"), this);
 
     ui::decorate(addRemote, QStringLiteral("plus"));
     ui::decorate(addLocal, QStringLiteral("folder"));
@@ -253,7 +254,7 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
     ui::decorate(switchBtn, QStringLiteral("target"));
     ui::decorate(removeBtn, QStringLiteral("trash"));
 
-    editBtn->setToolTip(QStringLiteral("修改名称 / 订阅链接（双击某一行也可以）"));
+    editBtn->setToolTip(tr("Edit the name or URL (or double-click a row)"));
 
     toolbar->addWidget(addRemote);
     toolbar->addWidget(addLocal);
@@ -266,16 +267,15 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
     root->addLayout(toolbar);
 
     m_emptyHint = ui::makeHintLabel(
-        QStringLiteral("还没有任何订阅。点击「添加订阅」填写订阅链接，"
-                       "或「导入本地配置」选择一个已有的 Clash 配置文件。"),
+        tr("No profiles yet. Click \"Add profile\" to enter a subscription URL, or \"Import local config\" to pick an existing Clash config file."),
         this);
     root->addWidget(m_emptyHint);
 
     m_table = new QTableWidget(this);
     m_table->setColumnCount(6);
-    m_table->setHorizontalHeaderLabels({QStringLiteral("当前"), QStringLiteral("名称"),
-                                        QStringLiteral("类型"), QStringLiteral("流量"),
-                                        QStringLiteral("到期"), QStringLiteral("更新时间")});
+    m_table->setHorizontalHeaderLabels({tr("Active"), tr("Name"),
+                                        tr("Type"), tr("Traffic"),
+                                        tr("Expires"), tr("Updated")});
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -314,9 +314,9 @@ void ProfilesPage::refresh()
         currentCell->setTextAlignment(Qt::AlignCenter);
 
         QString typeText = item.type;
-        if (item.type == QLatin1String("remote")) typeText = QStringLiteral("远程");
-        else if (item.type == QLatin1String("local")) typeText = QStringLiteral("本地");
-        else if (item.type == QLatin1String("plugin")) typeText = QStringLiteral("插件");
+        if (item.type == QLatin1String("remote")) typeText = tr("Remote");
+        else if (item.type == QLatin1String("local")) typeText = tr("Local");
+        else if (item.type == QLatin1String("plugin")) typeText = tr("Plugin");
 
         m_table->setItem(row, 0, currentCell);
 
@@ -359,7 +359,7 @@ void ProfilesPage::onAddSubscription()
 
     QString error;
     if (!m_context->addSubscription(dialog.url(), dialog.name(), &error)) {
-        QMessageBox::warning(this, QStringLiteral("添加失败"), error);
+        QMessageBox::warning(this, tr("Add failed"), error);
         return;
     }
 
@@ -377,13 +377,13 @@ void ProfilesPage::onAddSubscription()
 void ProfilesPage::onAddLocal()
 {
     const QString filePath = QFileDialog::getOpenFileName(
-        this, QStringLiteral("选择配置文件"), QString(),
-        QStringLiteral("Clash 配置 (*.yaml *.yml);;所有文件 (*)"));
+        this, tr("Choose a config file"), QString(),
+        tr("Clash config (*.yaml *.yml);;All files (*)"));
     if (filePath.isEmpty()) return;
 
     QString error;
     if (!m_context->addLocalProfile(filePath, QString(), &error)) {
-        QMessageBox::warning(this, QStringLiteral("导入失败"), error);
+        QMessageBox::warning(this, tr("Import failed"), error);
         return;
     }
     refresh();
@@ -393,7 +393,7 @@ void ProfilesPage::onEditSelected()
 {
     const QString id = selectedId();
     if (id.isEmpty()) {
-        m_context->showToast(QStringLiteral("warning"), QStringLiteral("请先选择一个订阅"));
+        m_context->showToast(QStringLiteral("warning"), tr("Select a profile first"));
         return;
     }
 
@@ -411,7 +411,7 @@ void ProfilesPage::onEditSelected()
     if (patch.isEmpty() && newFile.isEmpty()) return; // 什么都没改
 
     if (!patch.isEmpty() && !m_context->profileConfig()->updateItem(id, patch)) {
-        QMessageBox::warning(this, QStringLiteral("保存失败"), QStringLiteral("写入订阅配置失败"));
+        QMessageBox::warning(this, tr("Save failed"), tr("Failed to write profile config"));
         return;
     }
 
@@ -419,7 +419,7 @@ void ProfilesPage::onEditSelected()
     if (!newFile.isEmpty()) {
         QString error;
         if (!m_context->replaceProfileContent(id, newFile, &error)) {
-            QMessageBox::warning(this, QStringLiteral("替换失败"), error);
+            QMessageBox::warning(this, tr("Replace failed"), error);
         }
         refresh();
         return;
@@ -431,9 +431,8 @@ void ProfilesPage::onEditSelected()
         if (!m_context->updateSubscription(id, &error)) {
             // 链接已经保存成功，只是内容没拉下来，提示即可，不必回滚
             QMessageBox::warning(
-                this, QStringLiteral("链接已保存"),
-                QStringLiteral("链接已保存，但拉取新订阅内容失败：\n\n%1\n\n"
-                               "可稍后用「更新选中」重试。")
+                this, tr("URL saved"),
+                tr("URL saved, but fetching the new content failed:\n\n%1\n\nTry \"Update selected\" again later.")
                     .arg(error));
         }
     }
@@ -445,13 +444,13 @@ void ProfilesPage::onUpdateSelected()
 {
     const QString id = selectedId();
     if (id.isEmpty()) {
-        m_context->showToast(QStringLiteral("warning"), QStringLiteral("请先选择一个订阅"));
+        m_context->showToast(QStringLiteral("warning"), tr("Select a profile first"));
         return;
     }
 
     QString error;
     if (!m_context->updateSubscription(id, &error)) {
-        QMessageBox::warning(this, QStringLiteral("更新失败"), error);
+        QMessageBox::warning(this, tr("Update failed"), error);
         return;
     }
     refresh();
@@ -463,14 +462,14 @@ void ProfilesPage::onUpdateAll()
     const int   count = m_context->updateAllSubscriptions(&errors);
 
     if (!errors.isEmpty()) {
-        QMessageBox::warning(this, QStringLiteral("部分订阅更新失败"),
-                             QStringLiteral("成功 %1 个，失败 %2 个：\n\n%3")
+        QMessageBox::warning(this, tr("Some profiles failed to update"),
+                             tr("%1 succeeded, %2 failed:\n\n%3")
                                  .arg(count)
                                  .arg(errors.size())
                                  .arg(errors.join(QStringLiteral("\n"))));
     } else {
         m_context->showToast(QStringLiteral("info"),
-                             QStringLiteral("已更新 %1 个订阅").arg(count));
+                             tr("Updated %1 profile(s)").arg(count));
     }
     refresh();
 }
@@ -479,13 +478,13 @@ void ProfilesPage::onSwitchSelected()
 {
     const QString id = selectedId();
     if (id.isEmpty()) {
-        m_context->showToast(QStringLiteral("warning"), QStringLiteral("请先选择一个订阅"));
+        m_context->showToast(QStringLiteral("warning"), tr("Select a profile first"));
         return;
     }
 
     QString error;
     if (!m_context->switchProfile(id, &error)) {
-        QMessageBox::warning(this, QStringLiteral("切换失败"), error);
+        QMessageBox::warning(this, tr("Switch failed"), error);
         return;
     }
     refresh();
@@ -495,18 +494,18 @@ void ProfilesPage::onRemoveSelected()
 {
     const QString id = selectedId();
     if (id.isEmpty()) {
-        m_context->showToast(QStringLiteral("warning"), QStringLiteral("请先选择一个订阅"));
+        m_context->showToast(QStringLiteral("warning"), tr("Select a profile first"));
         return;
     }
 
     const ProfileItem item = m_context->profileConfig()->item(id);
     const auto        answer = QMessageBox::question(
-        this, QStringLiteral("删除订阅"),
-        QStringLiteral("确定要删除「%1」吗？该订阅的配置文件也会被删除。").arg(item.name));
+        this, tr("Delete profile"),
+        tr("Delete \"%1\"? Its config file will be removed as well.").arg(item.name));
     if (answer != QMessageBox::Yes) return;
 
     if (!m_context->profileConfig()->removeItem(id)) {
-        QMessageBox::warning(this, QStringLiteral("删除失败"), QStringLiteral("订阅不存在"));
+        QMessageBox::warning(this, tr("Delete failed"), tr("Profile not found"));
         return;
     }
 
@@ -519,7 +518,7 @@ void ProfilesPage::onRemoveSelected()
     QString error;
     if (!m_context->reloadKernel(&error)) {
         m_context->showToast(QStringLiteral("warning"),
-                             QStringLiteral("订阅已删除，但配置重载失败：%1").arg(error));
+                             tr("Profile deleted, but reloading the config failed: %1").arg(error));
     }
     refresh();
 }

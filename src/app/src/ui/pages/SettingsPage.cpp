@@ -38,28 +38,56 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     root->setSpacing(12);
 
     root->addWidget(ui::makePageHeader(
-        QStringLiteral("设置"),
-        QStringLiteral("日志、DNS 覆写、端口与系统集成。修改后会自动保存并即时生效。")));
+        tr("Settings"),
+        tr("Logs, DNS overrides, ports and system integration. Changes are saved and applied immediately."), QStringLiteral("settings")));
+
+    // ---- 界面 -------------------------------------------------------------
+    auto *appearanceCard = ui::makeCard(tr("Appearance"), this, QStringLiteral("settings"));
+    auto *appearanceLayout = qobject_cast<QVBoxLayout *>(appearanceCard->layout());
+
+    m_themeCombo = new QComboBox(appearanceCard);
+    m_themeCombo->addItem(tr("Follow system"), QStringLiteral("system"));
+    m_themeCombo->addItem(tr("Light"), QStringLiteral("light"));
+    m_themeCombo->addItem(tr("Dark"), QStringLiteral("dark"));
+    // 滚轮不参与改值：主题是有明显视觉后果的设置，鼠标划过时被滚轮顺手切走
+    // 很难察觉（尤其「跟随系统 / 深色」之间的差异在某些桌面下并不明显）。
+    // 忽略后事件冒泡给页面滚动区，滚轮照常滚动页面。
+    ui::ignoreWheel(m_themeCombo);
+    appearanceLayout->addWidget(
+        ui::makeFormRow(tr("Theme"), m_themeCombo, QString(), appearanceCard));
+
+    m_languageCombo = new QComboBox(appearanceCard);
+    // 语言名用各自的语言写（简体中文 / English），不随界面语言变化：
+    // 英文界面下把「简体中文」翻成 Simplified Chinese 反而让中文用户难找。
+    m_languageCombo->addItem(tr("Follow system"), QStringLiteral("system"));
+    m_languageCombo->addItem(QStringLiteral("简体中文"), QStringLiteral("zh-CN"));
+    m_languageCombo->addItem(QStringLiteral("English"), QStringLiteral("en-US"));
+    ui::ignoreWheel(m_languageCombo);
+    appearanceLayout->addWidget(ui::makeFormRow(
+        tr("Language"), m_languageCombo,
+        tr("Interface text is loaded at startup; restart the app after switching."), appearanceCard));
+
+    root->addWidget(appearanceCard);
 
     // ---- 日志 -------------------------------------------------------------
-    auto *logCard = ui::makeCard(QStringLiteral("日志"), this);
+    auto *logCard = ui::makeCard(tr("Logs"), this, QStringLiteral("logs"));
     auto *logLayout = qobject_cast<QVBoxLayout *>(logCard->layout());
 
     m_logLevelCombo = new QComboBox(logCard);
     for (const QString &level : core::logLevelNames()) m_logLevelCombo->addItem(level);
-    logLayout->addWidget(ui::makeFormRow(QStringLiteral("日志等级"), m_logLevelCombo,
+    logLayout->addWidget(ui::makeFormRow(tr("Log level"), m_logLevelCombo,
                                          QString(), logCard));
 
     m_maxLogDaysSpin = new QSpinBox(logCard);
     m_maxLogDaysSpin->setRange(1, 365);
-    m_maxLogDaysSpin->setSuffix(QStringLiteral(" 天"));
+    m_maxLogDaysSpin->setSuffix(tr(" days"));
     // 滚轮不参与改值，避免鼠标划过时误改（滚轮留给页面滚动）
     ui::ignoreWheel(m_maxLogDaysSpin);
-    logLayout->addWidget(ui::makeFormRow(QStringLiteral("日志保留天数"), m_maxLogDaysSpin,
-                                         QStringLiteral("超过保留天数的日志文件会在启动时清理。"),
+    logLayout->addWidget(ui::makeFormRow(tr("Log retention (days)"), m_maxLogDaysSpin,
+                                         tr("Log files older than the retention period are removed at startup."),
                                          logCard));
 
-    auto *openDir = new QPushButton(QStringLiteral("打开数据目录"), logCard);
+    auto *openDir = new QPushButton(tr("Open data folder"), logCard);
     ui::decorate(openDir, QStringLiteral("folder"));
     logLayout->addWidget(openDir);
 
@@ -68,22 +96,22 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     root->addWidget(logCard);
 
     // ---- 配置覆写 ---------------------------------------------------------
-    auto *controlCard = ui::makeCard(QStringLiteral("配置覆写"), this);
+    auto *controlCard = ui::makeCard(tr("Config overrides"), this, QStringLiteral("code"));
     auto *controlLayout = qobject_cast<QVBoxLayout *>(controlCard->layout());
 
-    m_controlDns = new QCheckBox(QStringLiteral("由本应用管理 DNS 配置"), controlCard);
+    m_controlDns = new QCheckBox(tr("Manage DNS settings in this app"), controlCard);
     controlLayout->addWidget(m_controlDns);
     controlLayout->addWidget(ui::makeHintLabel(
-        QStringLiteral("开启后使用本应用设置的 DNS 段；关闭则沿用订阅自带的 DNS 配置。"),
+        tr("When on, the DNS section configured here is used; when off, the profile's own DNS settings apply."),
         controlCard));
 
-    m_controlSniff = new QCheckBox(QStringLiteral("由本应用管理域名嗅探"), controlCard);
+    m_controlSniff = new QCheckBox(tr("Manage domain sniffing in this app"), controlCard);
     controlLayout->addWidget(m_controlSniff);
 
     root->addWidget(controlCard);
 
     // ---- 端口 -------------------------------------------------------------
-    auto *portCard = ui::makeCard(QStringLiteral("入站端口"), this);
+    auto *portCard = ui::makeCard(tr("Inbound ports"), this, QStringLiteral("port"));
     auto *portLayout = qobject_cast<QVBoxLayout *>(portCard->layout());
 
     m_mixedPort = new QSpinBox(portCard);
@@ -97,70 +125,54 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
         ui::ignoreWheel(spin);
     }
 
-    portLayout->addWidget(ui::makeFormRow(QStringLiteral("混合端口（HTTP + SOCKS5）"),
+    portLayout->addWidget(ui::makeFormRow(tr("Mixed port (HTTP + SOCKS5)"),
                                           m_mixedPort, QString(), portCard));
-    portLayout->addWidget(ui::makeFormRow(QStringLiteral("SOCKS5 端口"), m_socksPort,
-                                         QStringLiteral("设为与混合端口相同则复用混合端口。"),
+    portLayout->addWidget(ui::makeFormRow(tr("SOCKS5 port"), m_socksPort,
+                                         tr("Set it equal to the mixed port to reuse the mixed port."),
                                          portCard));
-    portLayout->addWidget(ui::makeFormRow(QStringLiteral("HTTP 端口"), m_httpPort, QString(),
+    portLayout->addWidget(ui::makeFormRow(tr("HTTP port"), m_httpPort, QString(),
                                          portCard));
     root->addWidget(portCard);
 
     // ---- 系统集成 ---------------------------------------------------------
-    auto *systemCard = ui::makeCard(QStringLiteral("系统集成"), this);
+    auto *systemCard = ui::makeCard(tr("System integration"), this, QStringLiteral("system"));
     auto *systemLayout = qobject_cast<QVBoxLayout *>(systemCard->layout());
 
-    m_autoStart = new QCheckBox(QStringLiteral("开机自启动"), systemCard);
+    m_autoStart = new QCheckBox(tr("Start at login"), systemCard);
     systemLayout->addWidget(m_autoStart);
-    systemLayout->addWidget(ui::makeHintLabel(QStringLiteral("通过 XDG 自启动项实现"
-                                                             "（~/.config/autostart/clash-qt.desktop）。"),
+    systemLayout->addWidget(ui::makeHintLabel(tr("Implemented via an XDG autostart entry (~/.config/autostart/clash-qt.desktop)."),
                                              systemCard));
 
-    m_sysProxy = new QCheckBox(QStringLiteral("系统代理"), systemCard);
+    m_sysProxy = new QCheckBox(tr("System proxy"), systemCard);
     systemLayout->addWidget(m_sysProxy);
     systemLayout->addWidget(ui::makeHintLabel(
-        QStringLiteral("将系统 HTTP/HTTPS/SOCKS 代理指向本应用的混合端口。"
-                       "当前后端：%1").arg(m_context->sysProxy()->backendName()),
+        tr("Points the system HTTP/HTTPS/SOCKS proxy at this app's mixed port. Current backend: %1").arg(m_context->sysProxy()->backendName()),
         systemCard));
 
     // ---- TUN 模式 --------------------------------------------------------
-    m_tunEnabled = new QCheckBox(QStringLiteral("TUN 模式"), systemCard);
+    m_tunEnabled = new QCheckBox(tr("TUN mode"), systemCard);
     systemLayout->addWidget(m_tunEnabled);
     systemLayout->addWidget(ui::makeHintLabel(
-        QStringLiteral("创建虚拟网卡接管流量，连不认系统代理的程序（游戏 / 命令行 / 部分 Electron）"
-                       "也能走代理。首次开启会弹系统密码框授权一次；"
-                       "必须与「接管域名流量」配合才真正生效。"),
+        tr("Creates a virtual network interface to capture all traffic, including apps that ignore the system proxy (games, CLI tools, some Electron apps). The first enable asks for your password once; it only takes effect together with \"Route domain traffic\"."),
         systemCard));
 
-    m_tunAutoRoute = new QCheckBox(QStringLiteral("接管域名流量（fake-ip 路由）"), systemCard);
+    m_tunAutoRoute = new QCheckBox(tr("Route domain traffic (fake-IP)"), systemCard);
     systemLayout->addWidget(m_tunAutoRoute);
     systemLayout->addWidget(ui::makeHintLabel(
-        QStringLiteral("把假 IP 网段的路由指向 TUN（关闭 TUN 时随接口一起消失）。"
-                       "不改动系统默认路由，因此不会影响网络连通性；"
-                       "关掉这一项，TUN 将收不到任何流量。"),
+        tr("Routes the fake-IP range to the TUN interface (removed together with the interface). The default route is untouched, so connectivity is unaffected; with this off, TUN receives no traffic."),
         systemCard));
 
-    m_themeCombo = new QComboBox(systemCard);
-    m_themeCombo->addItem(QStringLiteral("跟随系统"), QStringLiteral("system"));
-    m_themeCombo->addItem(QStringLiteral("浅色"), QStringLiteral("light"));
-    m_themeCombo->addItem(QStringLiteral("深色"), QStringLiteral("dark"));
-    // 滚轮不参与改值：主题是有明显视觉后果的设置，鼠标划过时被滚轮顺手切走
-    // 很难察觉（尤其「跟随系统 / 深色」之间的差异在某些桌面下并不明显）。
-    // 忽略后事件冒泡给页面滚动区，滚轮照常滚动页面。
-    ui::ignoreWheel(m_themeCombo);
-    systemLayout->addWidget(ui::makeFormRow(QStringLiteral("主题"), m_themeCombo, QString(),
-                                           systemCard));
     root->addWidget(systemCard);
 
     // ---- 关于 / 检查更新 ---------------------------------------------------
-    auto *aboutCard = ui::makeCard(QStringLiteral("关于"), this);
+    auto *aboutCard = ui::makeCard(tr("About"), this, QStringLiteral("info"));
     auto *aboutLayout = qobject_cast<QVBoxLayout *>(aboutCard->layout());
 
     auto *versionLabel =
-        new QLabel(QStringLiteral("当前版本 v%1").arg(QLatin1String(CLASHQT_VERSION)), aboutCard);
+        new QLabel(tr("Version v%1").arg(QLatin1String(CLASHQT_VERSION)), aboutCard);
     aboutLayout->addWidget(versionLabel);
 
-    m_checkUpdate = new QPushButton(QStringLiteral("检查更新"), aboutCard);
+    m_checkUpdate = new QPushButton(tr("Check for updates"), aboutCard);
     ui::decorate(m_checkUpdate, QStringLiteral("refresh"));
     auto *updateRow = new QHBoxLayout();
     updateRow->setContentsMargins(0, 0, 0, 0);
@@ -170,8 +182,7 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     aboutLayout->addLayout(updateRow);
 
     aboutLayout->addWidget(ui::makeHintLabel(
-        QStringLiteral("从 GitHub Releases 获取最新版本。有更新时会显示更新日志，"
-                       "可一键在浏览器中打开发布页，下载与安装由你自己决定。"),
+        tr("Fetches the latest version from GitHub Releases. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you."),
         aboutCard));
     root->addWidget(aboutCard);
 
@@ -206,6 +217,8 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
                      });
     QObject::connect(m_themeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &SettingsPage::onThemeChanged);
+    QObject::connect(m_languageCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                     &SettingsPage::onLanguageChanged);
     QObject::connect(openDir, &QPushButton::clicked, this, &SettingsPage::onOpenDataDir);
 
     // ---- 检查更新 ---------------------------------------------------------
@@ -221,7 +234,7 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     QObject::connect(m_updater, &UpdateChecker::upToDate, this, [this](const QString &current) {
         setUpdateCheckBusy(false);
         emit m_context->toast(QStringLiteral("info"),
-                              QStringLiteral("已是最新版本 v%1").arg(current));
+                              tr("Already up to date (v%1)").arg(current));
     });
     QObject::connect(m_updater, &UpdateChecker::failed, this, [this](const QString &reason) {
         setUpdateCheckBusy(false);
@@ -229,9 +242,9 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
         // 否则用户只会看到一句 Connection refused
         const QString hint = m_context->isKernelRunning()
                                  ? QString()
-                                 : QStringLiteral("（当前内核未运行，请先开启代理再试）");
+                                 : tr(" (the kernel is not running; start the proxy and try again)");
         emit m_context->toast(QStringLiteral("error"),
-                              QStringLiteral("检查更新失败：%1%2").arg(reason, hint));
+                              tr("Update check failed: %1%2").arg(reason, hint));
     });
 
     loadFromConfig();
@@ -263,7 +276,13 @@ void SettingsPage::loadFromConfig()
     const int themeIndex = m_themeCombo->findData(theme);
     m_themeCombo->setCurrentIndex(themeIndex >= 0 ? themeIndex : 0);
 
-    m_dataDirLabel->setText(QStringLiteral("数据目录：%1").arg(paths::dataDir()));
+    int languageIndex = m_languageCombo->findData(app->language());
+    // 旧配置里可能是本版本还没支持的语言（例如 zh-TW），回落到中文而不是
+    // 悄悄显示成「跟随系统」——用户至少能看出自己选过什么。
+    if (languageIndex < 0) languageIndex = m_languageCombo->findData(QStringLiteral("zh-CN"));
+    m_languageCombo->setCurrentIndex(languageIndex >= 0 ? languageIndex : 0);
+
+    m_dataDirLabel->setText(tr("Data folder: %1").arg(paths::dataDir()));
 
     m_loading = false;
 }
@@ -319,7 +338,7 @@ void SettingsPage::onPortChanged(int)
     QString error;
     if (!m_context->reloadKernel(&error)) {
         m_context->showToast(QStringLiteral("error"),
-                             QStringLiteral("端口修改后重载失败：%1").arg(error));
+                             tr("Reload failed after port change: %1").arg(error));
     }
 }
 
@@ -332,7 +351,7 @@ void SettingsPage::onAutoStartToggled(bool enabled)
                          : m_context->autoRun()->disable(&error);
     if (!ok) {
         m_context->showToast(QStringLiteral("error"),
-                             QStringLiteral("自启动设置失败：%1").arg(error));
+                             tr("Failed to change startup setting: %1").arg(error));
         m_loading = true;
         m_autoStart->setChecked(m_context->autoRun()->isEnabled());
         m_loading = false;
@@ -407,6 +426,18 @@ void SettingsPage::onThemeChanged(int index)
     ui::applyThemeFor(theme);
 }
 
+void SettingsPage::onLanguageChanged(int index)
+{
+    if (m_loading) return;
+    const QString language = m_languageCombo->itemData(index).toString();
+    m_context->appConfig()->patch(QJsonObject{{QStringLiteral("language"), language}});
+
+    // 界面文案在控件构造时就已经取走，运行期没有可靠的换语言手段；
+    // 这里只落配置并明确告知需要重启，不做假的「立即生效」。
+    m_context->showToast(QStringLiteral("info"),
+                         tr("Language saved; restart the app to apply."));
+}
+
 void SettingsPage::onOpenDataDir()
 {
     QDesktopServices::openUrl(QUrl::fromLocalFile(paths::dataDir()));
@@ -429,7 +460,7 @@ void SettingsPage::setUpdateCheckBusy(bool busy)
 {
     if (!m_checkUpdate) return;
     m_checkUpdate->setEnabled(!busy);
-    m_checkUpdate->setText(busy ? QStringLiteral("检查中…") : QStringLiteral("检查更新"));
+    m_checkUpdate->setText(busy ? tr("Checking…") : tr("Check for updates"));
 }
 
 } // namespace clashqt

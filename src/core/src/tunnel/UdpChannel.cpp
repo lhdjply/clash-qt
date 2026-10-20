@@ -1,4 +1,5 @@
 #include "tunnel/UdpChannel.h"
+#include <QCoreApplication>
 
 #include "tunnel/OutboundStream.h"
 
@@ -67,7 +68,7 @@ bool SocketUdpChannel::isOpen() const
 
 QString SocketUdpChannel::errorText() const
 {
-    return m_socket ? m_socket->errorString() : QStringLiteral("UDP 套接字已关闭");
+    return m_socket ? m_socket->errorString() : QCoreApplication::translate("clashqt::core", "UDP socket closed");
 }
 
 // ===========================================================================
@@ -156,7 +157,7 @@ bool StreamUdpChannel::isOpen() const
 
 QString StreamUdpChannel::errorText() const
 {
-    return m_stream ? m_stream->errorText() : QStringLiteral("UDP 隧道已关闭");
+    return m_stream ? m_stream->errorText() : QCoreApplication::translate("clashqt::core", "UDP tunnel closed");
 }
 
 } // namespace core

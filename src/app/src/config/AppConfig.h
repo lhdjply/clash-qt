@@ -53,7 +53,8 @@ public:
     bool autoUpdateProfileOnStart() const;
 
     QString appTheme() const;          // system / light / dark
-    QString language() const;          // zh-CN / zh-TW / en-US / ru-RU / fa-IR
+    QString language() const;          // system / zh-CN / en-US
+    void    setLanguage(const QString &language);
 
     bool disableTray() const;
     bool proxyInTray() const;

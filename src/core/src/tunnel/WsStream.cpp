@@ -1,4 +1,5 @@
 #include "tunnel/WsStream.h"
+#include <QCoreApplication>
 
 #include "common/Tls13Client.h"
 
@@ -84,7 +85,7 @@ WsStream::WsStream(std::shared_ptr<RealityTlsStream> transport, const QString &p
     request.append("Sec-WebSocket-Version: 13\r\n\r\n");
 
     if (m_transport->write(request) < 0) {
-        if (error) *error = QStringLiteral("WebSocket 升级请求发送失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to send the WebSocket upgrade request");
         m_closed = true;
         return;
     }
@@ -100,7 +101,7 @@ WsStream::WsStream(std::shared_ptr<RealityTlsStream> transport, const QString &p
         }
         if (!m_transport->isOpen()) {
             if (error) {
-                *error = QStringLiteral("WebSocket 升级时连接关闭（已收到 %1 字节：%2）")
+                *error = QCoreApplication::translate("clashqt::core", "Connection closed during the WebSocket upgrade (received %1 bytes: %2)")
                              .arg(head.size())
                              .arg(QString::fromLatin1(head.left(120)));
             }
@@ -109,7 +110,7 @@ WsStream::WsStream(std::shared_ptr<RealityTlsStream> transport, const QString &p
         }
         const qint64 remaining = deadline - QDateTime::currentMSecsSinceEpoch();
         if (remaining <= 0) {
-            if (error) *error = QStringLiteral("WebSocket 升级握手超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "WebSocket upgrade handshake timed out");
             m_closed = true;
             return;
         }
@@ -123,7 +124,7 @@ WsStream::WsStream(std::shared_ptr<RealityTlsStream> transport, const QString &p
     const QByteArray statusLine = head.left(head.indexOf("\r\n"));
     if (!statusLine.contains("101")) {
         if (error) {
-            *error = QStringLiteral("WebSocket 握手被拒绝：%1")
+            *error = QCoreApplication::translate("clashqt::core", "WebSocket handshake rejected: %1")
                          .arg(QString::fromLatin1(statusLine));
         }
         m_closed = true;
@@ -150,7 +151,7 @@ void WsStream::pumpOut()
             const uchar b0 = uchar(m_in.at(0));
             const uchar b1 = uchar(m_in.at(1));
             if (b1 & 0x80) { // 服务端帧不允许掩码
-                m_error  = QStringLiteral("WebSocket 服务端帧带掩码");
+                m_error  = QCoreApplication::translate("clashqt::core", "Server-sent WebSocket frames must not be masked");
                 m_closed = true;
                 emit streamClosed();
                 return;
@@ -175,7 +176,7 @@ void WsStream::pumpOut()
                     payloadLen = (payloadLen << 8) | uchar(m_in.at(i));
                 }
                 if (payloadLen > 32 * 1024 * 1024) {
-                    m_error  = QStringLiteral("WebSocket 帧过长");
+                    m_error  = QCoreApplication::translate("clashqt::core", "WebSocket frame too long");
                     m_closed = true;
                     emit streamClosed();
                     return;
@@ -320,12 +321,12 @@ bool WsStream::readExact(int n, QByteArray *out, int timeoutMs, QString *error)
         pumpOut();
         if (m_out.size() >= n) break;
         if (m_closed || !m_transport->isOpen()) {
-            if (error) *error = QStringLiteral("连接在读取时关闭");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Connection closed while reading");
             return false;
         }
         const qint64 remaining = deadline - QDateTime::currentMSecsSinceEpoch();
         if (remaining <= 0) {
-            if (error) *error = QStringLiteral("读取超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Read timed out");
             return false;
         }
         m_transport->waitForData(int(remaining));

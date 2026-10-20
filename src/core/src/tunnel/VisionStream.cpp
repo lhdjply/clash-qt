@@ -1,4 +1,5 @@
 #include "tunnel/VisionStream.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 
@@ -305,7 +306,7 @@ void VisionStream::pumpOut()
             if (m_readFilterUuid) {
                 m_readFilterUuid = false;
                 if (!header.startsWith(m_uuid)) {
-                    m_error = QStringLiteral("Vision 服务端回显了未知 UUID");
+                    m_error = QCoreApplication::translate("clashqt::core", "Vision: the server echoed an unknown UUID");
                     m_closed = true;
                     emit streamClosed();
                     return;
@@ -334,7 +335,7 @@ void VisionStream::pumpOut()
             continue;
         }
         default:
-            m_error  = QStringLiteral("Vision 读取到未知命令 %1").arg(m_readLastCommand);
+            m_error  = QCoreApplication::translate("clashqt::core", "Vision: read an unknown command %1").arg(m_readLastCommand);
             m_closed = true;
             emit streamClosed();
             return;
@@ -381,12 +382,12 @@ bool VisionStream::readExact(int n, QByteArray *out, int timeoutMs, QString *err
         pumpOut();
         if (m_out.size() >= n) break;
         if (m_closed || !m_tls->isOpen()) {
-            if (error) *error = QStringLiteral("连接在读取应答时关闭");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Connection closed while reading the response");
             return false;
         }
         const qint64 remaining = deadline - QDateTime::currentMSecsSinceEpoch();
         if (remaining <= 0) {
-            if (error) *error = QStringLiteral("读取应答超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Timed out reading the response");
             return false;
         }
         m_tls->waitForData(int(remaining));

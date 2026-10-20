@@ -17,7 +17,7 @@ namespace clashqt {
 UpdateDialog::UpdateDialog(const ReleaseInfo &release, QWidget *parent) : QDialog(parent)
 {
     setObjectName(QStringLiteral("updateDialog"));
-    setWindowTitle(QStringLiteral("发现新版本"));
+    setWindowTitle(tr("Update available"));
     setModal(true);
     setMinimumSize(620, 520);
 
@@ -27,9 +27,8 @@ UpdateDialog::UpdateDialog(const ReleaseInfo &release, QWidget *parent) : QDialo
 
     root->addWidget(ui::makeDialogHeader(
         QStringLiteral("clouddown"),
-        QStringLiteral("发现新版本 %1").arg(release.tagName),
-        QStringLiteral("当前版本 v%1。更新日志来自 GitHub Release；"
-                       "下载与安装由你自己决定，本程序不会自动替换自身。")
+        tr("Version %1 is available").arg(release.tagName),
+        tr("Version v%1. The changelog comes from the GitHub release; downloading and installing is up to you — this app never replaces itself.")
             .arg(QLatin1String(CLASHQT_VERSION)),
         this));
 
@@ -49,7 +48,7 @@ UpdateDialog::UpdateDialog(const ReleaseInfo &release, QWidget *parent) : QDialo
         notesText = QStringLiteral("## %1\n\n%2").arg(title, notesText);
     }
     if (notesText.isEmpty()) {
-        notesText = QStringLiteral("（这次发布没有填写更新说明，可直接到发布页查看。）");
+        notesText = tr("(No release notes for this version; see the release page.)");
     }
 
     auto *notes = new QTextBrowser(this);
@@ -92,9 +91,9 @@ UpdateDialog::UpdateDialog(const ReleaseInfo &release, QWidget *parent) : QDialo
         QDateTime::fromString(release.publishedAt, Qt::ISODate).toLocalTime();
     root->addWidget(ui::makeHintLabel(
         published.isValid()
-            ? QStringLiteral("发布于 %1。安装包请到发布页下载。")
+            ? tr("Published on %1. Download the package from the release page.")
                   .arg(published.toString(QStringLiteral("yyyy-MM-dd")))
-            : QStringLiteral("安装包请到发布页下载。"),
+            : tr("Download the package from the release page."),
         this));
 
     auto *actions = new QHBoxLayout();
@@ -102,8 +101,8 @@ UpdateDialog::UpdateDialog(const ReleaseInfo &release, QWidget *parent) : QDialo
     actions->setSpacing(8);
     actions->addStretch(1);
 
-    auto *later = new QPushButton(QStringLiteral("稍后再说"), this);
-    auto *open  = ui::makePrimaryButton(QStringLiteral("打开下载页"), this);
+    auto *later = new QPushButton(tr("Later"), this);
+    auto *open  = ui::makePrimaryButton(tr("Open download page"), this);
     ui::decorate(open, QStringLiteral("external"));
     open->setDefault(true);
     actions->addWidget(later);

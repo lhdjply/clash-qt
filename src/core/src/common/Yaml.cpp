@@ -1,4 +1,5 @@
 #include "common/Yaml.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 
@@ -137,7 +138,7 @@ std::optional<QJsonValue> Yaml::parse(const QString &text, QString *errorMessage
         return nodeToJson(root);
     } catch (const YAML::Exception &error) {
         if (errorMessage) {
-            *errorMessage = QStringLiteral("YAML 解析失败：%1").arg(
+            *errorMessage = QCoreApplication::translate("clashqt::core", "YAML parse failed: %1").arg(
                 QString::fromStdString(error.what()));
         }
         return std::nullopt;
@@ -161,7 +162,7 @@ QString Yaml::stringify(const QJsonValue &value, int indent)
     } catch (const YAML::Exception &error) {
         Logger::instance().error(
             LogCategory::Config,
-            QStringLiteral("YAML 发射失败：%1").arg(QString::fromStdString(error.what())));
+            QCoreApplication::translate("clashqt::core", "YAML emit failed: %1").arg(QString::fromStdString(error.what())));
         return QString();
     }
 }

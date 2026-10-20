@@ -1,4 +1,5 @@
 #include "ui/MainWindow.h"
+#include <QCoreApplication>
 
 #include "AppContext.h"
 #include "config/AppConfig.h"
@@ -88,9 +89,11 @@ MainWindow::MainWindow(AppContext *context, QWidget *parent)
 
     m_navTitles = titles;
     m_navList->blockSignals(true);
-    for (const QString &title : titles) {
-        auto *item = new QListWidgetItem(title, m_navList);
+    for (int i = 0; i < titles.size(); ++i) {
+        auto *item = new QListWidgetItem(titles.at(i), m_navList);
         item->setSizeHint(QSize(0, 40));
+        // 图标名单独存一份：标题会随界面语言变化，不能拿显示文本反查图标
+        item->setData(ui::icons::IconNameRole, m_navIcons.value(i));
     }
     m_navList->blockSignals(false);
     m_navList->setCurrentRow(0);
@@ -172,43 +175,43 @@ QWidget *MainWindow::buildSider()
     siderLayout->addWidget(brand);
 
     // ---- 快捷设置卡片（出站模式 + 系统代理） -------------------------------
-    auto *kernelCard = ui::makeCard(QStringLiteral("快捷设置"), sider);
+    auto *kernelCard = ui::makeCard(tr("Quick settings"), sider, QStringLiteral("quick"));
     auto *kernelLayout = qobject_cast<QVBoxLayout *>(kernelCard->layout());
 
     m_modeCombo = new QComboBox(kernelCard);
-    m_modeCombo->addItem(QStringLiteral("规则模式"), QStringLiteral("rule"));
-    m_modeCombo->addItem(QStringLiteral("全局模式"), QStringLiteral("global"));
-    m_modeCombo->addItem(QStringLiteral("直连模式"), QStringLiteral("direct"));
+    m_modeCombo->addItem(tr("Rule mode"), QStringLiteral("rule"));
+    m_modeCombo->addItem(tr("Global mode"), QStringLiteral("global"));
+    m_modeCombo->addItem(tr("Direct mode"), QStringLiteral("direct"));
     const QString mode = m_context->controledConfig()->mode();
     const int modeIndex = m_modeCombo->findData(mode);
     m_modeCombo->setCurrentIndex(modeIndex >= 0 ? modeIndex : 0);
-    kernelLayout->addWidget(ui::makeFormRow(QStringLiteral("出站模式"), m_modeCombo, QString(),
+    kernelLayout->addWidget(ui::makeFormRow(tr("Outbound mode"), m_modeCombo, QString(),
                                             kernelCard));
 
-    m_sysProxySwitch = new QCheckBox(QStringLiteral("系统代理"), kernelCard);
+    m_sysProxySwitch = new QCheckBox(tr("System proxy"), kernelCard);
     m_sysProxySwitch->setChecked(m_context->isSysProxyEnabled());
     m_sysProxySwitch->setEnabled(m_context->sysProxy()->backend() != SysProxy::Backend::None);
     kernelLayout->addWidget(m_sysProxySwitch);
 
     if (m_context->sysProxy()->backend() == SysProxy::Backend::None) {
         kernelLayout->addWidget(ui::makeHintLabel(
-            QStringLiteral("未检测到系统代理后端（gsettings / kwriteconfig），系统代理不可用"),
+            tr("No system proxy backend found (gsettings / kwriteconfig); system proxy is unavailable"),
             kernelCard));
     }
 
     // TUN 模式：接管全部流量（不只是走系统代理的应用），首次启用会弹一次授权框。
     // 它与系统代理是两套独立机制，可以同时开启：TUN 负责收发全部 IP 流量，
     // 系统代理只影响读环境变量的应用，二者互不冲突。
-    m_tunSwitch = new QCheckBox(QStringLiteral("TUN 模式"), kernelCard);
+    m_tunSwitch = new QCheckBox(tr("TUN mode"), kernelCard);
     m_tunSwitch->setChecked(m_context->tunEnabled());
     m_tunSwitch->setToolTip(
-        QStringLiteral("接管本机全部流量（含不读系统代理的程序）。首次启用需要输入一次密码授权。"));
+        tr("Captures all local traffic, including apps that ignore the system proxy. The first enable requires a one-time password prompt."));
     kernelLayout->addWidget(m_tunSwitch);
 
     siderLayout->addWidget(kernelCard);
 
     // ---- 统计卡片（上行 / 下行各一行，带方向图标） --------------------------
-    auto *statsCard = ui::makeCard(QStringLiteral("统计"), sider);
+    auto *statsCard = ui::makeCard(tr("Statistics"), sider, QStringLiteral("stats"));
     auto *statsLayout = qobject_cast<QVBoxLayout *>(statsCard->layout());
 
     // 生成一行「方向图标 + 名称 + 数值」，返回数值标签供实时刷新
@@ -234,9 +237,9 @@ QWidget *MainWindow::buildSider()
     };
 
     m_uploadLabel = makeStatRow(QStringLiteral("arrowup"),
-                                QColor(0xE0, 0x9B, 0x36), QStringLiteral("上行"));
+                                QColor(0xE0, 0x9B, 0x36), tr("Up"));
     m_downloadLabel = makeStatRow(QStringLiteral("arrowdown"),
-                                  QColor(0x2F, 0xA8, 0x7C), QStringLiteral("下行"));
+                                  QColor(0x2F, 0xA8, 0x7C), tr("Down"));
     statsLayout->addWidget(m_uploadLabel->parentWidget());
     statsLayout->addWidget(m_downloadLabel->parentWidget());
     siderLayout->addWidget(statsCard);
@@ -262,7 +265,8 @@ QStringList MainWindow::registerPages()
     QStringList titles;
 
     // 按引用捕获 titles 与 m_pages：lambda 需要写入二者
-    auto add = [&](const QString &title, QWidget *page) {
+    auto add = [&](const QString &title, QWidget *page, const QString &iconName) {
+        m_navIcons << iconName;
         titles << title;
         m_pageContents << page;
 
@@ -287,14 +291,14 @@ QStringList MainWindow::registerPages()
         m_pages->addWidget(scroll);
     };
 
-    add(QStringLiteral("代理"),     new ProxiesPage(m_context, this));
-    add(QStringLiteral("订阅"),     new ProfilesPage(m_context, this));
-    add(QStringLiteral("连接"),     new ConnectionsPage(m_context, this));
-    add(QStringLiteral("规则"),     new RulesPage(m_context, this));
-    add(QStringLiteral("覆写"),     new OverridePage(m_context, this));
-    add(QStringLiteral("日志"),     new LogsPage(m_context, this));
-    add(QStringLiteral("流量"),     new TrafficPage(m_context, this));
-    add(QStringLiteral("设置"),     new SettingsPage(m_context, this));
+    add(tr("Proxies"), new ProxiesPage(m_context, this), QStringLiteral("proxy"));
+    add(tr("Profiles"), new ProfilesPage(m_context, this), QStringLiteral("profiles"));
+    add(tr("Connections"), new ConnectionsPage(m_context, this), QStringLiteral("connections"));
+    add(tr("Rules"), new RulesPage(m_context, this), QStringLiteral("rules"));
+    add(tr("Overrides"), new OverridePage(m_context, this), QStringLiteral("code"));
+    add(tr("Logs"), new LogsPage(m_context, this), QStringLiteral("logs"));
+    add(tr("Traffic"), new TrafficPage(m_context, this), QStringLiteral("traffic"));
+    add(tr("Settings"), new SettingsPage(m_context, this), QStringLiteral("settings"));
 
     return titles;
 }
@@ -304,7 +308,7 @@ void MainWindow::buildTray()
     if (m_context->appConfig()->disableTray()) return;
 
     if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-        AppLogger::instance().warn(QStringLiteral("系统托盘不可用，跳过托盘初始化"));
+        AppLogger::instance().warn(QCoreApplication::translate("clashqt::app", "System tray unavailable; skipping tray setup"));
         return;
     }
 
@@ -318,7 +322,7 @@ void MainWindow::buildTray()
 
     // 内核不再有独立的启停入口：其生命周期跟随系统代理开关
     // （见 AppContext::setSysProxyEnabled）。
-    m_trayToggleSysProxy = menu->addAction(QStringLiteral("关闭系统代理"));
+    m_trayToggleSysProxy = menu->addAction(tr("Disable system proxy"));
     m_trayToggleSysProxy->setEnabled(m_context->sysProxy()->backend() != SysProxy::Backend::None);
     QObject::connect(m_trayToggleSysProxy, &QAction::triggered, this, [this]() {
         m_sysProxySwitch->setChecked(!m_sysProxySwitch->isChecked());
@@ -326,14 +330,14 @@ void MainWindow::buildTray()
 
     // TUN 与系统代理并列：不读系统代理的程序（游戏、容器、命令行工具）
     // 只有 TUN 能接管，所以托盘里必须能直接开关
-    m_trayToggleTun = menu->addAction(QStringLiteral("启用 TUN 模式"));
+    m_trayToggleTun = menu->addAction(tr("Enable TUN mode"));
     QObject::connect(m_trayToggleTun, &QAction::triggered, this, [this]() {
         // 走与快捷设置同一条入口：失败会 toast，状态以 AppContext 为准
         onTunToggleRequested(!m_context->tunEnabled());
     });
 
     menu->addSeparator();
-    QAction *showAction = menu->addAction(QStringLiteral("显示主窗口"));
+    QAction *showAction = menu->addAction(tr("Show main window"));
     QObject::connect(showAction, &QAction::triggered, this, [this]() {
         showNormal();
         raise();
@@ -341,7 +345,7 @@ void MainWindow::buildTray()
     });
 
     menu->addSeparator();
-    QAction *quitAction = menu->addAction(QStringLiteral("退出"));
+    QAction *quitAction = menu->addAction(tr("Quit"));
     QObject::connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
 
     m_tray->setContextMenu(menu);
@@ -397,20 +401,20 @@ void MainWindow::updateTray()
 
     m_tray->setToolTip(QStringLiteral("Clash Qt · %1").arg(trayStateText()));
 
-    m_trayToggleSysProxy->setText(sysProxy ? QStringLiteral("关闭系统代理")
-                                           : QStringLiteral("启用系统代理"));
+    m_trayToggleSysProxy->setText(sysProxy ? tr("Disable system proxy")
+                                           : tr("Enable system proxy"));
 }
 
 QString MainWindow::trayStateText() const
 {
-    if (m_context->tunStarting()) return QStringLiteral("TUN 启用中…");
+    if (m_context->tunStarting()) return tr("Enabling TUN…");
 
     const bool sysProxy = m_context->isSysProxyEnabled();
     const bool tun      = m_context->tunEnabled();
-    if (sysProxy && tun) return QStringLiteral("系统代理 + TUN 已开启");
-    if (tun) return QStringLiteral("TUN 已开启");
-    if (sysProxy) return QStringLiteral("系统代理已开启");
-    return QStringLiteral("系统代理未开启");
+    if (sysProxy && tun) return tr("System proxy + TUN enabled");
+    if (tun) return tr("TUN enabled");
+    if (sysProxy) return tr("System proxy enabled");
+    return tr("System proxy disabled");
 }
 
 // 快捷设置与托盘菜单共用：显示状态一律以 AppContext 为准。
@@ -426,15 +430,15 @@ void MainWindow::syncTunUi()
         m_tunSwitch->setChecked(running || starting);
         m_tunSwitch->blockSignals(false);
         m_tunSwitch->setEnabled(!starting);
-        m_tunSwitch->setText(starting ? QStringLiteral("TUN 模式（启用中…）")
-                                      : QStringLiteral("TUN 模式"));
+        m_tunSwitch->setText(starting ? tr("TUN mode (enabling…)")
+                                      : tr("TUN mode"));
     }
 
     if (m_trayToggleTun) {
         m_trayToggleTun->setEnabled(!starting);
-        m_trayToggleTun->setText(starting ? QStringLiteral("TUN 启用中…")
-                                          : (running ? QStringLiteral("关闭 TUN 模式")
-                                                     : QStringLiteral("启用 TUN 模式")));
+        m_trayToggleTun->setText(starting ? tr("Enabling TUN…")
+                                          : (running ? tr("Disable TUN mode")
+                                                     : tr("Enable TUN mode")));
     }
 
     updateTray();
@@ -460,9 +464,9 @@ void MainWindow::onNavChanged(int index)
 void MainWindow::onKernelRunningChanged(bool running)
 {
     statusBar()->showMessage(running
-                                 ? QStringLiteral("混合端口 %1")
+                                 ? tr("Mixed port %1")
                                        .arg(m_context->controledConfig()->mixedPort())
-                                 : QStringLiteral("未启动"));
+                                 : tr("Not running"));
 
     updateTray();
 
@@ -479,11 +483,11 @@ void MainWindow::onOutboundModeChanged(int index)
     QString error;
     if (!m_context->setOutboundMode(mode, &error)) {
         m_context->showToast(QStringLiteral("error"),
-                             QStringLiteral("切换出站模式失败：%1").arg(error));
+                             tr("Failed to switch outbound mode: %1").arg(error));
         return;
     }
     m_context->showToast(QStringLiteral("info"),
-                         QStringLiteral("出站模式：%1").arg(m_modeCombo->itemText(index)));
+                         tr("Outbound mode: %1").arg(m_modeCombo->itemText(index)));
 }
 
 void MainWindow::onSysProxyToggled(bool enabled)
@@ -595,9 +599,9 @@ void MainWindow::updateNavIcons()
         QListWidgetItem *item = m_navList->item(i);
         if (!item) continue;
 
-        const QString title = m_navTitles.value(i, item->text());
-        const QColor  color = (i == current) ? ui::theme().onAccent : ui::theme().text;
-        item->setIcon(ui::icons::forNavTitle(title, color, 18));
+        const QColor color = (i == current) ? ui::theme().onAccent : ui::theme().text;
+        const QString name = item->data(ui::icons::IconNameRole).toString();
+        if (!name.isEmpty()) item->setIcon(ui::icons::get(name, color, 18));
     }
 }
 

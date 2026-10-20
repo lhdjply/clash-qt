@@ -80,16 +80,19 @@ QColor       textColor();
 QColor       mutedColor();
 
 // 统一风格的卡片容器。title 为空时不生成表头（用于纯表格卡片）。
-// 表头图标按标题自动匹配（见 Icons::forCardTitle）。
-QGroupBox *makeCard(const QString &title, QWidget *parent = nullptr);
+//
+// iconName 为空时按标题查映射表（兼容旧调用）；界面文案参与翻译后，
+// 标题是随语言变化的，凡是会被翻译的标题都应显式给出图标名。
+QGroupBox *makeCard(const QString &title, QWidget *parent = nullptr,
+                    const QString &iconName = QString());
 
 // 一行「标签 + 控件」
 QWidget *makeFormRow(const QString &label, QWidget *field, const QString &hint = QString(),
                      QWidget *parent = nullptr);
 
-// 页面标题区（图标徽标 + 大标题 + 说明）。图标按标题自动匹配。
+// 页面标题区（图标徽标 + 大标题 + 说明）。iconName 为空时按标题自动匹配。
 QWidget *makePageHeader(const QString &title, const QString &description,
-                        QWidget *parent = nullptr);
+                        const QString &iconName = QString(), QWidget *parent = nullptr);
 
 // 弹窗标题区：与页面标题同一套观感，尺寸更适合对话框。
 // 图标名显式给出（弹窗标题不在导航 / 卡片标题的映射表里）。

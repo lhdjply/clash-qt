@@ -1,4 +1,5 @@
 #include "listener/Socks5Listener.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 #include "common/SocketUtil.h"
@@ -54,7 +55,7 @@ bool Socks5Listener::negotiate(QTcpSocket *client, QString *username, QString *e
     if (!sockutil::readAtLeast(client, &head, 2, kHandshakeTimeoutMs, error)) return false;
 
     if (static_cast<uchar>(head.at(0)) != 0x05) {
-        if (error) *error = QStringLiteral("不支持的 SOCKS 版本：%1").arg(int(head.at(0)));
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Unsupported SOCKS version: %1").arg(int(head.at(0)));
         return false;
     }
 
@@ -71,13 +72,13 @@ bool Socks5Listener::negotiate(QTcpSocket *client, QString *username, QString *e
     if (requireAuth && !supportsAuth) {
         static const QByteArray kNoAcceptable = QByteArray::fromHex("05FF");
         writeAll(client, kNoAcceptable, kHandshakeTimeoutMs);
-        if (error) *error = QStringLiteral("客户端不支持用户名/密码认证");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "The client does not support username/password authentication");
         return false;
     }
     if (!requireAuth && !supportsNone && !supportsAuth) {
         static const QByteArray kNoAcceptable = QByteArray::fromHex("05FF");
         writeAll(client, kNoAcceptable, kHandshakeTimeoutMs);
-        if (error) *error = QStringLiteral("客户端未提供可接受的认证方式");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "The client offered no acceptable authentication method");
         return false;
     }
 
@@ -85,7 +86,7 @@ bool Socks5Listener::negotiate(QTcpSocket *client, QString *username, QString *e
     selection.append(char(0x05));
     selection.append(requireAuth ? char(0x02) : char(0x00));
     if (!writeAll(client, selection, kHandshakeTimeoutMs)) {
-        if (error) *error = QStringLiteral("写入 SOCKS5 方法选择失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to write the SOCKS5 method selection");
         return false;
     }
 
@@ -96,7 +97,7 @@ bool Socks5Listener::negotiate(QTcpSocket *client, QString *username, QString *e
     if (!sockutil::readAtLeast(client, &auth, 2, kHandshakeTimeoutMs, error)) return false;
 
     if (static_cast<uchar>(auth.at(0)) != 0x01) {
-        if (error) *error = QStringLiteral("不支持的用户名/密码认证版本");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Unsupported username/password auth version");
         return false;
     }
 
@@ -121,7 +122,7 @@ bool Socks5Listener::negotiate(QTcpSocket *client, QString *username, QString *e
     writeAll(client, response, kHandshakeTimeoutMs);
 
     if (!granted) {
-        if (error) *error = QStringLiteral("SOCKS5 认证失败（用户名 %1）").arg(name);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "SOCKS5 authentication failed (user %1)").arg(name);
         return false;
     }
     if (username) *username = name;
@@ -138,7 +139,7 @@ bool Socks5Listener::readRequest(QTcpSocket *client, Metadata *metadata, uchar *
     if (!sockutil::readAtLeast(client, &head, 4, kHandshakeTimeoutMs, error)) return false;
 
     if (static_cast<uchar>(head.at(0)) != 0x05) {
-        if (error) *error = QStringLiteral("SOCKS5 请求版本错误");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Wrong SOCKS5 request version");
         return false;
     }
 
@@ -148,7 +149,7 @@ bool Socks5Listener::readRequest(QTcpSocket *client, Metadata *metadata, uchar *
     if (command != 0x01) {
         *replyCode = kCommandNotSupported;
         if (error) {
-            *error = QStringLiteral("不支持的 SOCKS5 命令 0x%1").arg(QString::number(command, 16));
+            *error = QCoreApplication::translate("clashqt::core", "Unsupported SOCKS5 command 0x%1").arg(QString::number(command, 16));
         }
         return false;
     }
@@ -176,7 +177,7 @@ bool Socks5Listener::readRequest(QTcpSocket *client, Metadata *metadata, uchar *
     } else {
         *replyCode = kAddressNotSupported;
         if (error) {
-            *error = QStringLiteral("SOCKS5 不支持的地址类型 0x%1")
+            *error = QCoreApplication::translate("clashqt::core", "Unsupported SOCKS5 address type 0x%1")
                          .arg(QString::number(addressType, 16));
         }
         return false;
@@ -215,7 +216,7 @@ void Socks5Listener::handleConnection(QTcpSocket *clientSocket)
 
     if (!negotiate(clientSocket, &username, &error)) {
         Logger::instance().warn(LogCategory::Listener,
-                                QStringLiteral("SOCKS5 协商失败：%1").arg(error));
+                                QCoreApplication::translate("clashqt::core", "SOCKS5 negotiation failed: %1").arg(error));
         clientSocket->abort();
         return;
     }
@@ -246,7 +247,7 @@ void Socks5Listener::handleConnection(QTcpSocket *clientSocket)
 
         Logger::instance().debug(
             LogCategory::Listener,
-            QStringLiteral("SOCKS5 请求失败：%1").arg(error.isEmpty() ? QStringLiteral("目标无效")
+            QCoreApplication::translate("clashqt::core", "SOCKS5 request failed: %1").arg(error.isEmpty() ? QCoreApplication::translate("clashqt::core", "Invalid target")
                                                                      : error));
         clientSocket->abort();
         return;

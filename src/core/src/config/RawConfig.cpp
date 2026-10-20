@@ -1,4 +1,5 @@
 #include "config/RawConfig.h"
+#include <QCoreApplication>
 
 namespace core {
 namespace {
@@ -77,7 +78,7 @@ std::optional<RawConfig> RawConfig::fromYaml(const QString &text, QString *error
     if (!parsed) return std::nullopt;
     if (parsed->isNull() || parsed->isUndefined()) return RawConfig(QJsonObject());
     if (!parsed->isObject()) {
-        if (errorMessage) *errorMessage = QStringLiteral("配置根节点必须是映射（mapping）");
+        if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "The config root must be a mapping");
         return std::nullopt;
     }
     return RawConfig(parsed->toObject());

@@ -1,4 +1,5 @@
 #include "config/ProfileConfig.h"
+#include <QCoreApplication>
 
 #include "utils/AppLogger.h"
 #include "utils/Paths.h"
@@ -116,7 +117,7 @@ bool ProfileConfig::load()
                 if (!item.id.isEmpty()) m_items.append(item);
             }
         } else if (!error.isEmpty()) {
-            AppLogger::instance().error(QStringLiteral("订阅列表解析失败：%1").arg(error));
+            AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to parse the profile list: %1").arg(error));
         }
     }
 
@@ -139,7 +140,7 @@ bool ProfileConfig::save()
 
     QString error;
     if (!safefile::writeAtomic(paths::profileConfigPath(), core::Yaml::stringify(root), &error)) {
-        AppLogger::instance().error(QStringLiteral("订阅列表保存失败：%1").arg(error));
+        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to save the profile list: %1").arg(error));
         return false;
     }
     emit configChanged();
@@ -224,7 +225,7 @@ bool ProfileConfig::setProfileContent(const QString &id, const QString &content)
     QString error;
     if (!safefile::writeAtomic(paths::profilePath(id), content, &error)) {
         AppLogger::instance().error(
-            QStringLiteral("订阅内容写入失败（%1）：%2").arg(id, error));
+            QCoreApplication::translate("clashqt::app", "Failed to write profile content (%1): %2").arg(id, error));
         return false;
     }
     return true;

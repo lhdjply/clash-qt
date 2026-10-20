@@ -1,4 +1,5 @@
 #include "utils/AppLogger.h"
+#include <QCoreApplication>
 
 #include "utils/Paths.h"
 
@@ -148,7 +149,7 @@ void AppLogger::purgeOldLogs()
 
     if (removed > 0) {
         writeToFile(QStringLiteral("info"), QStringLiteral("App"),
-                    QStringLiteral("已清理 %1 个过期日志文件（保留 %2 天）")
+                    QCoreApplication::translate("clashqt::app", "Removed %1 expired log file(s) (retention %2 days)")
                         .arg(removed)
                         .arg(m_maxLogDays),
                     false);

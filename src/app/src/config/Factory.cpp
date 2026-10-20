@@ -1,4 +1,5 @@
 #include "config/Factory.h"
+#include <QCoreApplication>
 
 #include "config/AppConfig.h"
 #include "config/ControledKernelConfig.h"
@@ -94,7 +95,7 @@ bool Factory::applyOverrides(core::RawConfig *config, const QStringList &overrid
         const OverrideItem item = m_overrideConfig->item(overrideId);
         if (item.id.isEmpty()) {
             if (warnings) {
-                warnings->append(QStringLiteral("引用了不存在的覆写：%1").arg(overrideId));
+                warnings->append(QCoreApplication::translate("clashqt::app", "References an override that does not exist: %1").arg(overrideId));
             }
             continue;
         }
@@ -103,7 +104,7 @@ bool Factory::applyOverrides(core::RawConfig *config, const QStringList &overrid
         const QString content = m_overrideConfig->content(item.id, item.ext, &ok);
         if (!ok) {
             if (warnings) {
-                warnings->append(QStringLiteral("覆写 %1 的内容文件缺失").arg(item.name));
+                warnings->append(QCoreApplication::translate("clashqt::app", "Override %1 has no content file").arg(item.name));
             }
             continue;
         }
@@ -112,8 +113,7 @@ bool Factory::applyOverrides(core::RawConfig *config, const QStringList &overrid
             // 明确告警而不是静默跳过：静默跳过会让用户以为覆写已生效
             if (warnings) {
                 warnings->append(
-                    QStringLiteral("覆写「%1」是 js 脚本，当前尚未支持 JS 覆写引擎，"
-                                   "已跳过（配置不会应用该覆写）")
+                    QCoreApplication::translate("clashqt::app", "Override \"%1\" is a JS script, and the JS override engine is not supported yet; it was skipped (the config will not apply it)")
                         .arg(item.name));
             }
             continue;
@@ -123,14 +123,14 @@ bool Factory::applyOverrides(core::RawConfig *config, const QStringList &overrid
         const auto patch = core::Yaml::parse(content, &parseError);
         if (!patch) {
             if (warnings) {
-                warnings->append(QStringLiteral("覆写「%1」解析失败：%2")
+                warnings->append(QCoreApplication::translate("clashqt::app", "Failed to parse override \"%1\": %2")
                                      .arg(item.name, parseError));
             }
             continue;
         }
         if (!patch->isObject()) {
             if (warnings) {
-                warnings->append(QStringLiteral("覆写「%1」的根节点必须是映射").arg(item.name));
+                warnings->append(QCoreApplication::translate("clashqt::app", "The root of override \"%1\" must be a mapping").arg(item.name));
             }
             continue;
         }
@@ -156,7 +156,7 @@ void Factory::applyRuleOverride(core::RawConfig *config, const QString &profileI
     const auto parsed = core::Yaml::parse(content, &parseError);
     if (!parsed || !parsed->isObject()) {
         if (warnings) {
-            warnings->append(QStringLiteral("规则覆写文件解析失败：%1").arg(parseError));
+            warnings->append(QCoreApplication::translate("clashqt::app", "Failed to parse the rule-override file: %1").arg(parseError));
         }
         return;
     }
@@ -225,7 +225,7 @@ std::optional<core::RawConfig> Factory::generateInMemory(Result *result)
     const QString profileId = m_profileConfig ? m_profileConfig->current() : QString();
     if (profileId.isEmpty()) {
         if (result) {
-            result->error = QStringLiteral("尚未选择任何订阅，请先在「订阅」页添加并选中一个配置");
+            result->error = QCoreApplication::translate("clashqt::app", "No profile selected yet. Add one on the Profiles page and select it first.");
         }
         return std::nullopt;
     }
@@ -236,7 +236,7 @@ std::optional<core::RawConfig> Factory::generateInMemory(Result *result)
     const QString content = m_profileConfig->profileContent(profileId, &ok);
     if (!ok || content.trimmed().isEmpty()) {
         if (result) {
-            result->error = QStringLiteral("订阅「%1」的内容为空或不存在")
+            result->error = QCoreApplication::translate("clashqt::app", "Profile \"%1\" is empty or missing")
                                 .arg(m_profileConfig->item(profileId).name);
         }
         return std::nullopt;
@@ -246,7 +246,7 @@ std::optional<core::RawConfig> Factory::generateInMemory(Result *result)
     const auto              parsed = core::RawConfig::fromYaml(content, &parseError);
     if (!parsed) {
         if (result) {
-            result->error = QStringLiteral("订阅内容解析失败：%1").arg(parseError);
+            result->error = QCoreApplication::translate("clashqt::app", "Failed to parse the profile content: %1").arg(parseError);
         }
         return std::nullopt;
     }
@@ -353,12 +353,12 @@ Factory::Result Factory::generate()
     QString error;
     if (!safefile::writeAtomic(paths::workConfigPath(), config->toYaml(), &error)) {
         result.success = false;
-        result.error   = QStringLiteral("配置写入失败：%1").arg(error);
+        result.error   = QCoreApplication::translate("clashqt::app", "Failed to write the config: %1").arg(error);
         return result;
     }
 
     AppLogger::instance().info(
-        QStringLiteral("已生成运行配置：%1（订阅 %2）").arg(paths::workConfigPath(),
+        QCoreApplication::translate("clashqt::app", "Generated the runtime config: %1 (profile %2)").arg(paths::workConfigPath(),
                                                           result.profileId));
     result.success = true;
     return result;

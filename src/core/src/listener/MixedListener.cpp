@@ -1,4 +1,5 @@
 #include "listener/MixedListener.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 #include "common/SocketUtil.h"
@@ -33,7 +34,7 @@ void MixedListener::handleConnection(QTcpSocket *clientSocket)
     QByteArray sniffed = sockutil::drainAvailable(clientSocket);
     if (sniffed.isEmpty()
         && !sockutil::readAtLeast(clientSocket, &sniffed, 1, kSniffTimeoutMs)) {
-        Logger::instance().debug(LogCategory::Listener, QStringLiteral("MIXED 入站嗅探协议超时"));
+        Logger::instance().debug(LogCategory::Listener, QCoreApplication::translate("clashqt::core", "MIXED inbound timed out while sniffing the protocol"));
         clientSocket->abort();
         return;
     }

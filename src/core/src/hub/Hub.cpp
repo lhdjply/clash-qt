@@ -1,4 +1,5 @@
 #include "hub/Hub.h"
+#include <QCoreApplication>
 
 #include "tunnel/TunDevice.h"
 
@@ -110,7 +111,7 @@ bool Hub::applyConfig(const RawConfig &config, QString *error)
         m_resolver->applyDnsConfig(QJsonObject());
         m_dnsServer->applyDnsConfig(QJsonObject());
         Logger::instance().info(LogCategory::Config,
-                                QStringLiteral("DNS 覆写已关闭，使用系统解析"));
+                                QCoreApplication::translate("clashqt::core", "DNS override is off; using system resolution"));
     }
 
     // ---- 适配器 -----------------------------------------------------------
@@ -135,7 +136,7 @@ bool Hub::applyConfig(const RawConfig &config, QString *error)
         if (!behavior) {
             Logger::instance().warn(
                 LogCategory::Rule,
-                QStringLiteral("规则集 %1 的 behavior 非法：%2").arg(it.key(), behaviorText));
+                QCoreApplication::translate("clashqt::core", "Rule set %1 has an invalid behavior: %2").arg(it.key(), behaviorText));
             continue;
         }
 
@@ -161,10 +162,10 @@ bool Hub::applyConfig(const RawConfig &config, QString *error)
                 }
                 set = RuleParser::parseRuleSet(it.key(), *behavior, lines, &warnings);
             } else {
-                warnings << QStringLiteral("无法读取规则集文件：%1").arg(path);
+                warnings << QCoreApplication::translate("clashqt::core", "Could not read the rule-set file: %1").arg(path);
             }
         } else {
-            warnings << QStringLiteral("远程规则集（type=http）尚未实现，已跳过");
+            warnings << QCoreApplication::translate("clashqt::core", "Remote rule sets (type=http) are not implemented yet; skipped");
         }
 
         for (const QString &warning : warnings) {
@@ -190,7 +191,7 @@ bool Hub::applyConfig(const RawConfig &config, QString *error)
 
     if (wasRunning) {
         Logger::instance().info(LogCategory::Config,
-                                QStringLiteral("配置已热更新（不重启入站监听）"));
+                                QCoreApplication::translate("clashqt::core", "Config hot-reloaded (inbound listeners kept)"));
     }
 
     emit configChanged();
@@ -231,7 +232,7 @@ bool Hub::startListeners(QString *error)
         QString listenError;
         if (!listener->start(bindAddress, quint16(ports.mixed))) {
             if (error) {
-                *error = QStringLiteral("混合端口 %1 启动失败").arg(ports.mixed);
+                *error = QCoreApplication::translate("clashqt::core", "Mixed port %1 failed to start").arg(ports.mixed);
             }
             return false;
         }
@@ -248,7 +249,7 @@ bool Hub::startListeners(QString *error)
                              emit logMessage(level, message);
                          });
         if (!listener->start(bindAddress, quint16(ports.socks))) {
-            if (error) *error = QStringLiteral("SOCKS5 端口 %1 启动失败").arg(ports.socks);
+            if (error) *error = QCoreApplication::translate("clashqt::core", "SOCKS5 port %1 failed to start").arg(ports.socks);
             return false;
         }
         m_listeners.push_back(listener);
@@ -263,7 +264,7 @@ bool Hub::startListeners(QString *error)
                              emit logMessage(level, message);
                          });
         if (!listener->start(bindAddress, quint16(ports.http))) {
-            if (error) *error = QStringLiteral("HTTP 端口 %1 启动失败").arg(ports.http);
+            if (error) *error = QCoreApplication::translate("clashqt::core", "HTTP port %1 failed to start").arg(ports.http);
             return false;
         }
         m_listeners.push_back(listener);
@@ -273,14 +274,12 @@ bool Hub::startListeners(QString *error)
         // redir / tproxy 透明代理需要 SO_ORIGINAL_DST / IP_TRANSPARENT 等
         // 内核特性与提权，属于后续阶段；这里明确告警而不是静默忽略。
         emit logMessage(QStringLiteral("warning"),
-                        QStringLiteral("redir-port / tproxy-port 透明代理尚未实现（Phase 2），"
-                                       "对应端口未监听"));
+                        QCoreApplication::translate("clashqt::core", "redir-port / tproxy-port transparent proxying is not implemented yet (Phase 2); those ports are not listening"));
     }
 
     if (m_listeners.empty()) {
         if (error) {
-            *error = QStringLiteral("配置中没有任何启用的入站端口"
-                                    "（mixed-port / socks-port / port 均为 0）");
+            *error = QCoreApplication::translate("clashqt::core", "No inbound port is enabled in the config (mixed-port / socks-port / port are all 0)");
         }
         return false;
     }
@@ -299,7 +298,7 @@ bool Hub::start(QString *error)
 {
     if (m_running) return true;
     if (m_config.isEmpty()) {
-        if (error) *error = QStringLiteral("尚未应用任何配置");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "No config has been applied yet");
         return false;
     }
 
@@ -313,8 +312,8 @@ bool Hub::start(QString *error)
     m_statsTimer->start();
 
     m_running = true;
-    Logger::instance().info(LogCategory::Core, QStringLiteral("已启动"));
-    emit logMessage(QStringLiteral("info"), QStringLiteral("已启动"));
+    Logger::instance().info(LogCategory::Core, QCoreApplication::translate("clashqt::core", "Started"));
+    emit logMessage(QStringLiteral("info"), QCoreApplication::translate("clashqt::core", "Started"));
     return true;
 }
 
@@ -331,7 +330,7 @@ void Hub::stop()
     }
 
     m_running = false;
-    Logger::instance().info(LogCategory::Core, QStringLiteral("已停止"));
+    Logger::instance().info(LogCategory::Core, QCoreApplication::translate("clashqt::core", "Stopped"));
 }
 
 // ---------------------------------------------------------------------------
@@ -350,7 +349,7 @@ void Hub::setMode(OutboundMode mode)
         m_tunnel->setSnapshot(next);
     }
     Logger::instance().info(LogCategory::Core,
-                            QStringLiteral("出站模式切换为 %1").arg(toString(mode)));
+                            QCoreApplication::translate("clashqt::core", "Outbound mode switched to %1").arg(toString(mode)));
     emit configChanged();
 }
 
@@ -372,11 +371,11 @@ void Hub::setMode(OutboundMode mode)
 bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
 {
     if (deviceFd < 0) {
-        if (error) *error = QStringLiteral("无效的 TUN 设备 fd");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Invalid TUN device fd");
         return false;
     }
     if (m_tunDevice) {
-        if (error) *error = QStringLiteral("TUN 已在运行");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "TUN is already running");
         return false;
     }
 
@@ -386,7 +385,7 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
     auto dialFn = [this, alive](const DialContext &context) {
         DialResult aborted;
         if (!*alive) {
-            aborted.error = QStringLiteral("TUN 已关闭");
+            aborted.error = QCoreApplication::translate("clashqt::core", "TUN is closed");
             return aborted;
         }
         DialContext working = context;
@@ -395,7 +394,7 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
         if (!outcome.adapter) {
             DialResult failure;
             failure.error = outcome.error.isEmpty()
-                                ? QStringLiteral("没有匹配到可用出站")
+                                ? QCoreApplication::translate("clashqt::core", "No usable outbound matched")
                                 : outcome.error;
             return failure;
         }
@@ -426,7 +425,7 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
                            : QList<QHostAddress>{};
             if (resolved.isEmpty()) {
                 DialResult failure;
-                failure.error = QStringLiteral("域名解析失败：%1").arg(working.host);
+                failure.error = QCoreApplication::translate("clashqt::core", "DNS resolution failed: %1").arg(working.host);
                 return failure;
             }
             working.dstIp           = resolved.first().toString();
@@ -469,7 +468,7 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
                      });
     QObject::connect(m_tunDevice, &TunDevice::failed, this, [this](const QString &reason) {
         emit logMessage(QStringLiteral("warning"),
-                        QStringLiteral("TUN 数据面异常（%1），已停止 TUN").arg(reason));
+                        QCoreApplication::translate("clashqt::core", "TUN data-plane error (%1); TUN stopped").arg(reason));
         // 在 GUI 线程收尾，避免在设备线程里析构自己
         QMetaObject::invokeMethod(this, [this]() { stopTun(); }, Qt::QueuedConnection);
     });
@@ -484,7 +483,7 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
 
     m_tunFd = -1; // 所有权已交给 TunDevice（由它关闭）
     Logger::instance().info(LogCategory::Core,
-                            QStringLiteral("TUN 已接管（fd=%1），数据面运行在工作线程")
+                            QCoreApplication::translate("clashqt::core", "TUN taken over (fd=%1); data plane running on a worker thread")
                                 .arg(deviceFd));
     emit configChanged();
     return true;
@@ -525,20 +524,20 @@ void Hub::stopTun()
             // running"），这正是「关闭 TUN 闪退」的第二个原因。
             // 交给它自己退出后回收。
             emit logMessage(QStringLiteral("warning"),
-                            QStringLiteral("TUN 数据面线程仍在收尾，退出后自动释放"));
+                            QCoreApplication::translate("clashqt::core", "The TUN data-plane thread is still winding down; it will be released after exit"));
             QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
         }
     } else if (thread) {
         thread->deleteLater();
     }
 
-    Logger::instance().info(LogCategory::Core, QStringLiteral("TUN 已关闭"));
+    Logger::instance().info(LogCategory::Core, QCoreApplication::translate("clashqt::core", "TUN is closed"));
     emit configChanged();
 }
 #else
 bool Hub::startTun(int, int, int, QString *error)
 {
-    if (error) *error = QStringLiteral("当前平台尚未实现 TUN");
+    if (error) *error = QCoreApplication::translate("clashqt::core", "TUN is not implemented on this platform yet");
     return false;
 }
 void Hub::stopTun() {}
@@ -580,16 +579,16 @@ bool Hub::selectProxy(const QString &group, const QString &proxy, QString *error
 {
     const AdapterPtr adapter = m_registry->find(group);
     if (!adapter) {
-        if (error) *error = QStringLiteral("组 %1 不存在").arg(group);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Group %1 does not exist").arg(group);
         return false;
     }
     auto proxyGroup = std::dynamic_pointer_cast<ProxyGroup>(adapter);
     if (!proxyGroup) {
-        if (error) *error = QStringLiteral("%1 不是代理组").arg(group);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "%1 is not a proxy group").arg(group);
         return false;
     }
     if (!proxyGroup->select(proxy)) {
-        if (error) *error = QStringLiteral("组 %1 中不存在成员 %2").arg(group, proxy);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Group %1 has no member %2").arg(group, proxy);
         return false;
     }
     emit configChanged();
@@ -625,7 +624,7 @@ int Hub::restoreSelectedProxies(const QJsonObject &selections)
             // 换过订阅后成员可能已不存在：忽略该组并提示，不阻断其他组的恢复
             Logger::instance().warn(
                 LogCategory::Adapter,
-                QStringLiteral("组 %1 保存的成员 %2 已不存在，已忽略")
+                QCoreApplication::translate("clashqt::core", "Group %1 references member %2, which no longer exists; ignored")
                     .arg(group->name(), member));
             continue;
         }
@@ -635,7 +634,7 @@ int Hub::restoreSelectedProxies(const QJsonObject &selections)
     if (restored > 0) {
         Logger::instance().info(
             LogCategory::Adapter,
-            QStringLiteral("已恢复 %1 个代理组的手动选择").arg(restored));
+            QCoreApplication::translate("clashqt::core", "Restored manual selections for %1 proxy group(s)").arg(restored));
     }
     return restored;
 }
@@ -650,7 +649,7 @@ QJsonObject Hub::testDelay(const QString &name, const QString &url, int timeoutM
 
     const AdapterPtr adapter = m_registry->resolvePolicy(name);
     if (!adapter) {
-        result.insert(QStringLiteral("message"), QStringLiteral("节点不存在：%1").arg(name));
+        result.insert(QStringLiteral("message"), QCoreApplication::translate("clashqt::core", "Node does not exist: %1").arg(name));
         return result;
     }
 
@@ -713,7 +712,7 @@ QJsonObject Hub::testGroupDelay(const QString &group, const QString &url, int ti
     const AdapterPtr adapter = m_registry->find(group);
     auto proxyGroup = std::dynamic_pointer_cast<ProxyGroup>(adapter);
     if (!proxyGroup) {
-        result.insert(QStringLiteral("message"), QStringLiteral("%1 不是代理组").arg(group));
+        result.insert(QStringLiteral("message"), QCoreApplication::translate("clashqt::core", "%1 is not a proxy group").arg(group));
         return result;
     }
 

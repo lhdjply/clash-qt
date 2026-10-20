@@ -1,4 +1,5 @@
 #include "component/dns/Resolver.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 #include "common/JsonUtil.h"
@@ -281,7 +282,7 @@ void FakeIpPool::configure(const QString &range)
     if (!net || net->family() != 4) {
         Logger::instance().warn(
             LogCategory::Dns,
-            QStringLiteral("非法或非 IPv4 的 fake-ip-range：%1，回退到 198.18.0.1/16").arg(range));
+            QCoreApplication::translate("clashqt::core", "Invalid or non-IPv4 fake-ip-range: %1; falling back to 198.18.0.1/16").arg(range));
         const auto fallback = IpNet::parse(QStringLiteral("198.18.0.1/16"));
         m_base = fallback->address().toIPv4Address();
         m_mask = 0xFFFF0000u;
@@ -541,7 +542,7 @@ void Resolver::applyDnsConfig(const QJsonObject &dnsConfig)
 
         m_cache.clear();
 
-        summary = QStringLiteral("DNS 已配置：enhanced-mode=%1，nameserver=%2，fake-ip=%3")
+        summary = QCoreApplication::translate("clashqt::core", "DNS configured: enhanced-mode=%1, nameserver=%2, fake-ip=%3")
                       .arg(toString(m_enhancedMode), m_nameservers.join(QLatin1Char(',')),
                            m_fakeIp.enabled() ? QStringLiteral("on") : QStringLiteral("off"));
     } // 释放锁后再发信号：槽函数可能又调回 Resolver
@@ -911,7 +912,7 @@ QList<QHostAddress> Resolver::queryServer(const Server &server, const QString &h
         // tls:// 需要 DoT 的 TLS 包装，本阶段以 TCP 明文回退并在日志中说明
         if (server.tls) {
             emit logMessage(QStringLiteral("warning"),
-                            QStringLiteral("DoT（tls://）暂以 TCP 方式连接 %1").arg(server.host));
+                            QCoreApplication::translate("clashqt::core", "DoT (tls://) currently connects over plain TCP to %1").arg(server.host));
         }
         return queryTcp(server, host, type, timeoutMs);
     }
@@ -975,7 +976,7 @@ QList<QHostAddress> Resolver::resolveImpl(const QString &host, int timeoutMs, bo
         // AAAA 查不到是常态（多数 DoH / 节点域名只有 A 记录），客户端本来就会
         // 回落到 A。只有 A 查询失败才值得告警，否则每换一次网络就刷一条假故障。
         emit logMessage(ipv6 ? QStringLiteral("debug") : QStringLiteral("warning"),
-                        QStringLiteral("无法通过引导服务器解析 DNS 上游域名：%1").arg(needle));
+                        QCoreApplication::translate("clashqt::core", "Could not resolve the DNS upstream host through the bootstrap server: %1").arg(needle));
         return {};
     }
 
@@ -1000,7 +1001,7 @@ QList<QHostAddress> Resolver::resolveImpl(const QString &host, int timeoutMs, bo
         const auto server = parseServer(spec);
         if (!server) {
             emit logMessage(QStringLiteral("warning"),
-                            QStringLiteral("无法解析 DNS 服务器配置：%1").arg(spec));
+                            QCoreApplication::translate("clashqt::core", "Could not parse the DNS server config: %1").arg(spec));
             continue;
         }
         // 服务器本身是域名时才需要引导解析；DoH 不需要（走 URL，由 QNAM 自己解）。
@@ -1041,7 +1042,7 @@ QList<QHostAddress> Resolver::resolveImpl(const QString &host, int timeoutMs, bo
     if (result.isEmpty()) {
         // 同上：AAAA 解析不到不算故障（客户端会回落 A），降为 debug 免得刷假告警
         emit logMessage(ipv6 ? QStringLiteral("debug") : QStringLiteral("warning"),
-                        QStringLiteral("域名解析失败：%1").arg(needle));
+                        QCoreApplication::translate("clashqt::core", "DNS resolution failed: %1").arg(needle));
         // 负缓存 30 秒：解析失败的域名会被反复重试，每次都要等 DoH 超时，
         // 而这条路径跑在 TUN 数据面线程里，会直接卡住所有连接。
         CacheEntry negative;

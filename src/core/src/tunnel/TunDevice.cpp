@@ -1,4 +1,5 @@
 #include "tunnel/TunDevice.h"
+#include <QCoreApplication>
 
 #include "component/dns/DnsServer.h"
 #include "component/dns/Resolver.h"
@@ -47,7 +48,7 @@ void TunDevice::start(int fd, int dnsUdpFd, int dnsTcpFd)
 {
 #ifdef Q_OS_UNIX
     if (fd < 0) {
-        emit failed(QStringLiteral("无效的 TUN 设备 fd"));
+        emit failed(QCoreApplication::translate("clashqt::core", "Invalid TUN device fd"));
         return;
     }
     if (m_stack) return;
@@ -67,7 +68,7 @@ void TunDevice::start(int fd, int dnsUdpFd, int dnsTcpFd)
                              ::write(m_fd, packet.constData(), size_t(packet.size()));
                          if (written < 0 && errno != EAGAIN && errno != EINTR) {
                              emit logMessage(QStringLiteral("warning"),
-                                             QStringLiteral("写 TUN 设备失败：%1")
+                                             QCoreApplication::translate("clashqt::core", "Failed to write to the TUN device: %1")
                                                  .arg(QString::fromLocal8Bit(
                                                      std::strerror(errno))));
                          }
@@ -102,12 +103,12 @@ void TunDevice::start(int fd, int dnsUdpFd, int dnsTcpFd)
     }
 
     emit logMessage(QStringLiteral("info"),
-                    QStringLiteral("TUN 数据面已就绪（工作线程 %1，DNS 53 %2）")
+                    QCoreApplication::translate("clashqt::core", "TUN data plane ready (worker thread %1, DNS 53 %2)")
                         .arg(quintptr(QThread::currentThreadId()), 0, 16)
-                        .arg(dnsUdpFd >= 0 ? QStringLiteral("已接管") : QStringLiteral("未接管")));
+                        .arg(dnsUdpFd >= 0 ? QCoreApplication::translate("clashqt::core", "Taken over") : QCoreApplication::translate("clashqt::core", "Not taken over")));
 #else
     Q_UNUSED(fd);
-    emit failed(QStringLiteral("当前平台尚未实现 TUN 数据面"));
+    emit failed(QCoreApplication::translate("clashqt::core", "The TUN data plane is not implemented on this platform yet"));
 #endif
 }
 
@@ -133,9 +134,9 @@ void TunDevice::readAvailable()
         if (errno == EAGAIN || errno == EINTR) break;
         if (m_closing) break; // fd 已在 shutdown 里关闭，属正常收尾
         emit logMessage(QStringLiteral("warning"),
-                        QStringLiteral("读 TUN 设备失败：%1")
+                        QCoreApplication::translate("clashqt::core", "Failed to read the TUN device: %1")
                             .arg(QString::fromLocal8Bit(std::strerror(errno))));
-        emit failed(QStringLiteral("TUN 设备读取失败"));
+        emit failed(QCoreApplication::translate("clashqt::core", "Failed to read the TUN device"));
         break;
     }
 

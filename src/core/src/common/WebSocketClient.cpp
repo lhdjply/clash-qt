@@ -1,4 +1,5 @@
 #include "common/WebSocketClient.h"
+#include <QCoreApplication>
 
 #include "common/SocketUtil.h"
 
@@ -69,11 +70,11 @@ bool handshake(QAbstractSocket *socket, const QString &path, const QString &host
     request += QStringLiteral("\r\n");
 
     if (!sockutil::writeAll(socket, request.toUtf8(), timeoutMs, error)) {
-        if (error) *error = QStringLiteral("写入升级请求失败：%1").arg(*error);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to write the upgrade request: %1").arg(*error);
         return false;
     }
     Logger::instance().debug(LogCategory::Listener,
-                             QStringLiteral("WS 升级请求已发送 %1 字节到 %2:%3（待写 %4，状态 %5）")
+                             QCoreApplication::translate("clashqt::core", "WS upgrade request: sent %1 bytes to %2:%3 (%4 pending, state %5)")
                                  .arg(request.size())
                                  .arg(socket->peerName(), QString::number(socket->peerPort()))
                                  .arg(socket->bytesToWrite())
@@ -83,7 +84,7 @@ bool handshake(QAbstractSocket *socket, const QString &path, const QString &host
     if (!sockutil::readUntil(socket, &response, "\r\n\r\n", timeoutMs, 16 * 1024, error)) {
         // 附带已读取的部分内容，便于判断请求是否到达服务端
         if (error) {
-            *error = QStringLiteral("%1（已收到 %2 字节：%3）")
+            *error = QCoreApplication::translate("clashqt::core", "%1 (received %2 bytes: %3)")
                          .arg(*error)
                          .arg(response.size())
                          .arg(QString::fromLatin1(response.left(120)));
@@ -97,7 +98,7 @@ bool handshake(QAbstractSocket *socket, const QString &path, const QString &host
     if (lines.isEmpty() || !lines.first().contains("101")) {
         // 附带完整响应头，便于排查 CDN 网关的拒绝原因（SNI 路由 / 路径 / UA 等）
         if (error) {
-            *error = QStringLiteral("WebSocket 握手被拒绝：%1\n%2")
+            *error = QCoreApplication::translate("clashqt::core", "WebSocket handshake rejected: %1\n%2")
                          .arg(QString::fromLatin1(lines.value(0)).trimmed(),
                               QString::fromLatin1(head));
         }
@@ -112,7 +113,7 @@ bool handshake(QAbstractSocket *socket, const QString &path, const QString &host
         }
     }
     if (accept != acceptKey(key).toLatin1()) {
-        if (error) *error = QStringLiteral("WebSocket 握手校验失败（Sec-WebSocket-Accept 不匹配）");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "WebSocket handshake verification failed (Sec-WebSocket-Accept mismatch)");
         return false;
     }
 
@@ -125,7 +126,7 @@ bool handshake(QAbstractSocket *socket, const QString &path, const QString &host
         // 该分支出现时按异常处理并明确报错。
         Q_UNUSED(extra);
         if (error) {
-            *error = QStringLiteral("WebSocket 握手响应中夹带了数据，当前不支持该形态");
+            *error = QCoreApplication::translate("clashqt::core", "The WebSocket handshake response carried extra data, which is not supported");
         }
         return false;
     }
@@ -223,7 +224,7 @@ bool readFrame(QAbstractSocket *socket, uchar *opcode, QByteArray *payload, int 
                     continue;
                 }
                 if (op == kOpClose) {
-                    if (error) *error = QStringLiteral("对端发送了 WebSocket 关闭帧");
+                    if (error) *error = QCoreApplication::translate("clashqt::core", "The peer sent a WebSocket close frame");
                     websocket::sendClose(socket);
                     return false;
                 }
@@ -232,7 +233,7 @@ bool readFrame(QAbstractSocket *socket, uchar *opcode, QByteArray *payload, int 
                 // 数据帧：当前不处理跨帧分片（VLESS 负载通常单帧承载），
                 // 出现分片时按异常处理并明确报错
                 if (!fin) {
-                    if (error) *error = QStringLiteral("收到分片的 WebSocket 消息，当前不支持");
+                    if (error) *error = QCoreApplication::translate("clashqt::core", "Fragmented WebSocket messages are not supported");
                     return false;
                 }
 
@@ -243,7 +244,7 @@ bool readFrame(QAbstractSocket *socket, uchar *opcode, QByteArray *payload, int 
         }
 
         if (socket->state() != QAbstractSocket::ConnectedState) {
-            if (error) *error = QStringLiteral("连接已关闭");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Connection closed");
             return false;
         }
 
@@ -258,7 +259,7 @@ bool readFrame(QAbstractSocket *socket, uchar *opcode, QByteArray *payload, int 
                 buffer.append(late);
                 continue;
             }
-            if (error) *error = QStringLiteral("读取 WebSocket 帧超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Timed out reading a WebSocket frame");
             return false;
         }
         buffer.append(sockutil::drainAvailable(socket));

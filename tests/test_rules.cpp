@@ -118,7 +118,7 @@ void TestRules::domainRegex()
     // 注意不要用未闭合的 "[a-z"：切分器会把 '[' 也当作分组括号，
     // 那样的输入会在「字段不足」处就被拦下，测不到正则校验本身
     QVERIFY(!RuleParser::parse(QStringLiteral("DOMAIN-REGEX,*bad,REJECT"), nullptr, &error));
-    QVERIFY2(error.contains(QStringLiteral("正则")), qPrintable(error));
+    QVERIFY2(error.contains(QStringLiteral("regular expression")), qPrintable(error));
 }
 
 void TestRules::ipCidr()
@@ -356,11 +356,11 @@ void TestRules::rejectsInvalidRules()
     QVERIFY(!error.isEmpty());
 
     QVERIFY(!RuleParser::parse(QStringLiteral("NOT-A-TYPE,payload,DIRECT"), nullptr, &error));
-    QVERIFY(error.contains(QStringLiteral("未知规则类型")));
+    QVERIFY(error.contains(QStringLiteral("Unknown rule type")));
 
     // 少一段：缺少策略名
     QVERIFY(!RuleParser::parse(QStringLiteral("DOMAIN,example.com"), nullptr, &error));
-    QVERIFY(error.contains(QStringLiteral("字段不足")));
+    QVERIFY(error.contains(QStringLiteral("too few fields")));
 
     QVERIFY(!RuleParser::parse(QStringLiteral("MATCH"), nullptr, &error));
     QVERIFY(error.contains(QStringLiteral("MATCH")));

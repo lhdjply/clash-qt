@@ -1,4 +1,5 @@
 #include "rules/RuleParser.h"
+#include <QCoreApplication>
 
 #include "config/ProxyConfig.h"
 #include "constant/Constants.h"
@@ -88,7 +89,7 @@ std::vector<RulePtr> RuleParser::parseSubRules(const QString &payload,
         const QStringList fields = splitTopLevel(expression, QLatin1Char(','));
         if (fields.size() < 2) {
             if (warnings) {
-                *warnings << QStringLiteral("逻辑规则子项格式不正确：%1").arg(expression);
+                *warnings << QCoreApplication::translate("clashqt::core", "Malformed logical-rule sub-item: %1").arg(expression);
             }
             continue;
         }
@@ -99,7 +100,7 @@ std::vector<RulePtr> RuleParser::parseSubRules(const QString &payload,
         RulePtr subRule = parse(normalized, ruleSets, &error);
         if (!subRule) {
             if (warnings) {
-                *warnings << QStringLiteral("逻辑规则子项解析失败：%1（%2）").arg(expression, error);
+                *warnings << QCoreApplication::translate("clashqt::core", "Failed to parse a logical-rule sub-item: %1 (%2)").arg(expression, error);
             }
             continue;
         }
@@ -115,13 +116,13 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
 {
     const QString trimmedText = text.trimmed();
     if (trimmedText.isEmpty()) {
-        if (errorMessage) *errorMessage = QStringLiteral("规则为空");
+        if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Empty rule");
         return nullptr;
     }
 
     const QStringList fields = splitTopLevel(trimmedText, QLatin1Char(','));
     if (fields.isEmpty()) {
-        if (errorMessage) *errorMessage = QStringLiteral("规则为空");
+        if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Empty rule");
         return nullptr;
     }
 
@@ -129,7 +130,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     const auto    ruleType = parseRuleType(typeText);
     if (!ruleType) {
         if (errorMessage) {
-            *errorMessage = QStringLiteral("未知规则类型：%1").arg(typeText);
+            *errorMessage = QCoreApplication::translate("clashqt::core", "Unknown rule type: %1").arg(typeText);
         }
         return nullptr;
     }
@@ -137,7 +138,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     // MATCH 只有目标策略，没有 payload
     if (*ruleType == RuleType::Match) {
         if (fields.size() < 2) {
-            if (errorMessage) *errorMessage = QStringLiteral("MATCH 规则缺少目标策略");
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "MATCH rule is missing the target policy");
             return nullptr;
         }
         return std::make_shared<MatchRule>(fields.at(1).trimmed());
@@ -145,7 +146,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
 
     if (fields.size() < 3) {
         if (errorMessage) {
-            *errorMessage = QStringLiteral("规则字段不足（至少需要 类型,匹配值,策略）：%1")
+            *errorMessage = QCoreApplication::translate("clashqt::core", "Rule has too few fields (expected type,value,policy): %1")
                                 .arg(trimmedText);
         }
         return nullptr;
@@ -193,7 +194,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     case RuleType::DomainRegex: {
         auto concrete = std::make_shared<DomainRegexRule>(payload, target);
         if (!concrete->isValid()) {
-            if (errorMessage) *errorMessage = QStringLiteral("非法的域名正则：%1").arg(payload);
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Invalid domain regular expression: %1").arg(payload);
             return nullptr;
         }
         rule = concrete;
@@ -209,7 +210,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     case RuleType::IpSuffix: {
         auto concrete = std::make_shared<IpCidrRule>(*ruleType, payload, target, false);
         if (!concrete->isValid()) {
-            if (errorMessage) *errorMessage = QStringLiteral("非法的 IP 段：%1").arg(payload);
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Invalid IP CIDR: %1").arg(payload);
             return nullptr;
         }
         rule = concrete;
@@ -221,7 +222,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     case RuleType::SrcIpSuffix: {
         auto concrete = std::make_shared<IpCidrRule>(*ruleType, payload, target, true);
         if (!concrete->isValid()) {
-            if (errorMessage) *errorMessage = QStringLiteral("非法的源 IP 段：%1").arg(payload);
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Invalid source IP CIDR: %1").arg(payload);
             return nullptr;
         }
         rule = concrete;
@@ -247,7 +248,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     case RuleType::DstPort: {
         auto concrete = std::make_shared<PortRule>(*ruleType, payload, target, PortRule::Dst);
         if (!concrete->isValid()) {
-            if (errorMessage) *errorMessage = QStringLiteral("非法端口：%1").arg(payload);
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Invalid port: %1").arg(payload);
             return nullptr;
         }
         rule = concrete;
@@ -257,7 +258,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     case RuleType::SrcPort: {
         auto concrete = std::make_shared<PortRule>(*ruleType, payload, target, PortRule::Src);
         if (!concrete->isValid()) {
-            if (errorMessage) *errorMessage = QStringLiteral("非法源端口：%1").arg(payload);
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Invalid source port: %1").arg(payload);
             return nullptr;
         }
         rule = concrete;
@@ -267,7 +268,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     case RuleType::InPort: {
         auto concrete = std::make_shared<PortRule>(*ruleType, payload, target, PortRule::Inbound);
         if (!concrete->isValid()) {
-            if (errorMessage) *errorMessage = QStringLiteral("非法入站端口：%1").arg(payload);
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Invalid inbound port: %1").arg(payload);
             return nullptr;
         }
         rule = concrete;
@@ -284,7 +285,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     case RuleType::ProcessPathRegex: {
         auto concrete = std::make_shared<ProcessRule>(*ruleType, payload, target);
         if (!concrete->isValid()) {
-            if (errorMessage) *errorMessage = QStringLiteral("非法的进程匹配表达式：%1").arg(payload);
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Invalid process-match expression: %1").arg(payload);
             return nullptr;
         }
         rule = concrete;
@@ -294,7 +295,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
     case RuleType::Uid: {
         auto concrete = std::make_shared<UidRule>(payload, target);
         if (!concrete->isValid()) {
-            if (errorMessage) *errorMessage = QStringLiteral("非法的 UID：%1").arg(payload);
+            if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Invalid UID: %1").arg(payload);
             return nullptr;
         }
         rule = concrete;
@@ -306,7 +307,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
         if (ruleSets) set = ruleSets->lookup(payload);
         if (!set) {
             if (errorMessage) {
-                *errorMessage = QStringLiteral("引用了未定义的规则集：%1").arg(payload);
+                *errorMessage = QCoreApplication::translate("clashqt::core", "References an undefined rule set: %1").arg(payload);
             }
             return nullptr;
         }
@@ -321,7 +322,7 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
         auto        subRules = parseSubRules(payload, target, ruleSets, &localWarnings);
         if (subRules.empty()) {
             if (errorMessage) {
-                *errorMessage = QStringLiteral("逻辑规则没有可用的子规则：%1").arg(payload);
+                *errorMessage = QCoreApplication::translate("clashqt::core", "Logical rule has no usable sub-rules: %1").arg(payload);
             }
             return nullptr;
         }
@@ -336,19 +337,19 @@ RulePtr RuleParser::parse(const QString &text, const RuleSetRegistry *ruleSets,
         // 这些类型在本阶段尚未实现独立匹配器；返回 nullptr 由上层记录为
         // “暂不支持的规则”，配置仍会原样保留，不会被破坏。
         if (errorMessage) {
-            *errorMessage = QStringLiteral("暂不支持的规则类型：%1").arg(typeText);
+            *errorMessage = QCoreApplication::translate("clashqt::core", "Unsupported rule type: %1").arg(typeText);
         }
         return nullptr;
 
     default:
         if (errorMessage) {
-            *errorMessage = QStringLiteral("暂不支持的规则类型：%1").arg(typeText);
+            *errorMessage = QCoreApplication::translate("clashqt::core", "Unsupported rule type: %1").arg(typeText);
         }
         return nullptr;
     }
 
     if (!rule) {
-        if (errorMessage) *errorMessage = QStringLiteral("规则构建失败：%1").arg(trimmedText);
+        if (errorMessage) *errorMessage = QCoreApplication::translate("clashqt::core", "Failed to build the rule: %1").arg(trimmedText);
         return nullptr;
     }
 
@@ -365,7 +366,7 @@ std::vector<RulePtr> RuleParser::parseAll(const QJsonArray &rules,
 
     for (const QJsonValue &value : rules) {
         if (!value.isString()) {
-            if (warnings) *warnings << QStringLiteral("规则项不是字符串，已跳过");
+            if (warnings) *warnings << QCoreApplication::translate("clashqt::core", "Skipped a non-string rule entry");
             continue;
         }
         QString error;
@@ -416,7 +417,7 @@ std::shared_ptr<RuleSet> RuleParser::parseRuleSet(const QString &name,
             RulePtr rule = parse(expression, nullptr, &error);
             if (!rule) {
                 if (warnings) {
-                    *warnings << QStringLiteral("规则集 %1 中的条目无法解析：%2").arg(name, line);
+                    *warnings << QCoreApplication::translate("clashqt::core", "Could not parse an entry in rule set %1: %2").arg(name, line);
                 }
                 continue;
             }

@@ -396,6 +396,8 @@ set(APP_SOURCES
 
     src/app/src/updater/UpdateChecker.cpp
 
+    src/app/src/i18n/I18n.cpp
+
     src/app/src/sys/SysProxy.cpp
     src/app/src/sys/AutoRun.cpp
     src/app/src/sys/SingleInstance.cpp
@@ -432,6 +434,8 @@ set(APP_HEADERS
 
     src/app/src/updater/UpdateChecker.h
 
+    src/app/src/i18n/I18n.h
+
     src/app/src/sys/SysProxy.h
     src/app/src/sys/AutoRun.h
     src/app/src/sys/SingleInstance.h
@@ -461,6 +465,41 @@ set(APP_RESOURCES
 qt_add_executable(${CLASHQT_TARGET} ${APP_SOURCES} ${APP_HEADERS} ${APP_RESOURCES})
 # .qrc 由 AUTORCC 编译出 qrc_*.cpp 参与链接
 set_target_properties(${CLASHQT_TARGET} PROPERTIES AUTORCC ON)
+
+# ---------------------------------------------------------------------------
+#  界面翻译
+#
+#  源语言是英文：源码里的 tr("...") 就是英文原文。中文译文放在
+#  translations/*.ts（可读、可 diff，是唯一的翻译来源），构建时由 lrelease
+#  编译成 .qm 并作为资源嵌入（:/i18n/clash-qt_zh_CN.qm）。
+#
+#  仓库里不提交 .qm：它是编译产物，改了 .ts 重新构建即可，避免二进制文件
+#  与 .ts 不一致。改了界面文案后跑 scripts/update-translations.py 同步 .ts
+#  （它驱动下面的 update_translations 目标，源文件清单由 CMake 维护），
+#  新增条目会标为 unfinished，需要人工补译文。
+#
+#  打包需要两个包，缺任一个都只是静默丢掉中文、不影响构建（只留一条警告）：
+#    qt6-tools-dev    —— 提供 Qt6LinguistTools 的 CMake 包，
+#                        find_package 找不到它就没有 Qt6::lrelease 这个目标
+#    qt6-l10n-tools   —— 提供 lrelease / lupdate 可执行文件本身
+#  注意别装成 qt6-tools-dev-tools：那是 designer/qdbusviewer/qtdiag 这类
+#  开发期小工具，跟翻译流程无关（它会被 qt6-tools-dev 自动带进来）。
+# ---------------------------------------------------------------------------
+find_package(Qt6 QUIET COMPONENTS LinguistTools)
+if(TARGET Qt6::lrelease)
+    qt_add_translations(${CLASHQT_TARGET}
+        TS_FILES
+            translations/clash-qt_en.ts      # 英文是源语言，这份是同文对照表（校对/导出用）
+            translations/clash-qt_zh_CN.ts
+        RESOURCE_PREFIX "/i18n"
+        LUPDATE_OPTIONS -no-obsolete
+        LRELEASE_OPTIONS -removeidentical
+    )
+else()
+    message(WARNING
+        "未找到 Qt6 LinguistTools（lrelease）：界面只会有英文源文案。"
+        "需要中文请安装 qt6-l10n-tools。")
+endif()
 
 target_include_directories(${CLASHQT_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app/src")
 

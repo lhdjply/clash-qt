@@ -1,4 +1,5 @@
 #include "tunnel/TunIpStack.h"
+#include <QCoreApplication>
 
 #include "tunnel/FlowWorker.h"
 #include "tunnel/UdpWorker.h"
@@ -181,7 +182,7 @@ TunIpStack::TunIpStack(DialFn dialFn, std::shared_ptr<Resolver> resolver,
         for (auto it = m_flows.constBegin(); it != m_flows.constEnd(); ++it) {
             if (now - it.value()->lastActive > kFlowIdleMs) stale.append(it.key());
         }
-        for (quint64 key : stale) closeFlow(key, true, QStringLiteral("空闲超时"));
+        for (quint64 key : stale) closeFlow(key, true, QCoreApplication::translate("clashqt::core", "Idle timeout"));
 
         // UDP 会话同样要回收：QUIC/STUN 结束后不会通知我们
         QList<UdpSessionKey> staleUdp;
@@ -189,7 +190,7 @@ TunIpStack::TunIpStack(DialFn dialFn, std::shared_ptr<Resolver> resolver,
             if (now - it.value()->lastActive > kUdpIdleMs) staleUdp.append(it.key());
         }
         for (const UdpSessionKey &key : staleUdp)
-            closeUdpFlow(key, QStringLiteral("空闲超时"));
+            closeUdpFlow(key, QCoreApplication::translate("clashqt::core", "Idle timeout"));
 
         // 清理过期的失败记录
         for (auto it = m_failedTargets.begin(); it != m_failedTargets.end();) {
@@ -212,7 +213,7 @@ void TunIpStack::closeAll()
         auto it = m_flows.find(key);
         if (it != m_flows.end() && it.value()->thread)
             threads.append(it.value()->thread);
-        closeFlow(key, false, QStringLiteral("关闭 TUN"));
+        closeFlow(key, false, QCoreApplication::translate("clashqt::core", "Closing TUN"));
     }
 
     // UDP 会话的工作线程同样要等：它们持有拨号回调
@@ -220,7 +221,7 @@ void TunIpStack::closeAll()
     for (const UdpSessionKey &key : udpKeys) {
         auto it = m_udpFlows.find(key);
         if (it != m_udpFlows.end() && it.value()->thread) threads.append(it.value()->thread);
-        closeUdpFlow(key, QStringLiteral("关闭 TUN"));
+        closeUdpFlow(key, QCoreApplication::translate("clashqt::core", "Closing TUN"));
     }
 
     // 关闭时等工作线程退出（有界等待）：它们持有 Hub 注入的拨号回调，
@@ -244,7 +245,7 @@ void TunIpStack::onPackets(const QByteArray &data)
 {
     if (m_inPacket) {
         emit logMessage(QStringLiteral("debug"),
-                        QStringLiteral("TUN 收包重入，本次丢弃（避免流表被并发改写）"));
+                        QCoreApplication::translate("clashqt::core", "Re-entered TUN packet handling; dropped this packet to avoid concurrent flow-table writes"));
         return;
     }
     // 用 RAII 复位：下面有多处提前 return，手写会漏
@@ -264,7 +265,7 @@ void TunIpStack::onPackets(const QByteArray &data)
             // IPv6 是常态（TUN 接口自己就有链路本地地址，mDNS/RA 也会从它发出），
             // 每包一条 warning 只会把日志刷满，降为 debug 即可。
             emit logMessage(QStringLiteral("debug"),
-                            QStringLiteral("TUN 收到非 IPv4 包，已丢弃（IPv6 尚未支持）"));
+                            QCoreApplication::translate("clashqt::core", "Dropped a non-IPv4 packet from TUN (IPv6 is not supported yet)"));
             return;
         }
         const int totalLength = readU16(packet + 2);
@@ -317,7 +318,7 @@ void TunIpStack::handlePacket(const quint8 *data, int length)
     const quint16 fragment = readU16(data + 6);
     if ((fragment & 0x2000) != 0 || (fragment & 0x1FFF) != 0) {
         emit logMessage(QStringLiteral("debug"),
-                        QStringLiteral("TUN 收到 IP 分片，未做重组，已丢弃"));
+                        QCoreApplication::translate("clashqt::core", "Dropped an IP fragment from TUN (no reassembly)"));
         return;
     }
 
@@ -417,7 +418,7 @@ void TunIpStack::handleUdp(quint32 srcIp, quint32 dstIp, const quint8 *udp, int 
     if (isLocalScopeAddress(dstIp)) {
         if (m_trace) {
             emit logMessage(QStringLiteral("debug"),
-                            QStringLiteral("TUN：本地链路/组播 UDP %1 已丢弃").arg(dstPort));
+                            QCoreApplication::translate("clashqt::core", "TUN: dropped link-local/multicast UDP to %1").arg(dstPort));
         }
         return;
     }
@@ -531,7 +532,7 @@ void TunIpStack::handleIcmp(quint32 srcIp, quint32 dstIp, const quint8 *icmp, in
     emit packetsReady(packet);
 
     emit logMessage(QStringLiteral("debug"),
-                    QStringLiteral("TUN：ICMP echo 由本机应答（%1，fake-ip）")
+                    QCoreApplication::translate("clashqt::core", "TUN: answered ICMP echo locally (%1, fake-ip)")
                         .arg(QHostAddress(dstIp).toString()));
 }
 
@@ -561,7 +562,7 @@ void TunIpStack::handleTcp(quint32 srcIp, quint32 dstIp, const quint8 *tcp, int 
     // 收包日志（debug 级）：排查「包没进来 / 被丢弃」时最直接的一行
     if (m_trace) {
         emit logMessage(QStringLiteral("debug"),
-                        QStringLiteral("TUN TCP 段 %1:%2 → %3 标志=0x%4 序号=%5 长度=%6 已知流=%7")
+                        QCoreApplication::translate("clashqt::core", "TUN TCP segment %1:%2 -> %3 flags=0x%4 seq=%5 len=%6 known flows=%7")
                             .arg(QString::number(srcPort))
                             .arg(QHostAddress(srcIp).toString())
                             .arg(dstPort)
@@ -586,7 +587,7 @@ void TunIpStack::handleTcp(quint32 srcIp, quint32 dstIp, const quint8 *tcp, int 
         // TCP 上的 DNS：本步骤不支持，回 RST 让客户端回落到 UDP
         if (dstPort == 53) {
             emit logMessage(QStringLiteral("debug"),
-                            QStringLiteral("TUN：TCP 53 端口暂不支持，回 RST 促其回落到 UDP"));
+                            QCoreApplication::translate("clashqt::core", "TUN: TCP port 53 is not supported yet; replying RST so the client falls back to UDP"));
             FlowPtr temp = std::make_shared<TunFlow>();
             temp->clientIp = srcIp;
             temp->ourIp    = dstIp;
@@ -636,7 +637,7 @@ void TunIpStack::handleTcp(quint32 srcIp, quint32 dstIp, const quint8 *tcp, int 
 
     // ---- RST：直接拆流 ----
     if (flags & kFlagRst) {
-        closeFlow(key, false, QStringLiteral("客户端 RST"));
+        closeFlow(key, false, QCoreApplication::translate("clashqt::core", "Client RST"));
         return;
     }
 
@@ -664,13 +665,13 @@ void TunIpStack::handleTcp(quint32 srcIp, quint32 dstIp, const quint8 *tcp, int 
         flow->clientFin = true;
         sendSegment(flow, kFlagAck, flow->ourNext, flow->clientNext);
         if (flow->upstreamClosed) {
-            closeFlow(key, false, QStringLiteral("客户端关闭且上游已断"));
+            closeFlow(key, false, QCoreApplication::translate("clashqt::core", "Client closed and upstream already disconnected"));
         }
     }
 
     // ---- 收到我们对端 FIN 的 ACK ----
     if ((flags & kFlagAck) && flow->ourFin && ack == flow->ourNext) {
-        closeFlow(key, false, QStringLiteral("四次挥手完成"));
+        closeFlow(key, false, QCoreApplication::translate("clashqt::core", "Four-way handshake complete"));
     }
 }
 
@@ -774,14 +775,14 @@ void TunIpStack::openUdpFlow(quint32 srcIp, quint32 dstIp, quint16 srcPort, quin
         flow->failed = true;
         if (m_trace) {
             emit logMessage(QStringLiteral("debug"),
-                            QStringLiteral("TUN UDP 目标近期失败过，直接回 ICMP：%1")
+                            QCoreApplication::translate("clashqt::core", "TUN: UDP target failed recently; replying with ICMP: %1")
                                 .arg(targetKey));
         }
         return;
     }
     if (m_udpFlows.size() > kMaxUdpFlows) {
         emit logMessage(QStringLiteral("warning"),
-                        QStringLiteral("TUN UDP 会话数超过 %1，拒绝新会话").arg(kMaxUdpFlows));
+                        QCoreApplication::translate("clashqt::core", "TUN: UDP sessions exceed %1; rejecting new sessions").arg(kMaxUdpFlows));
         flow->failed = true;
         m_failedTargets.insert(targetKey, QDateTime::currentMSecsSinceEpoch() + 30000);
         return;
@@ -865,7 +866,7 @@ void TunIpStack::onUdpConnected(const UdpSessionKey &key)
 
     if (m_trace) {
         emit logMessage(QStringLiteral("debug"),
-                        QStringLiteral("TUN UDP 会话建立：%1:%2 → %3")
+                        QCoreApplication::translate("clashqt::core", "TUN UDP session established: %1:%2 -> %3")
                             .arg(QHostAddress(flow->clientIp).toString())
                             .arg(flow->clientPort)
                             .arg(flow->targetKey));
@@ -895,7 +896,7 @@ void TunIpStack::onUdpFailed(const UdpSessionKey &key, const QString &reason)
     trackClose(flow->connectionId);
 
     emit logMessage(QStringLiteral("warning"),
-                    QStringLiteral("TUN UDP 拨号失败 %1：%2").arg(flow->targetKey, reason));
+                    QCoreApplication::translate("clashqt::core", "TUN UDP dial failed for %1: %2").arg(flow->targetKey, reason));
 
     // 30 秒内同一目标直接回 ICMP：避免每个数据报都触发一次失败拨号
     m_failedTargets.insert(flow->targetKey, QDateTime::currentMSecsSinceEpoch() + 30000);
@@ -924,9 +925,9 @@ void TunIpStack::onUdpClosed(const UdpSessionKey &key)
     // 通道被上游关闭：清掉会话，客户端下次发包会重新拨号
     if (m_trace) {
         emit logMessage(QStringLiteral("debug"),
-                        QStringLiteral("TUN UDP 通道关闭：%1").arg(it.value()->targetKey));
+                        QCoreApplication::translate("clashqt::core", "TUN UDP channel closed: %1").arg(it.value()->targetKey));
     }
-    closeUdpFlow(key, QStringLiteral("上游关闭"));
+    closeUdpFlow(key, QCoreApplication::translate("clashqt::core", "Upstream closed"));
 }
 
 void TunIpStack::closeUdpFlow(const UdpSessionKey &key, const QString &reason)
@@ -946,7 +947,7 @@ void TunIpStack::closeUdpFlow(const UdpSessionKey &key, const QString &reason)
 
     if (m_trace) {
         emit logMessage(QStringLiteral("debug"),
-                        QStringLiteral("TUN 关闭 UDP 会话 %1:%2（%3）")
+                        QCoreApplication::translate("clashqt::core", "TUN closed UDP session %1:%2 (%3)")
                             .arg(QHostAddress(flow->clientIp).toString())
                             .arg(flow->clientPort)
                             .arg(reason));
@@ -1040,7 +1041,7 @@ void TunIpStack::openFlow(quint32 srcIp, quint32 dstIp, quint16 srcPort, quint16
     if (failedIt != m_failedTargets.constEnd() && failedIt.value() > nowMs) {
         if (m_trace) {
             emit logMessage(QStringLiteral("debug"),
-                            QStringLiteral("TUN 目标近期失败过，直接 RST：%1").arg(targetKey));
+                            QCoreApplication::translate("clashqt::core", "TUN: target failed recently; sending RST: %1").arg(targetKey));
         }
         FlowPtr temp      = std::make_shared<TunFlow>();
         temp->clientIp    = srcIp;
@@ -1094,7 +1095,7 @@ void TunIpStack::openFlow(quint32 srcIp, quint32 dstIp, quint16 srcPort, quint16
     constexpr int kMaxFlows = 256;
     if (m_flows.size() > kMaxFlows) {
         emit logMessage(QStringLiteral("warning"),
-                        QStringLiteral("TUN 并发连接超过 %1，拒绝新连接").arg(kMaxFlows));
+                        QCoreApplication::translate("clashqt::core", "TUN: concurrent connections exceed %1; rejecting new connections").arg(kMaxFlows));
         flow->established = true;
         sendSegment(flow, kFlagRst | kFlagAck, flow->ourNext, flow->clientNext);
         m_flows.erase(m_flows.find(key));
@@ -1145,7 +1146,7 @@ void TunIpStack::onFlowConnected(quint64 key)
     flow->lastActive   = QDateTime::currentMSecsSinceEpoch();
 
     emit logMessage(QStringLiteral("info"),
-                    QStringLiteral("TUN 新连接 %1:%2 → %3:%4")
+                    QCoreApplication::translate("clashqt::core", "TUN new connection %1:%2 -> %3:%4")
                         .arg(QHostAddress(flow->clientIp).toString())
                         .arg(flow->clientPort)
                         .arg(flow->host.isEmpty() ? QHostAddress(flow->ourIp).toString()
@@ -1175,7 +1176,7 @@ void TunIpStack::onFlowFailed(quint64 key, const QString &reason)
 
     const QString target = flow->host.isEmpty() ? QHostAddress(flow->ourIp).toString() : flow->host;
     emit logMessage(QStringLiteral("warning"),
-                    QStringLiteral("TUN 拨号失败 %1:%2：%3")
+                    QCoreApplication::translate("clashqt::core", "TUN dial failed for %1:%2: %3")
                         .arg(target)
                         .arg(flow->ourPort)
                         .arg(reason));
@@ -1200,7 +1201,7 @@ void TunIpStack::onFlowData(quint64 key, const QByteArray &data)
 
     if (m_trace) {
         emit logMessage(QStringLiteral("debug"),
-                        QStringLiteral("TUN 上游数据 %1 字节（待发 %2）")
+                        QCoreApplication::translate("clashqt::core", "TUN upstream data: %1 bytes (%2 pending)")
                             .arg(data.size())
                             .arg(flow->toClient.size()));
     }
@@ -1223,7 +1224,7 @@ void TunIpStack::onFlowClosed(quint64 key)
         sendSegment(flow, kFlagFin | kFlagAck, flow->ourNext, flow->clientNext);
         flow->ourNext += 1; // FIN 占一个序号
     }
-    if (flow->clientFin) closeFlow(key, false, QStringLiteral("客户端关闭且上游已断"));
+    if (flow->clientFin) closeFlow(key, false, QCoreApplication::translate("clashqt::core", "Client closed and upstream already disconnected"));
     if (flow->thread && flow->thread->isRunning()) flow->thread->quit();
 }
 
@@ -1332,7 +1333,7 @@ void TunIpStack::closeFlow(quint64 key, bool sendRst, const QString &reason)
     }
 
     emit logMessage(QStringLiteral("debug"),
-                    QStringLiteral("TUN 关闭连接 %1:%2（%3）")
+                    QCoreApplication::translate("clashqt::core", "TUN closed connection %1:%2 (%3)")
                         .arg(QHostAddress(flow->clientIp).toString())
                         .arg(flow->clientPort)
                         .arg(reason));

@@ -1,4 +1,5 @@
 #include "common/SocketUtil.h"
+#include <QCoreApplication>
 
 #include <QDateTime>
 #include <QAbstractSocket>
@@ -25,7 +26,7 @@ bool readUntil(QAbstractSocket *socket, QByteArray *out, const QByteArray &delim
     while (!out->contains(delimiter)) {
         if (maxBytes > 0 && out->size() > maxBytes) {
             if (error) {
-                *error = QStringLiteral("读取数据超过上限 %1 字节且未找到分隔符").arg(maxBytes);
+                *error = QCoreApplication::translate("clashqt::core", "Read more than %1 bytes without finding the delimiter").arg(maxBytes);
             }
             return false;
         }
@@ -38,13 +39,13 @@ bool readUntil(QAbstractSocket *socket, QByteArray *out, const QByteArray &delim
         }
 
         if (socket->state() != QAbstractSocket::ConnectedState) {
-            if (error) *error = QStringLiteral("连接已关闭");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Connection closed");
             return false;
         }
 
         const qint64 remaining = deadline - QDateTime::currentMSecsSinceEpoch();
         if (remaining <= 0) {
-            if (error) *error = QStringLiteral("读取超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Read timed out");
             return false;
         }
 
@@ -58,7 +59,7 @@ bool readUntil(QAbstractSocket *socket, QByteArray *out, const QByteArray &delim
             }
             if (before > 0) continue;
             if (error) {
-                *error = QStringLiteral("读取失败：%1").arg(socket->errorString());
+                *error = QCoreApplication::translate("clashqt::core", "Read failed: %1").arg(socket->errorString());
             }
             return false;
         }
@@ -83,13 +84,13 @@ bool readAtLeast(QAbstractSocket *socket, QByteArray *out, int count, int timeou
         }
 
         if (socket->state() != QAbstractSocket::ConnectedState) {
-            if (error) *error = QStringLiteral("连接已关闭");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Connection closed");
             return false;
         }
 
         const qint64 remaining = deadline - QDateTime::currentMSecsSinceEpoch();
         if (remaining <= 0) {
-            if (error) *error = QStringLiteral("读取超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Read timed out");
             return false;
         }
 
@@ -100,7 +101,7 @@ bool readAtLeast(QAbstractSocket *socket, QByteArray *out, int count, int timeou
                 continue;
             }
             if (error) {
-                *error = QStringLiteral("读取失败：%1").arg(socket->errorString());
+                *error = QCoreApplication::translate("clashqt::core", "Read failed: %1").arg(socket->errorString());
             }
             return false;
         }
@@ -122,14 +123,14 @@ bool writeAll(QAbstractSocket *socket, const QByteArray &payload, int timeoutMs,
     while (offset < payload.size()) {
         const qint64 written = socket->write(payload.constData() + offset, payload.size() - offset);
         if (written < 0) {
-            if (error) *error = QStringLiteral("写入失败：%1").arg(socket->errorString());
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Write failed: %1").arg(socket->errorString());
             return false;
         }
         offset += written;
 
         const qint64 remaining = deadline - QDateTime::currentMSecsSinceEpoch();
         if (remaining <= 0) {
-            if (error) *error = QStringLiteral("写入超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Write timed out");
             return false;
         }
         socket->waitForBytesWritten(int(remaining));
@@ -141,7 +142,7 @@ bool writeAll(QAbstractSocket *socket, const QByteArray &payload, int timeoutMs,
 
     if (socket->error() == QAbstractSocket::RemoteHostClosedError
         && socket->state() != QAbstractSocket::ConnectedState) {
-        if (error) *error = QStringLiteral("连接已被对端关闭");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Connection closed by the peer");
         return false;
     }
     return true;

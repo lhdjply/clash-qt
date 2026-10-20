@@ -1,4 +1,5 @@
 #include "adapter/Hysteria2Adapter.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 #include "common/Hysteria2Client.h"
@@ -48,22 +49,22 @@ Hysteria2Adapter::Hysteria2Adapter(ProxyConfig config) : m_config(std::move(conf
         if (raw.size() == 32) {
             m_fingerprint = raw;
         } else {
-            m_unsupported = QStringLiteral("fingerprint 不是合法的 SHA-256 十六进制串");
+            m_unsupported = QCoreApplication::translate("clashqt::core", "fingerprint is not a valid SHA-256 hex string");
         }
     }
 
     // Salamander 混淆与 realm 需要额外的报文层 / 服务端协商，尚未实现
     const QString obfs = jsonutil::stringValue(extra, QStringLiteral("obfs"));
     if (!obfs.isEmpty() && m_unsupported.isEmpty()) {
-        m_unsupported = QStringLiteral("配置了 obfs=%1（Salamander 混淆尚未实现）").arg(obfs);
+        m_unsupported = QCoreApplication::translate("clashqt::core", "obfs=%1 is set (Salamander obfuscation is not implemented yet)").arg(obfs);
     }
     if (!extra.value(QStringLiteral("realm-opts")).toObject().isEmpty()
         && m_unsupported.isEmpty()) {
-        m_unsupported = QStringLiteral("配置了 realm-opts（realm 尚未实现）");
+        m_unsupported = QCoreApplication::translate("clashqt::core", "realm-opts is set (realm is not implemented yet)");
     }
 
     if (m_password.isEmpty() && m_unsupported.isEmpty()) {
-        m_unsupported = QStringLiteral("缺少 password");
+        m_unsupported = QCoreApplication::translate("clashqt::core", "Missing password");
     }
 }
 
@@ -74,14 +75,13 @@ DialResult Hysteria2Adapter::dial(const DialContext &context, int timeoutMs)
     if (context.network.compare(QLatin1String("udp"), Qt::CaseInsensitive) == 0) {
         // Hysteria2 的 UDP 中继走 QUIC DATAGRAM，而当前 OpenSSL 3.2 未提供该接口。
         // 明确失败，绝不静默降级成 TCP（那会让应用的 UDP 流量变成一条死连接）。
-        result.error = QStringLiteral("节点 %1 暂不支持 UDP 中继"
-                                      "（Hysteria2 需要 QUIC DATAGRAM，OpenSSL 3.2 未提供）")
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 does not support UDP relay yet (Hysteria2 needs QUIC DATAGRAM, which OpenSSL 3.2 does not provide)")
                            .arg(m_config.name);
         return result;
     }
 
     if (!m_unsupported.isEmpty()) {
-        result.error = QStringLiteral("节点 %1 暂不支持：%2")
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 is not supported yet: %2")
                            .arg(m_config.name, m_unsupported);
         return result;
     }
@@ -89,7 +89,7 @@ DialResult Hysteria2Adapter::dial(const DialContext &context, int timeoutMs)
     const QString host =
         context.host.isEmpty() ? context.dstIp : context.host;
     if (host.isEmpty() || context.dstPort <= 0) {
-        result.error = QStringLiteral("节点 %1 的目标地址无效").arg(m_config.name);
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 has an invalid target address").arg(m_config.name);
         return result;
     }
 
@@ -130,14 +130,14 @@ DialResult Hysteria2Adapter::dial(const DialContext &context, int timeoutMs)
 
         Logger::instance().info(
             LogCategory::Adapter,
-            QStringLiteral("节点 %1 第 %2 次连接失败，换端口重试：%3")
+            QCoreApplication::translate("clashqt::core", "Node %1 failed to connect (attempt %2); retrying on another port: %3")
                 .arg(m_config.name)
                 .arg(attempt)
                 .arg(sessionError));
     }
 
     if (!session) {
-        result.error = QStringLiteral("节点 %1 连接失败：%2")
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 failed to connect: %2")
                            .arg(m_config.name, sessionError);
         return result;
     }
@@ -146,7 +146,7 @@ DialResult Hysteria2Adapter::dial(const DialContext &context, int timeoutMs)
     auto    stream =
         session->openTcp(formatTarget(host, context.dstPort), timeoutMs, &streamError);
     if (!stream) {
-        result.error = QStringLiteral("节点 %1 建立隧道失败：%2")
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 failed to establish the tunnel: %2")
                            .arg(m_config.name, streamError);
         return result;
     }
@@ -155,7 +155,7 @@ DialResult Hysteria2Adapter::dial(const DialContext &context, int timeoutMs)
         // 仅记录：TCP 不受影响，UDP 请求由中继层按「不支持」处理
         Logger::instance().debug(
             LogCategory::Adapter,
-            QStringLiteral("节点 %1：服务端未启用 UDP，UDP 流量将不受支持")
+            QCoreApplication::translate("clashqt::core", "Node %1: the server has UDP disabled; UDP traffic will not work")
                 .arg(m_config.name));
     }
 

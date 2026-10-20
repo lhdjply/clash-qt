@@ -1,4 +1,5 @@
 #include "config/ControledKernelConfig.h"
+#include <QCoreApplication>
 
 #include "config/AppConfig.h"
 #include "utils/AppLogger.h"
@@ -222,13 +223,13 @@ QJsonObject ControledKernelConfig::importLegacyFile()
         if (value && value->isObject()) {
             parsed = value->toObject();
         } else if (!error.isEmpty()) {
-            AppLogger::instance().error(QStringLiteral("旧受控配置解析失败（%1）：%2")
+            AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to parse the legacy managed config (%1): %2")
                                             .arg(path, error));
         }
 
         QFile::remove(path);
         AppLogger::instance().info(
-            QStringLiteral("已将旧受控配置并入 config.yaml 并删除：%1").arg(path));
+            QCoreApplication::translate("clashqt::app", "Merged the legacy managed config into config.yaml and deleted it: %1").arg(path));
         return parsed;
     }
     return {};

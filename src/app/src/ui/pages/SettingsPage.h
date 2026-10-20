@@ -40,6 +40,7 @@ private slots:
     void onTunToggled(bool enabled);
     void onTunAutoRouteToggled(bool enabled);
     void onThemeChanged(int index);
+    void onLanguageChanged(int index);
     void onOpenDataDir();
     // 检查更新：按钮进入「检查中」状态，结果通过 UpdateChecker 的信号回来
     void onCheckUpdate();
@@ -58,6 +59,7 @@ private:
     QCheckBox    *m_tunEnabled = nullptr;
     QCheckBox    *m_tunAutoRoute = nullptr;
     QComboBox    *m_themeCombo = nullptr;
+    QComboBox    *m_languageCombo = nullptr;
     QLabel       *m_dataDirLabel = nullptr;
     QPushButton  *m_checkUpdate = nullptr;
     UpdateChecker *m_updater = nullptr;

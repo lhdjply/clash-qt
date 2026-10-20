@@ -1,4 +1,5 @@
 #include "utils/Calc.h"
+#include <QCoreApplication>
 
 #include <QtMath>
 
@@ -66,16 +67,16 @@ QString timeLeft(double usedBytes, double totalBytes, double bytesPerSecond)
     if (bytesPerSecond <= 0) return QStringLiteral("--");
 
     const double remaining = totalBytes - usedBytes;
-    if (remaining <= 0) return QStringLiteral("已用完");
+    if (remaining <= 0) return QCoreApplication::translate("clashqt::app", "Used up");
 
     const qint64 seconds = qint64(remaining / bytesPerSecond);
     const qint64 days    = seconds / 86400;
     const qint64 hours   = (seconds % 86400) / 3600;
     const qint64 minutes = (seconds % 3600) / 60;
 
-    if (days > 0) return QStringLiteral("%1 天 %2 小时").arg(days).arg(hours);
-    if (hours > 0) return QStringLiteral("%1 小时 %2 分").arg(hours).arg(minutes);
-    return QStringLiteral("%1 分").arg(minutes);
+    if (days > 0) return QCoreApplication::translate("clashqt::app", "%1 d %2 h").arg(days).arg(hours);
+    if (hours > 0) return QCoreApplication::translate("clashqt::app", "%1 h %2 min").arg(hours).arg(minutes);
+    return QCoreApplication::translate("clashqt::app", "%1 min").arg(minutes);
 }
 
 QString number(double value) { return formatNumber(value); }

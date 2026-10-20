@@ -21,18 +21,17 @@ RulesPage::RulesPage(AppContext *context, QWidget *parent) : QWidget(parent), m_
     root->setSpacing(12);
 
     root->addWidget(ui::makePageHeader(
-        QStringLiteral("规则"),
-        QStringLiteral("当前生效的规则列表，按匹配顺序排列。双击「启用」列可临时禁用一条规则；"
-                       "禁用状态仅作用于运行期，重启后恢复。")));
+        tr("Rules"),
+        tr("Active rules in match order. Double-click the \"Enabled\" column to disable a rule temporarily; this only affects the running session and is reset on restart."), QStringLiteral("rules")));
 
     auto *card = ui::makeCard(QString(), this);
     auto *cardLayout = qobject_cast<QVBoxLayout *>(card->layout());
 
     m_table = new QTableWidget(card);
     m_table->setColumnCount(5);
-    m_table->setHorizontalHeaderLabels({QStringLiteral("#"), QStringLiteral("类型"),
-                                        QStringLiteral("匹配值"), QStringLiteral("出站"),
-                                        QStringLiteral("启用")});
+    m_table->setHorizontalHeaderLabels({QStringLiteral("#"), tr("Type"),
+                                        tr("Value"), tr("Outbound"),
+                                        tr("Enabled")});
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->verticalHeader()->setVisible(false);
@@ -72,8 +71,8 @@ void RulesPage::refresh()
         m_table->setItem(row, 2, new QTableWidgetItem(payload.isEmpty() ? QStringLiteral("-")
                                                                         : payload));
         m_table->setItem(row, 3, new QTableWidgetItem(proxy));
-        m_table->setItem(row, 4, new QTableWidgetItem(disabled ? QStringLiteral("否")
-                                                               : QStringLiteral("是")));
+        m_table->setItem(row, 4, new QTableWidgetItem(disabled ? tr("No")
+                                                               : tr("Yes")));
         if (disabled) {
             for (int column = 0; column < 5; ++column) {
                 if (QTableWidgetItem *item = m_table->item(row, column)) {
@@ -99,7 +98,7 @@ void RulesPage::onToggleRule(int row, int column)
 
     // 禁用语义：把规则置为 disabled，使其在匹配时被跳过
     if (!m_context->hub()->setRuleDisabled(m_ruleTexts.at(row), !disabled)) {
-        m_context->showToast(QStringLiteral("warning"), QStringLiteral("规则状态更新失败"));
+        m_context->showToast(QStringLiteral("warning"), tr("Failed to update rule state"));
         return;
     }
 

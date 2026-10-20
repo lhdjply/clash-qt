@@ -97,18 +97,18 @@ void TestCalc::timeLeftVariants()
     // 没有速率时不能算出「0 分」这种误导性结果
     QCOMPARE(timeLeft(0, 100, 0), QStringLiteral("--"));
 
-    // 已用完
-    QCOMPARE(timeLeft(100, 100, 1024), QStringLiteral("已用完"));
-    QCOMPARE(timeLeft(200, 100, 1024), QStringLiteral("已用完"));
+    // 已用完。界面文案以英文为源语言：测试里没有装翻译器，拿到的是英文原文
+    QCOMPARE(timeLeft(100, 100, 1024), QStringLiteral("Used up"));
+    QCOMPARE(timeLeft(200, 100, 1024), QStringLiteral("Used up"));
 
     // 分钟级
-    QCOMPARE(timeLeft(0, 1024.0 * 60 * 10, 1024), QStringLiteral("10 分"));
+    QCOMPARE(timeLeft(0, 1024.0 * 60 * 10, 1024), QStringLiteral("10 min"));
 
     // 小时级
-    QCOMPARE(timeLeft(0, 1024.0 * 3600 * 2, 1024), QStringLiteral("2 小时 0 分"));
+    QCOMPARE(timeLeft(0, 1024.0 * 3600 * 2, 1024), QStringLiteral("2 h 0 min"));
 
     // 天级
-    QCOMPARE(timeLeft(0, 1024.0 * 86400 * 3, 1024), QStringLiteral("3 天 0 小时"));
+    QCOMPARE(timeLeft(0, 1024.0 * 86400 * 3, 1024), QStringLiteral("3 d 0 h"));
 }
 
 QTEST_GUILESS_MAIN(TestCalc)

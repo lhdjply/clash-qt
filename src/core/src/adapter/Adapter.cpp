@@ -1,4 +1,5 @@
 #include "adapter/Adapters.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 #include "common/JsonUtil.h"
@@ -89,7 +90,7 @@ std::unique_ptr<QTcpSocket> connectTcp(const QString &host, quint16 port, int ti
         if (error) {
             // 一定带上错误码：Qt 对很多失败只会给出 "Unknown error"，
             // 有了 SocketError 才能区分「连接被拒 / 主机不可达 / 超时」
-            *error = QStringLiteral("连接 %1:%2 失败：%3（error=%4）")
+            *error = QCoreApplication::translate("clashqt::core", "Failed to connect to %1:%2: %3 (error=%4)")
                          .arg(host)
                          .arg(port)
                          .arg(socket->errorString())
@@ -173,7 +174,7 @@ DialResult DirectAdapter::dial(const DialContext &context, int timeoutMs)
     // 失效，甚至把 .local 之类的名字交给系统的 mDNS 解析。
     const QString host = context.dstIp.isEmpty() ? context.host : context.dstIp;
     if (host.isEmpty() || context.dstPort <= 0) {
-        result.error = QStringLiteral("DIRECT 目标地址无效");
+        result.error = QCoreApplication::translate("clashqt::core", "Invalid DIRECT target address");
         return result;
     }
 
@@ -182,12 +183,12 @@ DialResult DirectAdapter::dial(const DialContext &context, int timeoutMs)
         auto socket = std::make_shared<QUdpSocket>();
         const QHostAddress address(host);
         if (address.isNull()) {
-            result.error = QStringLiteral("DIRECT UDP 需要字面 IP 目标");
+            result.error = QCoreApplication::translate("clashqt::core", "DIRECT UDP requires a literal IP target");
             return result;
         }
         // 绑定到任意本地端口，connectToHost 之后 socket 即处于已连接状态
         if (!socket->bind(QHostAddress(QHostAddress::AnyIPv4), 0)) {
-            result.error = QStringLiteral("UDP 绑定失败：%1").arg(socket->errorString());
+            result.error = QCoreApplication::translate("clashqt::core", "UDP bind failed: %1").arg(socket->errorString());
             return result;
         }
         socket->connectToHost(address, quint16(context.dstPort));
@@ -220,7 +221,7 @@ DialResult RejectAdapter::dial(const DialContext &context, int timeoutMs)
         result.drop = true;
         return result;
     }
-    result.error = QStringLiteral("连接被规则拒绝（REJECT）");
+    result.error = QCoreApplication::translate("clashqt::core", "Connection rejected by a rule (REJECT)");
     m_alive = false;
     return result;
 }
@@ -238,7 +239,7 @@ HttpProxyAdapter::HttpProxyAdapter(ProxyConfig config) : m_config(std::move(conf
     if (m_tls) {
         Logger::instance().warn(
             LogCategory::Adapter,
-            QStringLiteral("HTTP 代理 %1 声明为 https，当前以明文 CONNECT 方式连接")
+            QCoreApplication::translate("clashqt::core", "HTTP proxy %1 claims https; connecting with plaintext CONNECT for now")
                 .arg(m_config.name));
     }
 }
@@ -246,7 +247,7 @@ HttpProxyAdapter::HttpProxyAdapter(ProxyConfig config) : m_config(std::move(conf
 std::unique_ptr<QTcpSocket> HttpProxyAdapter::connectToServer(int timeoutMs, QString *error)
 {
     if (m_config.server.isEmpty() || m_config.port <= 0) {
-        if (error) *error = QStringLiteral("HTTP 代理 %1 缺少 server/port").arg(m_config.name);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "HTTP proxy %1 is missing server/port").arg(m_config.name);
         return nullptr;
     }
     return connectTcp(m_config.server, quint16(m_config.port), timeoutMs, error);
@@ -257,7 +258,7 @@ DialResult HttpProxyAdapter::dial(const DialContext &context, int timeoutMs)
     DialResult result;
 
     if (context.network.compare(QLatin1String("udp"), Qt::CaseInsensitive) == 0) {
-        result.error = QStringLiteral("HTTP 代理不支持 UDP 转发");
+        result.error = QCoreApplication::translate("clashqt::core", "The HTTP proxy does not support UDP forwarding");
         return result;
     }
 
@@ -282,7 +283,7 @@ DialResult HttpProxyAdapter::dial(const DialContext &context, int timeoutMs)
     SocketBuffer reader(socket.get());
     // HTTP 响应头不应超过 32KB；超过即视为异常，避免被恶意对端拖死
     if (!reader.ensureUntil("\r\n\r\n", timeoutMs, 32 * 1024)) {
-        result.error = QStringLiteral("HTTP 代理 %1 无响应或响应头超长").arg(m_config.name);
+        result.error = QCoreApplication::translate("clashqt::core", "HTTP proxy %1 did not respond, or its response headers are too long").arg(m_config.name);
         return result;
     }
 
@@ -296,7 +297,7 @@ DialResult HttpProxyAdapter::dial(const DialContext &context, int timeoutMs)
     bool      ok         = false;
     const int statusCode = parts.size() >= 2 ? parts.at(1).trimmed().toInt(&ok) : 0;
     if (!ok || statusCode != 200) {
-        result.error = QStringLiteral("HTTP 代理返回 %1").arg(QString::fromLatin1(statusLine));
+        result.error = QCoreApplication::translate("clashqt::core", "HTTP proxy returned %1").arg(QString::fromLatin1(statusLine));
         return result;
     }
 
@@ -331,7 +332,7 @@ Socks5ProxyAdapter::Socks5ProxyAdapter(ProxyConfig config) : m_config(std::move(
 std::unique_ptr<QTcpSocket> Socks5ProxyAdapter::connectToServer(int timeoutMs, QString *error)
 {
     if (m_config.server.isEmpty() || m_config.port <= 0) {
-        if (error) *error = QStringLiteral("SOCKS5 代理 %1 缺少 server/port").arg(m_config.name);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "SOCKS5 proxy %1 is missing server/port").arg(m_config.name);
         return nullptr;
     }
     return connectTcp(m_config.server, quint16(m_config.port), timeoutMs, error);
@@ -352,19 +353,19 @@ bool Socks5ProxyAdapter::negotiate(QTcpSocket *socket, int timeoutMs, QString *e
 
     SocketBuffer reader(socket);
     if (!reader.ensure(2, timeoutMs)) {
-        if (error) *error = QStringLiteral("SOCKS5 协商无响应");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "No response to SOCKS5 negotiation");
         return false;
     }
 
     const QByteArray handshake = reader.take(2);
     if (static_cast<unsigned char>(handshake.at(0)) != 0x05) {
-        if (error) *error = QStringLiteral("SOCKS5 版本不匹配");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "SOCKS5 version mismatch");
         return false;
     }
 
     const unsigned char method = static_cast<unsigned char>(handshake.at(1));
     if (method == 0xFF) {
-        if (error) *error = QStringLiteral("SOCKS5 服务器拒绝了所有认证方式");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "The SOCKS5 server rejected all authentication methods");
         return false;
     }
 
@@ -373,7 +374,7 @@ bool Socks5ProxyAdapter::negotiate(QTcpSocket *socket, int timeoutMs, QString *e
         const QByteArray user = m_username.toUtf8();
         const QByteArray pass = m_password.toUtf8();
         if (user.size() > 255 || pass.size() > 255) {
-            if (error) *error = QStringLiteral("SOCKS5 用户名或密码过长");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "SOCKS5 username or password too long");
             return false;
         }
 
@@ -387,17 +388,17 @@ bool Socks5ProxyAdapter::negotiate(QTcpSocket *socket, int timeoutMs, QString *e
         if (!sockutil::writeAll(socket, auth, timeoutMs, error)) return false;
 
         if (!reader.ensure(2, timeoutMs)) {
-            if (error) *error = QStringLiteral("SOCKS5 认证无响应");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "No response to SOCKS5 authentication");
             return false;
         }
         const QByteArray authReply = reader.take(2);
         if (static_cast<unsigned char>(authReply.at(1)) != 0x00) {
-            if (error) *error = QStringLiteral("SOCKS5 认证失败");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "SOCKS5 authentication failed");
             return false;
         }
     } else if (method != 0x00) {
         if (error) {
-            *error = QStringLiteral("SOCKS5 服务器要求不支持的认证方式 0x%1")
+            *error = QCoreApplication::translate("clashqt::core", "The SOCKS5 server requires an unsupported auth method 0x%1")
                          .arg(QString::number(method, 16));
         }
         return false;
@@ -421,7 +422,7 @@ bool Socks5ProxyAdapter::requestConnect(QTcpSocket *socket, const DialContext &c
         // ATYP=0x03 域名：交给代理服务器远端解析，避免本地 DNS 泄漏
         const QByteArray raw = domain.toUtf8();
         if (raw.size() > 255) {
-            if (error) *error = QStringLiteral("SOCKS5 目标域名过长");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "SOCKS5 target domain name too long");
             return false;
         }
         request.append(char(0x03));
@@ -438,7 +439,7 @@ bool Socks5ProxyAdapter::requestConnect(QTcpSocket *socket, const DialContext &c
         const Q_IPV6ADDR v6 = literal.toIPv6Address();
         for (int i = 0; i < 16; ++i) request.append(char(v6.c[i]));
     } else {
-        if (error) *error = QStringLiteral("SOCKS5 目标地址无法解析：%1").arg(ipText);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Could not resolve the SOCKS5 target address: %1").arg(ipText);
         return false;
     }
 
@@ -451,20 +452,29 @@ bool Socks5ProxyAdapter::requestConnect(QTcpSocket *socket, const DialContext &c
 
     // 应答固定部分：VER(1) REP(1) RSV(1) ATYP(1)
     if (!reader.ensure(4, timeoutMs)) {
-        if (error) *error = QStringLiteral("SOCKS5 CONNECT 无响应");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "No response to SOCKS5 CONNECT");
         return false;
     }
     const QByteArray fixed = reader.take(4);
     const unsigned char reply = static_cast<unsigned char>(fixed.at(1));
     if (reply != 0x00) {
+        // 应答码文案：QT_TRANSLATE_NOOP 只做标记（数组要能静态初始化），
+        // 真正取译文在用到的这一处翻译
         static const char *kReasons[] = {
-            "成功",         "一般性失败",   "连接不被允许",   "网络不可达",
-            "主机不可达",   "连接被拒绝",   "TTL 过期",       "不支持的命令",
-            "不支持的地址类型"};
-        const QString reason = reply <= 8 ? QString::fromUtf8(kReasons[reply])
-                                          : QStringLiteral("未知错误 %1").arg(reply);
+            QT_TRANSLATE_NOOP("clashqt::core", "Succeeded"),
+            QT_TRANSLATE_NOOP("clashqt::core", "General SOCKS server failure"),
+            QT_TRANSLATE_NOOP("clashqt::core", "Connection not allowed by ruleset"),
+            QT_TRANSLATE_NOOP("clashqt::core", "Network unreachable"),
+            QT_TRANSLATE_NOOP("clashqt::core", "Host unreachable"),
+            QT_TRANSLATE_NOOP("clashqt::core", "Connection refused"),
+            QT_TRANSLATE_NOOP("clashqt::core", "TTL expired"),
+            QT_TRANSLATE_NOOP("clashqt::core", "Command not supported"),
+            QT_TRANSLATE_NOOP("clashqt::core", "Address type not supported")};
+        const QString reason = reply <= 8
+                                   ? QCoreApplication::translate("clashqt::core", kReasons[reply])
+                                   : QCoreApplication::translate("clashqt::core", "Unknown error %1").arg(reply);
         if (error) {
-            *error = QStringLiteral("SOCKS5 连接被拒：%1（%2）").arg(reason, targetAuthority(context));
+            *error = QCoreApplication::translate("clashqt::core", "SOCKS5 connection refused: %1 (%2)").arg(reason, targetAuthority(context));
         }
         return false;
     }
@@ -478,19 +488,19 @@ bool Socks5ProxyAdapter::requestConnect(QTcpSocket *socket, const DialContext &c
     case 0x04: addressLength = 16; break;
     case 0x03: {
         if (!reader.ensure(1, timeoutMs)) {
-            if (error) *error = QStringLiteral("SOCKS5 应答被截断");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Truncated SOCKS5 response");
             return false;
         }
         addressLength = static_cast<unsigned char>(reader.take(1).at(0));
         break;
     }
     default:
-        if (error) *error = QStringLiteral("SOCKS5 应答包含未知地址类型 %1").arg(int(atyp));
+        if (error) *error = QCoreApplication::translate("clashqt::core", "The SOCKS5 response contains an unknown address type %1").arg(int(atyp));
         return false;
     }
 
     if (!reader.ensure(addressLength + 2, timeoutMs)) {
-        if (error) *error = QStringLiteral("SOCKS5 应答被截断");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Truncated SOCKS5 response");
         return false;
     }
     reader.take(addressLength + 2);
@@ -508,7 +518,7 @@ DialResult Socks5ProxyAdapter::dial(const DialContext &context, int timeoutMs)
     if (context.network.compare(QLatin1String("udp"), Qt::CaseInsensitive) == 0) {
         // UDP ASSOCIATE 的完整转发链路属于后续阶段的工作，这里明确失败，
         // 避免 UDP 流量在无感知的情况下走直连。
-        result.error = QStringLiteral("SOCKS5 UDP ASSOCIATE 转发尚未实现（Phase 2）");
+        result.error = QCoreApplication::translate("clashqt::core", "SOCKS5 UDP ASSOCIATE forwarding is not implemented yet (Phase 2)");
         return result;
     }
 
@@ -547,7 +557,7 @@ DialResult UnsupportedAdapter::dial(const DialContext &context, int timeoutMs)
     Q_UNUSED(timeoutMs);
 
     DialResult result;
-    result.error = QStringLiteral("节点 %1（%2）暂不支持：%3")
+    result.error = QCoreApplication::translate("clashqt::core", "Node %1 (%2) is not supported yet: %3")
                        .arg(m_config.name, m_config.rawType, m_reason);
     return result;
 }
@@ -619,7 +629,7 @@ bool ProxyGroup::select(const QString &memberName)
             m_userSelected = true; // 用户显式选择：写回配置，重载后继续使用
             Logger::instance().info(
                 LogCategory::Adapter,
-                QStringLiteral("组 %1 切换到 %2").arg(m_config.name, memberName));
+                QCoreApplication::translate("clashqt::core", "Group %1 switched to %2").arg(m_config.name, memberName));
             return true;
         }
     }
@@ -632,7 +642,7 @@ DialResult ProxyGroup::dial(const DialContext &context, int timeoutMs)
 
     if (!target) {
         DialResult result;
-        result.error = QStringLiteral("代理组 %1 没有可用成员").arg(m_config.name);
+        result.error = QCoreApplication::translate("clashqt::core", "Proxy group %1 has no available members").arg(m_config.name);
         return result;
     }
 
@@ -645,7 +655,7 @@ DialResult ProxyGroup::dial(const DialContext &context, int timeoutMs)
     if (!result.ok()) {
         Logger::instance().warn(
             LogCategory::Adapter,
-            QStringLiteral("组 %1 的成员 %2 连接失败：%3")
+            QCoreApplication::translate("clashqt::core", "Group %1 member %2 failed to connect: %3")
                 .arg(m_config.name, target->name(), result.error));
     }
     return result;

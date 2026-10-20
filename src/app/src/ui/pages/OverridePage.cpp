@@ -4,6 +4,7 @@
 #include "ui/UiFactory.h"
 
 #include <QCheckBox>
+#include <QCoreApplication>
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -110,22 +111,22 @@ struct RuleTypeInfo {
 };
 
 const RuleTypeInfo kRuleTypes[] = {
-    {"DOMAIN-SUFFIX", "域名后缀（含所有子域）", "例如 example.com", "", true, false, false},
-    {"DOMAIN", "域名（完全一致）", "例如 www.example.com", "", true, false, false},
-    {"DOMAIN-KEYWORD", "域名关键字", "例如 google", "", true, false, false},
-    {"DOMAIN-REGEX", "域名正则", "例如 ^ads\\..*", "", true, false, false},
-    {"GEOSITE", "预置站点库", "例如 cn / netflix / telegram", "", true, false, false},
-    {"GEOIP", "IP 归属地", "例如 CN / US / JP", "CN|US|JP|HK|SG|TW|UK|DE", true, true, true},
-    {"IP-CIDR", "IPv4 网段", "例如 10.0.0.0/8", "", true, true, true},
-    {"IP-CIDR6", "IPv6 网段", "例如 2001:db8::/32", "", true, true, true},
-    {"IP-ASN", "ASN 编号", "例如 13335", "", true, true, true},
-    {"DST-PORT", "目标端口", "例如 443", "", true, false, false},
-    {"SRC-PORT", "来源端口", "例如 1234", "", true, false, false},
-    {"NETWORK", "网络类型", "tcp 或 udp", "tcp|udp", true, false, false},
-    {"PROCESS-NAME", "进程名", "例如 telegram", "", true, false, false},
-    {"PROCESS-PATH", "进程路径", "例如 /usr/bin/curl", "", true, false, false},
-    {"RULE-SET", "规则集", "选择配置里的规则集", "", true, true, false},
-    {"MATCH", "兜底（匹配所有剩余流量）", "", "", false, false, false},
+    {"DOMAIN-SUFFIX", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Domain suffix (incl. subdomains)"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. example.com"), "", true, false, false},
+    {"DOMAIN", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Domain (exact)"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. www.example.com"), "", true, false, false},
+    {"DOMAIN-KEYWORD", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Domain keyword"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. google"), "", true, false, false},
+    {"DOMAIN-REGEX", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Domain regex"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. ^ads\\..*"), "", true, false, false},
+    {"GEOSITE", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Geosite category"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. cn / netflix / telegram"), "", true, false, false},
+    {"GEOIP", QT_TRANSLATE_NOOP("clashqt::OverridePage", "IP country"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. CN / US / JP"), "CN|US|JP|HK|SG|TW|UK|DE", true, true, true},
+    {"IP-CIDR", QT_TRANSLATE_NOOP("clashqt::OverridePage", "IPv4 CIDR"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. 10.0.0.0/8"), "", true, true, true},
+    {"IP-CIDR6", QT_TRANSLATE_NOOP("clashqt::OverridePage", "IPv6 CIDR"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. 2001:db8::/32"), "", true, true, true},
+    {"IP-ASN", QT_TRANSLATE_NOOP("clashqt::OverridePage", "ASN"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. 13335"), "", true, true, true},
+    {"DST-PORT", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Destination port"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. 443"), "", true, false, false},
+    {"SRC-PORT", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Source port"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. 1234"), "", true, false, false},
+    {"NETWORK", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Network type"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "tcp or udp"), "tcp|udp", true, false, false},
+    {"PROCESS-NAME", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Process name"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. telegram"), "", true, false, false},
+    {"PROCESS-PATH", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Process path"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "e.g. /usr/bin/curl"), "", true, false, false},
+    {"RULE-SET", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Rule set"), QT_TRANSLATE_NOOP("clashqt::OverridePage", "Choose a rule set from the config"), "", true, true, false},
+    {"MATCH", QT_TRANSLATE_NOOP("clashqt::OverridePage", "Catch-all (match all remaining traffic)"), QT_TRANSLATE_NOOP("clashqt::OverridePage", ""), "", false, false, false},
 };
 
 const RuleTypeInfo *findType(const QString &type)
@@ -138,7 +139,8 @@ const RuleTypeInfo *findType(const QString &type)
 
 QString typeLabel(const QString &type)
 {
-    if (const RuleTypeInfo *info = findType(type)) return QString::fromUtf8(info->label);
+    if (const RuleTypeInfo *info = findType(type))
+        return QCoreApplication::translate("clashqt::OverridePage", info->label);
     // 不在目录里的（AND / OR / SUB-RULE 等手写规则）直接显示类型名
     return type;
 }
@@ -165,8 +167,8 @@ public:
                const QStringList &ruleSets)
         : QDialog(parent), m_ruleSets(ruleSets)
     {
-        setWindowTitle(initial.type.isEmpty() ? QStringLiteral("新增规则")
-                                              : QStringLiteral("编辑规则"));
+        setWindowTitle(initial.type.isEmpty() ? QCoreApplication::translate("clashqt::RuleDialog", "New rule")
+                                              : QCoreApplication::translate("clashqt::RuleDialog", "Edit rule"));
         setModal(true);
         setMinimumWidth(480);
 
@@ -175,7 +177,7 @@ public:
         root->setSpacing(12);
 
         auto *header = new QLabel(
-            QStringLiteral("按提示选择即可，保存时会自动拼成规则语法。"), this);
+            QCoreApplication::translate("clashqt::RuleDialog", "Follow the prompts; the rule syntax is assembled when you save."), this);
         header->setWordWrap(true);
         root->addWidget(header);
 
@@ -187,16 +189,16 @@ public:
         m_type = new QComboBox(this);
         for (const RuleTypeInfo &info : kRuleTypes) {
             const QString type = QString::fromUtf8(info.type);
-            m_type->addItem(QString::fromUtf8(info.label), type);
+            m_type->addItem(QCoreApplication::translate("clashqt::OverridePage", info.label), type);
             // 语法名放进 tooltip：界面上保持中文可读，需要核对时悬停即可
             m_type->setItemData(m_type->count() - 1, type, Qt::ToolTipRole);
         }
         // 手写型规则（AND/OR/SUB-RULE…）也要能编辑：不在目录里就补一项
         if (!initial.type.isEmpty() && !findType(initial.type)) {
-            m_type->addItem(QStringLiteral("%1（无法结构化编辑）").arg(initial.type),
+            m_type->addItem(QCoreApplication::translate("clashqt::RuleDialog", "%1 (cannot be edited structurally)").arg(initial.type),
                             initial.type);
         }
-        form->addRow(QStringLiteral("规则类型"), m_type);
+        form->addRow(QCoreApplication::translate("clashqt::RuleDialog", "Rule type"), m_type);
 
         // 内容控件有两种形态：自由输入用 QLineEdit，有候选值（GEOIP / NETWORK /
         // RULE-SET）用 QComboBox。同一行里按需切换显示，避免出现"点开是空列表"
@@ -212,20 +214,20 @@ public:
         m_payloadCombo->setInsertPolicy(QComboBox::NoInsert);
         payloadRow->addWidget(m_payloadEdit);
         payloadRow->addWidget(m_payloadCombo);
-        form->addRow(QStringLiteral("匹配内容"), m_payloadHost);
+        form->addRow(QCoreApplication::translate("clashqt::RuleDialog", "Content"), m_payloadHost);
 
         m_target = new QComboBox(this);
         m_target->setEditable(true);
         m_target->setInsertPolicy(QComboBox::NoInsert);
         m_target->addItems(targets);
-        m_target->lineEdit()->setPlaceholderText(QStringLiteral("选择策略或代理组"));
-        form->addRow(QStringLiteral("交给谁处理"), m_target);
+        m_target->lineEdit()->setPlaceholderText(QCoreApplication::translate("clashqt::RuleDialog", "Choose a policy or proxy group"));
+        form->addRow(QCoreApplication::translate("clashqt::RuleDialog", "Target"), m_target);
 
         m_option = new QComboBox(this);
-        m_option->addItem(QStringLiteral("默认"), QString());
-        m_option->addItem(QStringLiteral("不解析域名（no-resolve）"), QStringLiteral("no-resolve"));
-        m_option->addItem(QStringLiteral("匹配来源地址（src）"), QStringLiteral("src"));
-        form->addRow(QStringLiteral("匹配方式"), m_option);
+        m_option->addItem(QCoreApplication::translate("clashqt::RuleDialog", "Default"), QString());
+        m_option->addItem(QCoreApplication::translate("clashqt::RuleDialog", "Do not resolve domain (no-resolve)"), QStringLiteral("no-resolve"));
+        m_option->addItem(QCoreApplication::translate("clashqt::RuleDialog", "Match source address (src)"), QStringLiteral("src"));
+        form->addRow(QCoreApplication::translate("clashqt::RuleDialog", "Options"), m_option);
         // 该行在不需要时整体隐藏（见 syncType），避免出现一个灰掉的空选项
         m_optionRow = qobject_cast<QWidget *>(form->labelForField(m_option));
 
@@ -248,8 +250,8 @@ public:
         actions->setContentsMargins(0, 0, 0, 0);
         actions->setSpacing(8);
         actions->addStretch(1);
-        auto *cancel = new QPushButton(QStringLiteral("取消"), this);
-        auto *ok     = ui::makePrimaryButton(QStringLiteral("保存"), this);
+        auto *cancel = new QPushButton(QCoreApplication::translate("clashqt::RuleDialog", "Cancel"), this);
+        auto *ok     = ui::makePrimaryButton(QCoreApplication::translate("clashqt::RuleDialog", "Save"), this);
         ok->setDefault(true);
         actions->addWidget(cancel);
         actions->addWidget(ok);
@@ -297,8 +299,8 @@ private:
         if (type == QLatin1String("RULE-SET")) {
             m_payloadCombo->addItems(m_ruleSets);
             m_payloadCombo->lineEdit()->setPlaceholderText(
-                m_ruleSets.isEmpty() ? QStringLiteral("配置里没有 rule-providers")
-                                     : QStringLiteral("选择规则集"));
+                m_ruleSets.isEmpty() ? QCoreApplication::translate("clashqt::RuleDialog", "No rule-providers in the config")
+                                     : QCoreApplication::translate("clashqt::RuleDialog", "Choose a rule set"));
         } else if (hasCandidates) {
             m_payloadCombo->addItems(
                 QString::fromUtf8(info->candidates).split(QLatin1Char('|'), Qt::SkipEmptyParts));
@@ -308,7 +310,7 @@ private:
 
         m_payloadEdit->setText(keep);
         m_payloadEdit->setPlaceholderText(
-            QString::fromUtf8(info && info->hint ? info->hint : ""));
+            QCoreApplication::translate("clashqt::OverridePage", info && info->hint ? info->hint : ""));
         m_payloadEdit->setVisible(!hasCandidates);
 
         const bool editable = !info || info->needValue;
@@ -328,13 +330,13 @@ private:
 
         QString hint;
         if (type == QLatin1String("MATCH")) {
-            hint = QStringLiteral("兜底规则会匹配所有未命中的流量，请务必排在自定义规则的最后。");
+            hint = QCoreApplication::translate("clashqt::RuleDialog", "A catch-all rule matches all remaining traffic; keep it last among your custom rules.");
         } else if (type == QLatin1String("DOMAIN-SUFFIX")) {
-            hint = QStringLiteral("填 example.com 会同时匹配它自己与它的所有子域。");
+            hint = QCoreApplication::translate("clashqt::RuleDialog", "example.com also matches all of its subdomains.");
         } else if (type == QLatin1String("IP-CIDR")) {
-            hint = QStringLiteral("直连局域网时，建议把「匹配方式」设为不解析。");
+            hint = QCoreApplication::translate("clashqt::RuleDialog", "For LAN traffic, set Options to no-resolve.");
         } else if (type == QLatin1String("RULE-SET")) {
-            hint = QStringLiteral("规则集来自订阅配置的 rule-providers。");
+            hint = QCoreApplication::translate("clashqt::RuleDialog", "Rule sets come from rule-providers in the profile.");
         }
         m_hint->setText(hint);
         m_hint->setVisible(!hint.isEmpty());
@@ -357,17 +359,17 @@ private:
         if (!option.isEmpty()) rule.options << option;
 
         if (rule.target.isEmpty()) {
-            m_error->setText(QStringLiteral("请选择这条规则交给谁处理（策略 / 代理组）。"));
+            m_error->setText(QCoreApplication::translate("clashqt::RuleDialog", "Choose what handles this rule (policy / proxy group)."));
             m_error->show();
             return;
         }
         if ((!info || info->needValue) && rule.payload.isEmpty()) {
-            m_error->setText(QStringLiteral("请填写「匹配内容」，它是这条规则判断的依据。"));
+            m_error->setText(QCoreApplication::translate("clashqt::RuleDialog", "Enter the content to match; it is what the rule checks."));
             m_error->show();
             return;
         }
         if (type == QLatin1String("IP-CIDR") && !rule.payload.contains(QLatin1Char('/'))) {
-            m_error->setText(QStringLiteral("IPv4 网段要带掩码长度，例如 10.0.0.0/8。"));
+            m_error->setText(QCoreApplication::translate("clashqt::RuleDialog", "IPv4 CIDR needs a prefix length, e.g. 10.0.0.0/8."));
             m_error->show();
             return;
         }
@@ -400,11 +402,10 @@ OverridePage::OverridePage(AppContext *context, QWidget *parent)
     root->setSpacing(12);
 
     root->addWidget(ui::makePageHeader(
-        QStringLiteral("覆写"),
-        QStringLiteral("在订阅规则之上叠加自定义规则。新增时按提示选择类型、内容和策略即可，"
-                       "无需了解规则语法；列表从上到下即匹配优先级，改动自动保存并生效。")));
+        tr("Overrides"),
+        tr("Adds custom rules on top of the profile's rules. Pick a type, content and target when adding — no rule syntax needed. The list order is the match priority; changes are saved and applied automatically."), QStringLiteral("code")));
 
-    auto *card       = ui::makeCard(QStringLiteral("自定义规则"), this);
+    auto *card       = ui::makeCard(tr("Custom rules"), this, QStringLiteral("rules"));
     auto *cardLayout = qobject_cast<QVBoxLayout *>(card->layout());
 
     m_profileLabel = ui::makeHintLabel(QString(), card);
@@ -414,7 +415,7 @@ OverridePage::OverridePage(AppContext *context, QWidget *parent)
     toolbar->setContentsMargins(0, 0, 0, 0);
     toolbar->setSpacing(8);
 
-    auto *addButton = new QPushButton(QStringLiteral("新增规则"), card);
+    auto *addButton = new QPushButton(tr("New rule"), card);
     ui::decorate(addButton, QStringLiteral("plus"));
 
     toolbar->addWidget(addButton);
@@ -426,9 +427,9 @@ OverridePage::OverridePage(AppContext *context, QWidget *parent)
     m_table = new QTableWidget(card);
     m_table->setObjectName(QStringLiteral("overrideTable"));
     m_table->setColumnCount(5);
-    m_table->setHorizontalHeaderLabels({QStringLiteral("启用"), QStringLiteral("规则类型"),
-                                        QStringLiteral("匹配内容"), QStringLiteral("交给谁处理"),
-                                        QStringLiteral("操作")});
+    m_table->setHorizontalHeaderLabels({tr("Enabled"), tr("Rule type"),
+                                        tr("Content"), tr("Target"),
+                                        tr("Actions")});
     m_table->verticalHeader()->setVisible(false);
     m_table->verticalHeader()->setDefaultSectionSize(34);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -448,8 +449,7 @@ OverridePage::OverridePage(AppContext *context, QWidget *parent)
     cardLayout->addWidget(m_table);
 
     cardLayout->addWidget(ui::makeHintLabel(
-        QStringLiteral("双击任意一行可以修改；取消勾选即停用（内容保留、不参与匹配）。"
-                       "改动会自动保存并立即生效，无需手动提交。"),
+        tr("Double-click any row to edit; uncheck it to disable (content is kept but not matched). Changes are saved and applied automatically."),
         card));
 
     m_statusLabel = ui::makeHintLabel(QString(), card);
@@ -523,8 +523,8 @@ void OverridePage::refresh()
     const QString profile = m_context->currentProfileName();
     m_profileLabel->setText(
         profile.isEmpty()
-            ? QStringLiteral("当前没有选中订阅，自定义规则无法保存")
-            : QStringLiteral("作用于订阅：%1（规则按订阅保存，切换订阅后内容不同）")
+            ? tr("No profile selected; custom rules cannot be saved")
+            : tr("Applies to profile: %1 (rules are stored per profile and differ between profiles)")
                   .arg(profile));
 
     const AppContext::RuleOverride value = m_context->ruleOverride();
@@ -550,7 +550,7 @@ void OverridePage::updateSummary()
         if (entry.enabled) ++enabled;
     }
     m_summaryLabel->setText(
-        QStringLiteral("共 %1 条，启用 %2 条").arg(m_rules.size()).arg(enabled));
+        tr("%1 rules, %2 enabled").arg(m_rules.size()).arg(enabled));
 }
 
 void OverridePage::rebuildTable()
@@ -572,8 +572,8 @@ void OverridePage::rebuildTable()
         checkLayout->setAlignment(Qt::AlignCenter);
         auto *checkBox = new QCheckBox(checkHost);
         checkBox->setChecked(entry.enabled);
-        checkBox->setToolTip(entry.enabled ? QStringLiteral("已启用，取消勾选即停用")
-                                           : QStringLiteral("已停用：保存后不参与匹配"));
+        checkBox->setToolTip(entry.enabled ? tr("Enabled; uncheck to disable")
+                                           : tr("Disabled: not matched after saving"));
         checkLayout->addWidget(checkBox);
         m_table->setCellWidget(row, 0, checkHost);
 
@@ -598,7 +598,7 @@ void OverridePage::rebuildTable()
         };
 
         makeCell(1, typeLabel(parsed.type),
-                 QStringLiteral("%1（%2）\n规则：%3")
+                 tr("%1 (%2)\nRule: %3")
                      .arg(typeLabel(parsed.type), parsed.type, entry.text));
         makeCell(2, parsed.payload.isEmpty() ? QStringLiteral("—") : parsed.payload,
                  parsed.payload);
@@ -609,11 +609,11 @@ void OverridePage::rebuildTable()
         layout->setContentsMargins(2, 0, 2, 0);
         layout->setSpacing(2);
 
-        auto *up = makeRowButton(ops, QStringLiteral("↑"), QStringLiteral("上移（提高优先级）"));
+        auto *up = makeRowButton(ops, QStringLiteral("↑"), tr("Move up (higher priority)"));
         auto *down =
-            makeRowButton(ops, QStringLiteral("↓"), QStringLiteral("下移（降低优先级）"));
-        auto *edit = makeRowButton(ops, QStringLiteral("✎"), QStringLiteral("修改这条规则"));
-        auto *remove = makeRowButton(ops, QStringLiteral("✕"), QStringLiteral("删除这条规则"));
+            makeRowButton(ops, QStringLiteral("↓"), tr("Move down (lower priority)"));
+        auto *edit = makeRowButton(ops, QStringLiteral("✎"), tr("Edit this rule"));
+        auto *remove = makeRowButton(ops, QStringLiteral("✕"), tr("Delete this rule"));
         up->setEnabled(row > 0);
         down->setEnabled(row + 1 < m_rules.size());
 
@@ -723,14 +723,14 @@ void OverridePage::persist()
     QString error;
     if (!m_context->saveRuleOverride(value, &error)) {
         m_statusLabel->setStyleSheet(QString::fromLatin1(kDangerColor));
-        m_statusLabel->setText(error.isEmpty() ? QStringLiteral("保存失败") : error);
+        m_statusLabel->setText(error.isEmpty() ? tr("Save failed") : error);
         return;
     }
 
     // 不 refresh()：内存里的列表就是刚刚写下去的内容，重建表格只会
     // 打断正在进行的选取与滚动位置
     m_statusLabel->setStyleSheet(QString());
-    m_statusLabel->setText(QStringLiteral("已自动生效：%1 条规则，其中停用 %2 条")
+    m_statusLabel->setText(tr("Applied automatically: %1 rules, %2 disabled")
                                .arg(value.prepend.size())
                                .arg(value.disabled.size()));
 }

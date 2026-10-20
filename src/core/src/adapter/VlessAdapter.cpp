@@ -1,4 +1,5 @@
 #include "adapter/VlessAdapter.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 #include "common/JsonUtil.h"
@@ -57,7 +58,7 @@ QByteArray makeVlessRequest(const unsigned char uuid[16], const QByteArray &addo
     if (!host.isEmpty() && literal.isNull()) {
         const QByteArray domain = host.toUtf8();
         if (domain.size() > 255) {
-            if (error) *error = QStringLiteral("目标域名过长");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Target domain name too long");
             return {};
         }
         request.append(char(0x02)); // ATYP = 域名
@@ -74,7 +75,7 @@ QByteArray makeVlessRequest(const unsigned char uuid[16], const QByteArray &addo
         const Q_IPV6ADDR v6 = literal.toIPv6Address();
         for (int i = 0; i < 16; ++i) request.append(char(v6.c[i]));
     } else {
-        if (error) *error = QStringLiteral("目标地址无法解析：%1").arg(host);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Could not resolve the target address: %1").arg(host);
         return {};
     }
     return request;
@@ -117,7 +118,7 @@ VlessAdapter::VlessAdapter(ProxyConfig config) : m_config(std::move(config))
 std::unique_ptr<QTcpSocket> VlessAdapter::connectPlainTcp(int timeoutMs, QString *error)
 {
     if (m_config.server.isEmpty() || m_config.port <= 0) {
-        if (error) *error = QStringLiteral("节点 %1 缺少 server/port").arg(m_config.name);
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Node %1 is missing server/port").arg(m_config.name);
         return nullptr;
     }
 
@@ -134,7 +135,7 @@ std::unique_ptr<QTcpSocket> VlessAdapter::connectPlainTcp(int timeoutMs, QString
 
     if (socket->state() != QAbstractSocket::ConnectedState) {
         if (error) {
-            *error = QStringLiteral("连接 %1:%2 失败：%3")
+            *error = QCoreApplication::translate("clashqt::core", "Failed to connect to %1:%2: %3")
                          .arg(m_config.server)
                          .arg(m_config.port)
                          .arg(socket->errorString());
@@ -153,13 +154,13 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
     }
 
     if (m_uuid.isEmpty()) {
-        result.error = QStringLiteral("节点 %1 缺少 uuid").arg(m_config.name);
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 is missing uuid").arg(m_config.name);
         return result;
     }
 
     unsigned char uuidBytes[16];
     if (!parseUuid(m_uuid, uuidBytes)) {
-        result.error = QStringLiteral("节点 %1 的 uuid 非法：%2").arg(m_config.name, m_uuid);
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 has an invalid uuid: %2").arg(m_config.name, m_uuid);
         return result;
     }
 
@@ -172,13 +173,12 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
     if (!flow.isEmpty()) {
         // ---- XTLS Vision：当前支持 REALITY 传输（flow 要求 TLS1.3 外层） -----
         if (flow != QLatin1String("xtls-rprx-vision")) {
-            result.error = QStringLiteral("节点 %1 使用不支持的 flow：%2")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 uses an unsupported flow: %2")
                                .arg(m_config.name, flow);
             return result;
         }
         if (realityOpts.isEmpty()) {
-            result.error = QStringLiteral("节点 %1 使用 vision 但未配置 reality-opts，"
-                                          "该组合尚未实现").arg(m_config.name);
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 uses vision but has no reality-opts configured; this combination is not implemented yet").arg(m_config.name);
             return result;
         }
 
@@ -193,12 +193,11 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
         reality.shortId = QByteArray::fromHex(
             jsonutil::stringValue(realityOpts, QStringLiteral("short-id")).toUtf8());
         if (reality.publicKey.size() != 32) {
-            result.error = QStringLiteral("节点 %1 的 reality-opts.public-key 非法"
-                                          "（解码后应为 32 字节）").arg(m_config.name);
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 has an invalid reality-opts.public-key (it should decode to 32 bytes)").arg(m_config.name);
             return result;
         }
         if (reality.shortId.size() > 8) {
-            result.error = QStringLiteral("节点 %1 的 reality-opts.short-id 过长")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 has a reality-opts.short-id that is too long")
                                .arg(m_config.name);
             return result;
         }
@@ -206,7 +205,7 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
         QString realityError;
         auto tlsStream = RealityTlsStream::connect(reality, timeoutMs, &realityError);
         if (!tlsStream) {
-            result.error = QStringLiteral("节点 %1 REALITY 握手失败：%2")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 REALITY handshake failed: %2")
                                .arg(m_config.name, realityError);
             return result;
         }
@@ -234,7 +233,7 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
         // 只有其后的业务数据走 Vision 填充帧。参照实现中 vision 包在
         // vless.Conn 外层，写入顺序同样是「先请求头、再填充帧」。
         if (tlsStream->write(request) < 0) {
-            result.error = QStringLiteral("节点 %1 VLESS 请求发送失败").arg(m_config.name);
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 failed to send the VLESS request").arg(m_config.name);
             return result;
         }
 
@@ -250,7 +249,7 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
 
     if (!m_network.isEmpty() && m_network != QLatin1String("ws")) {
         result.error =
-            QStringLiteral("节点 %1 的传输 %2 尚未实现（当前支持 ws、REALITY 与裸 TCP）")
+            QCoreApplication::translate("clashqt::core", "Node %1 transport %2 is not implemented yet (ws, REALITY and plain TCP are supported)")
                 .arg(m_config.name, m_network);
         return result;
     }
@@ -278,7 +277,7 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
         QString tlsError;
         auto tlsStream = RealityTlsStream::connect(tls, timeoutMs, &tlsError);
         if (!tlsStream) {
-            result.error = QStringLiteral("节点 %1 TLS 建连失败：%2")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 TLS connection failed: %2")
                                .arg(m_config.name, tlsError);
             return result;
         }
@@ -286,12 +285,12 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
         auto ws = std::make_shared<WsStream>(tlsStream, m_wsPath, m_wsHost, timeoutMs,
                                              &wsError);
         if (!ws->isOpen()) {
-            result.error = QStringLiteral("节点 %1 WebSocket 握手失败：%2")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 WebSocket handshake failed: %2")
                                .arg(m_config.name, wsError);
             return result;
         }
         if (ws->write(request) < 0) {
-            result.error = QStringLiteral("节点 %1 VLESS 请求发送失败").arg(m_config.name);
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 failed to send the VLESS request").arg(m_config.name);
             return result;
         }
         // 应答头同样不在拨号阶段同步等待（服务端延迟到首次写数据时发送）
@@ -315,12 +314,12 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
         QString tlsError;
         auto tlsStream = RealityTlsStream::connect(tls, timeoutMs, &tlsError);
         if (!tlsStream) {
-            result.error = QStringLiteral("节点 %1 TLS 建连失败：%2")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 TLS connection failed: %2")
                                .arg(m_config.name, tlsError);
             return result;
         }
         if (tlsStream->write(request) < 0) {
-            result.error = QStringLiteral("节点 %1 VLESS 请求发送失败").arg(m_config.name);
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 failed to send the VLESS request").arg(m_config.name);
             return result;
         }
         // 应答头懒消费（理由同 ws / REALITY 路径：服务端延迟到首次写数据才发送）
@@ -338,7 +337,7 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
     if (m_network == QLatin1String("ws")) {
         QString wsError;
         if (!websocket::handshake(socket.get(), m_wsPath, m_wsHost, timeoutMs, &wsError)) {
-            result.error = QStringLiteral("节点 %1 WebSocket 握手失败：%2")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 WebSocket handshake failed: %2")
                                .arg(m_config.name, wsError);
             return result;
         }
@@ -348,12 +347,12 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
     if (m_network == QLatin1String("ws")) {
         QString writeError;
         if (!websocket::sendBinary(socket.get(), request, &writeError)) {
-            result.error = QStringLiteral("VLESS 请求发送失败：%1").arg(writeError);
+            result.error = QCoreApplication::translate("clashqt::core", "Failed to send the VLESS request: %1").arg(writeError);
             return result;
         }
     } else {
         if (!sockutil::writeAll(socket.get(), request, timeoutMs, &result.error)) {
-            result.error = QStringLiteral("VLESS 请求发送失败：%1").arg(result.error);
+            result.error = QCoreApplication::translate("clashqt::core", "Failed to send the VLESS request: %1").arg(result.error);
             return result;
         }
     }
@@ -371,16 +370,16 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
         QString    frameError;
         if (!websocket::readFrame(wsStream->underlyingSocket(), &opcode, &frame,
                                   timeoutMs, &frameError)) {
-            result.error = QStringLiteral("VLESS 应答读取失败：%1").arg(frameError);
+            result.error = QCoreApplication::translate("clashqt::core", "Failed to read the VLESS response: %1").arg(frameError);
             return result;
         }
         if (frame.size() < 2) {
-            result.error = QStringLiteral("VLESS 应答被截断");
+            result.error = QCoreApplication::translate("clashqt::core", "Truncated VLESS response");
             return result;
         }
         const int addonsLength = static_cast<unsigned char>(frame.at(1));
         if (frame.size() < 2 + addonsLength) {
-            result.error = QStringLiteral("VLESS 应答 addons 被截断");
+            result.error = QCoreApplication::translate("clashqt::core", "Truncated VLESS response addons");
             return result;
         }
         extraData = frame.mid(2 + addonsLength);
@@ -395,14 +394,14 @@ DialResult VlessAdapter::dial(const DialContext &context, int timeoutMs)
     // 裸 TCP / TLS：按字节读取应答头（VER + ADDONS_LEN + ADDONS）
     QByteArray response;
     if (!sockutil::readAtLeast(socket.get(), &response, 2, timeoutMs, &result.error)) {
-        result.error = QStringLiteral("VLESS 应答读取失败：%1").arg(result.error);
+        result.error = QCoreApplication::translate("clashqt::core", "Failed to read the VLESS response: %1").arg(result.error);
         return result;
     }
     const int addonsLength = static_cast<unsigned char>(response.at(1));
     if (addonsLength > 0
         && !sockutil::readAtLeast(socket.get(), &response, 2 + addonsLength, timeoutMs,
                                   &result.error)) {
-        result.error = QStringLiteral("VLESS 应答 addons 读取失败：%1").arg(result.error);
+        result.error = QCoreApplication::translate("clashqt::core", "Failed to read the VLESS response addons: %1").arg(result.error);
         return result;
     }
 
@@ -440,19 +439,19 @@ DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
     DialResult result;
 
     if (m_uuid.isEmpty()) {
-        result.error = QStringLiteral("节点 %1 缺少 uuid").arg(m_config.name);
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 is missing uuid").arg(m_config.name);
         return result;
     }
 
     unsigned char uuidBytes[16];
     if (!parseUuid(m_uuid, uuidBytes)) {
-        result.error = QStringLiteral("节点 %1 的 uuid 非法：%2").arg(m_config.name, m_uuid);
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 has an invalid uuid: %2").arg(m_config.name, m_uuid);
         return result;
     }
 
     const QString host = context.host.isEmpty() ? context.dstIp : context.host;
     if (host.isEmpty() || context.dstPort <= 0) {
-        result.error = QStringLiteral("VLESS UDP 缺少目标地址");
+        result.error = QCoreApplication::translate("clashqt::core", "VLESS UDP is missing the target address");
         return result;
     }
 
@@ -486,7 +485,7 @@ DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
             tls.shortId = QByteArray::fromHex(
                 jsonutil::stringValue(realityOpts, QStringLiteral("short-id")).toUtf8());
             if (tls.publicKey.size() != 32) {
-                result.error = QStringLiteral("节点 %1 的 reality-opts.public-key 非法")
+                result.error = QCoreApplication::translate("clashqt::core", "Node %1 has an invalid reality-opts.public-key")
                                    .arg(m_config.name);
                 return result;
             }
@@ -495,7 +494,7 @@ DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
         QString tlsError;
         auto tlsStream = RealityTlsStream::connect(tls, timeoutMs, &tlsError);
         if (!tlsStream) {
-            result.error = QStringLiteral("节点 %1 TLS 建连失败：%2")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 TLS connection failed: %2")
                                .arg(m_config.name, tlsError);
             return result;
         }
@@ -505,7 +504,7 @@ DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
             auto ws = std::make_shared<WsStream>(tlsStream, m_wsPath, m_wsHost, timeoutMs,
                                                  &wsError);
             if (!ws->isOpen()) {
-                result.error = QStringLiteral("节点 %1 WebSocket 握手失败：%2")
+                result.error = QCoreApplication::translate("clashqt::core", "Node %1 WebSocket handshake failed: %2")
                                    .arg(m_config.name, wsError);
                 return result;
             }
@@ -513,7 +512,7 @@ DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
         } else if (m_network.isEmpty()) {
             stream = tlsStream;
         } else {
-            result.error = QStringLiteral("节点 %1 的传输 %2 尚不支持 UDP")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 transport %2 does not support UDP")
                                .arg(m_config.name, m_network);
             return result;
         }
@@ -523,7 +522,7 @@ DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
         if (m_network == QLatin1String("ws")) {
             QString wsError;
             if (!websocket::handshake(socket.get(), m_wsPath, m_wsHost, timeoutMs, &wsError)) {
-                result.error = QStringLiteral("节点 %1 WebSocket 握手失败：%2")
+                result.error = QCoreApplication::translate("clashqt::core", "Node %1 WebSocket handshake failed: %2")
                                    .arg(m_config.name, wsError);
                 return result;
             }
@@ -531,7 +530,7 @@ DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
         } else if (m_network.isEmpty()) {
             stream = std::make_shared<TcpStream>(socket.release(), nullptr);
         } else {
-            result.error = QStringLiteral("节点 %1 的传输 %2 尚不支持 UDP")
+            result.error = QCoreApplication::translate("clashqt::core", "Node %1 transport %2 does not support UDP")
                                .arg(m_config.name, m_network);
             return result;
         }
@@ -539,7 +538,7 @@ DialResult VlessAdapter::dialUdp(const DialContext &context, int timeoutMs)
 
     // ---- 2) 发送请求 → 延迟消费应答头 --------------------------------------
     if (stream->write(request) < 0) {
-        result.error = QStringLiteral("节点 %1 VLESS 请求发送失败").arg(m_config.name);
+        result.error = QCoreApplication::translate("clashqt::core", "Node %1 failed to send the VLESS request").arg(m_config.name);
         return result;
     }
     stream->setLazyVlessResponseHeader(true);

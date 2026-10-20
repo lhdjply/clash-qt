@@ -63,7 +63,7 @@ struct ProtocolBadge {
 // 未收录的协议回退成「原名大写 + 中性灰」，保证每行都有标签，不留空。
 ProtocolBadge badgeFor(const QString &type, bool group)
 {
-    if (group) return {QStringLiteral("组"), ui::accent()};
+    if (group) return {QCoreApplication::translate("clashqt::ProxiesPage", "Group"), ui::accent()};
 
     static const QHash<QString, ProtocolBadge> kBadges = {
         {QStringLiteral("Vless"),        {QStringLiteral("VLESS"), QColor(0x8B, 0x5C, 0xF6)}},
@@ -87,7 +87,7 @@ ProtocolBadge badgeFor(const QString &type, bool group)
 
     const auto it = kBadges.constFind(type);
     if (it != kBadges.constEnd()) return *it;
-    return {type.isEmpty() ? QStringLiteral("节点") : type.toUpper(), ui::mutedColor()};
+    return {type.isEmpty() ? QCoreApplication::translate("clashqt::ProxiesPage", "Nodes") : type.toUpper(), ui::mutedColor()};
 }
 
 // 行内的小字号（延迟 / 徽章）。按点值算，控件若用像素字号也能退化处理。
@@ -106,9 +106,9 @@ QFont scaledFont(const QFont &base, qreal delta, bool bold = false)
 // 右侧延迟文字。测速进行中优先显示「测试中」，与委托、命中测试共用同一套规则。
 QString delayTextFor(bool testing, const QVariant &delayValue)
 {
-    if (testing) return QStringLiteral("测试中");
+    if (testing) return QCoreApplication::translate("clashqt::ProxiesPage", "Testing");
     if (!delayValue.isValid()) return QString();
-    return delayValue.toInt() < 0 ? QStringLiteral("超时")
+    return delayValue.toInt() < 0 ? QCoreApplication::translate("clashqt::ProxiesPage", "Timeout")
                                   : QStringLiteral("%1 ms").arg(delayValue.toInt());
 }
 
@@ -140,8 +140,8 @@ RowGeometry layoutRow(const QRect &itemRect, const QFont &baseFont, const QStrin
     const QFont delayFont = scaledFont(baseFont, 1.0);
     const QFontMetrics delayMetrics(delayFont);
     const int slotWidth = qMax(delayMetrics.horizontalAdvance(QStringLiteral("8888 ms")),
-                               qMax(delayMetrics.horizontalAdvance(QStringLiteral("测试中")),
-                                    delayMetrics.horizontalAdvance(QStringLiteral("超时"))));
+                               qMax(delayMetrics.horizontalAdvance(QCoreApplication::translate("clashqt::ProxiesPage", "Testing")),
+                                    delayMetrics.horizontalAdvance(QCoreApplication::translate("clashqt::ProxiesPage", "Timeout"))));
     g.delay = QRect(right - slotWidth, row.top(), slotWidth, row.height());
     right -= slotWidth + 10;
 
@@ -282,15 +282,14 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
     root->setSpacing(12);
 
     root->addWidget(ui::makePageHeader(
-        QStringLiteral("代理"),
-        QStringLiteral("选择代理组中的节点。右侧徽章是协议类型，"
-                       "颜色相同的节点属于同一传输族；GLOBAL 组在全局模式下决定所有流量的出口。")));
+        tr("Proxies"),
+        tr("Pick a node from the proxy group. The badge on the right is the protocol type; nodes of the same color belong to the same transport family. In global mode, the GLOBAL group decides the exit for all traffic."), QStringLiteral("proxy")));
 
     // ---- 顶部操作条 -------------------------------------------------------
     auto *toolbar = new QHBoxLayout();
     toolbar->setSpacing(8);
 
-    toolbar->addWidget(new QLabel(QStringLiteral("代理组"), this));
+    toolbar->addWidget(new QLabel(tr("Proxy group"), this));
     m_groupCombo = new QComboBox(this);
     m_groupCombo->setMinimumWidth(240);
     toolbar->addWidget(m_groupCombo);
@@ -299,23 +298,22 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
     toolbar->addWidget(m_summaryLabel, 1);
 
     // ---- 排序：只影响显示顺序，不改变订阅里成员的原始排列 -----------------
-    toolbar->addWidget(new QLabel(QStringLiteral("排序"), this));
+    toolbar->addWidget(new QLabel(tr("Sort"), this));
     m_sortCombo = new QComboBox(this);
-    m_sortCombo->addItem(QStringLiteral("默认顺序"), int(SortMode::Default));
-    m_sortCombo->addItem(QStringLiteral("名称"), int(SortMode::Name));
-    m_sortCombo->addItem(QStringLiteral("类型"), int(SortMode::Type));
-    m_sortCombo->addItem(QStringLiteral("延迟"), int(SortMode::Delay));
+    m_sortCombo->addItem(tr("Default order"), int(SortMode::Default));
+    m_sortCombo->addItem(tr("Name"), int(SortMode::Name));
+    m_sortCombo->addItem(tr("Type"), int(SortMode::Type));
+    m_sortCombo->addItem(tr("Latency"), int(SortMode::Delay));
     m_sortCombo->setToolTip(
-        QStringLiteral("按名称、协议类型或最近一次测速延迟排列节点。\n"
-                       "延迟按升序，未测与超时排在最后；切换排序不会改变当前选中的节点。"));
+        tr("Sort nodes by name, protocol type or latest measured latency.\nLatency sorts ascending; untested and timed-out nodes go last. Sorting never changes the selected node."));
     // 恢复上次的排序选择；配置里没有或值无效时回到默认顺序
     m_sortMode = sortModeFromKey(m_context->appConfig()->proxySort());
     const int savedSort = m_sortCombo->findData(int(m_sortMode));
     m_sortCombo->setCurrentIndex(savedSort >= 0 ? savedSort : 0);
     toolbar->addWidget(m_sortCombo);
 
-    m_testButton = new QPushButton(QStringLiteral("测试本组"), this);
-    m_testAllButton = new QPushButton(QStringLiteral("测试全部组"), this);
+    m_testButton = new QPushButton(tr("Test this group"), this);
+    m_testAllButton = new QPushButton(tr("Test all groups"), this);
 
     ui::decorate(m_testButton, QStringLiteral("bolt"));
     ui::decorate(m_testAllButton, QStringLiteral("speed"));
@@ -325,7 +323,7 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
     root->addLayout(toolbar);
 
     // ---- 成员列表 ---------------------------------------------------------
-    auto *card = ui::makeCard(QStringLiteral("节点"), this);
+    auto *card = ui::makeCard(tr("Nodes"), this, QStringLiteral("server"));
     auto *cardLayout = qobject_cast<QVBoxLayout *>(card->layout());
 
     m_memberList = new QListWidget(card);
@@ -394,7 +392,7 @@ void ProxiesPage::rebuildGroups()
 
     if (groups.isEmpty()) {
         m_memberList->clear();
-        m_summaryLabel->setText(QStringLiteral("当前订阅没有任何代理组"));
+        m_summaryLabel->setText(tr("The active profile has no proxy groups"));
         return;
     }
 
@@ -427,12 +425,12 @@ void ProxiesPage::onGroupChanged(int index)
     // 当前节点在列表里用圆点 + 加粗标出，这里不再重复写名字：
     // 节点名普遍很长，塞进工具条会挤成两三行，把按钮推得上下不对齐。
     m_summaryLabel->setText(
-        QStringLiteral("类型 %1 · 共 %2 个成员")
+        tr("Type %1 · %2 members")
             .arg(type.isEmpty() ? QStringLiteral("-") : type)
             .arg(group.value(QStringLiteral("all")).toArray().size()));
     m_summaryLabel->setToolTip(now.isEmpty()
                                    ? QString()
-                                   : QStringLiteral("当前节点：%1").arg(now));
+                                   : tr("Current node: %1").arg(now));
 
     const QJsonArray members = group.value(QStringLiteral("all")).toArray();
     for (const QJsonValue &value : members) {
@@ -460,30 +458,30 @@ void ProxiesPage::onGroupChanged(int index)
 
         QStringList tip;
         tip << name;
-        tip << (isGroup ? QStringLiteral("代理组 · %1").arg(type)
-                        : QStringLiteral("协议 · %1").arg(
-                              type.isEmpty() ? QStringLiteral("未知") : type));
+        tip << (isGroup ? tr("Proxy group · %1").arg(type)
+                        : tr("Protocol · %1").arg(
+                              type.isEmpty() ? tr("Unknown") : type));
         if (unsupported) {
-            tip << QStringLiteral("当前实现尚不支持该协议，选中后连接会明确失败");
+            tip << tr("This protocol is not supported yet; connections will fail explicitly");
         }
 
         const QJsonArray history = member.value(QStringLiteral("history")).toArray();
         if (m_failedTests.contains(name)) {
             item->setData(kRoleDelay, -1);
-            tip << QStringLiteral("最近一次测速超时");
+            tip << tr("Last latency test timed out");
         } else if (!history.isEmpty()) {
             const int delay = history.last().toObject().value(QStringLiteral("delay")).toInt();
             // 与参照实现一致：<=0 视为超时（history 里超时通常记 0 或负数）
             item->setData(kRoleDelay, delay > 0 ? delay : -1);
-            tip << (delay > 0 ? QStringLiteral("上次延迟 %1 ms").arg(delay)
-                              : QStringLiteral("上次测试超时"));
+            tip << (delay > 0 ? tr("Last latency %1 ms").arg(delay)
+                              : tr("Last test timed out"));
         }
 
         if (isGroup) {
             const QString inner = member.value(QStringLiteral("now")).toString();
-            if (!inner.isEmpty()) tip << QStringLiteral("当前指向 %1").arg(inner);
+            if (!inner.isEmpty()) tip << tr("Currently pointing at %1").arg(inner);
         }
-        tip << QStringLiteral("点击行内闪电图标可单独测速");
+        tip << tr("Click the bolt icon in a row to test that node");
 
         item->setToolTip(tip.join(QLatin1Char('\n')));
     }
@@ -682,7 +680,7 @@ void ProxiesPage::startNextTests()
         }
 
         // 排队期间配置被重载、节点消失：直接记为失败，别让它一直挂着
-        finishTest(name, -1, QStringLiteral("节点已不存在"));
+        finishTest(name, -1, tr("Node no longer exists"));
     }
 }
 
@@ -713,11 +711,11 @@ void ProxiesPage::finishTest(const QString &name, int delayMs, const QString &er
 
             m_context->showToast(
                 QStringLiteral("info"),
-                QStringLiteral("测速完成：%1/%2 个节点可用").arg(ok).arg(total));
+                tr("Latency test finished: %1/%2 nodes available").arg(ok).arg(total));
         }
     } else if (!error.isEmpty()) {
         m_context->showToast(QStringLiteral("warning"),
-                             QStringLiteral("%1 测速失败：%2").arg(name, error));
+                             tr("%1 latency test failed: %2").arg(name, error));
     }
 
     startNextTests();
@@ -733,7 +731,7 @@ void ProxiesPage::startBatch(const QStringList &names)
 
     if (accepted.isEmpty()) {
         m_context->showToast(QStringLiteral("info"),
-                             QStringLiteral("这些节点正在测速，或没有可测的节点"));
+                             tr("These nodes are being tested, or none can be tested"));
         return;
     }
 
@@ -746,7 +744,7 @@ void ProxiesPage::startBatch(const QStringList &names)
 
     m_context->showToast(
         QStringLiteral("info"),
-        QStringLiteral("开始测试 %1 个节点（同时 %2 个，结果逐个回填）")
+        tr("Testing %1 nodes (%2 at a time, results fill in as they finish)")
             .arg(accepted.size())
             .arg(kMaxConcurrentTests));
 }
@@ -774,7 +772,7 @@ void ProxiesPage::onItemActivated()
     QString error;
     if (!m_context->hub()->selectProxy(m_currentGroup, memberName, &error)) {
         m_context->showToast(QStringLiteral("error"),
-                              QStringLiteral("切换节点失败：%1").arg(error));
+                              tr("Failed to switch node: %1").arg(error));
         return;
     }
 
@@ -782,7 +780,7 @@ void ProxiesPage::onItemActivated()
     m_context->saveProxySelections();
 
     m_context->showToast(QStringLiteral("info"),
-                          QStringLiteral("%1 已切换到 %2").arg(m_currentGroup, memberName));
+                          tr("%1 switched to %2").arg(m_currentGroup, memberName));
     onGroupChanged(m_groupCombo->currentIndex());
 }
 

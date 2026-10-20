@@ -14,7 +14,9 @@
 // ---------------------------------------------------------------------------
 
 #include "AppContext.h"
+#include <QCoreApplication>
 #include "config/AppConfig.h"
+#include "i18n/I18n.h"
 #include "sys/SingleInstance.h"
 #include "ui/MainWindow.h"
 #include "ui/UiFactory.h"
@@ -55,17 +57,29 @@ int main(int argc, char *argv[])
     QApplication::setApplicationVersion(QStringLiteral(CLASHQT_VERSION_TAG));
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Clash Qt —— Clash Party 的 Qt6/C++ 实现"));
+    parser.setApplicationDescription(QCoreApplication::translate("clashqt::app", "Clash Qt - a Qt6/C++ implementation of Clash Party"));
     parser.addHelpOption();
     parser.addVersionOption();
 
     QCommandLineOption silentOption({QStringLiteral("s"), QStringLiteral("silent")},
-                                    QStringLiteral("启动后不显示主窗口（配合自启动使用）"));
+                                    QCoreApplication::translate("clashqt::app", "Start without showing the main window (for autostart)"));
     QCommandLineOption portableOption(QStringLiteral("portable"),
-                                      QStringLiteral("使用可执行文件旁的 data 目录作为数据目录"));
+                                      QCoreApplication::translate("clashqt::app", "Use the data directory next to the executable"));
     parser.addOption(silentOption);
     parser.addOption(portableOption);
     parser.process(app);
+
+    // ---- 界面语言 ---------------------------------------------------------
+    // 放在参数解析之后、其余初始化之前：单实例告警、启动日志、配置加载的
+    // 错误都会进日志页或启动失败弹窗，装晚了它们在中文界面下仍是英文。
+    // 不放到解析之前是因为读配置会回写默认值，跑 `--help` 不该动用户的配置。
+    // 语言来自配置，这里用一份临时配置把 language 字段读出来；正式加载仍由
+    // AppContext 完成，多读一次文件的开销可以忽略。
+    {
+        clashqt::AppConfig preview;
+        preview.load();
+        clashqt::i18n::install(&app, preview.language());
+    }
 
     // ---- 单实例 -----------------------------------------------------------
     // 必须早于 AppContext 初始化：内核运行在界面进程内，第二个实例若继续
@@ -74,7 +88,7 @@ int main(int argc, char *argv[])
     if (!instance.acquire()) {
         clashqt::AppLogger::instance().install();
         clashqt::AppLogger::instance().info(
-            QStringLiteral("检测到已有实例在运行：已请求其显示窗口，本进程退出"));
+            QCoreApplication::translate("clashqt::app", "Another instance is already running: asked it to show its window, exiting"));
         return 0;
     }
 
@@ -85,7 +99,7 @@ int main(int argc, char *argv[])
     const QByteArray crashDir = clashqt::paths::dataDir().toLocal8Bit();
     clashqt::crash::install(crashDir.constData());
     clashqt::AppLogger::instance().info(
-        QStringLiteral("启动 %1 %2（%3，silent=%4）")
+        QCoreApplication::translate("clashqt::app", "Starting %1 %2 (%3, silent=%4)")
             .arg(QApplication::applicationName(),
                  QApplication::applicationVersion(),
                  clashqt::paths::dataDir(),
@@ -99,9 +113,15 @@ int main(int argc, char *argv[])
     QString initError;
     if (!context->initialize(&initError)) {
         clashqt::AppLogger::instance().error(
-            QStringLiteral("初始化失败：%1").arg(initError));
+            QCoreApplication::translate("clashqt::app", "Initialization failed: %1").arg(initError));
         return 1;
     }
+
+    // 翻译器已在上面按配置装好（也必须早于任何窗口部件的构造：控件构造时
+    // 就把 tr() 的结果取走了，之后再装只对之后新建的部件生效）
+    clashqt::AppLogger::instance().info(
+        QCoreApplication::translate("clashqt::app", "UI language: %1 (configured value %2)")
+            .arg(clashqt::i18n::current(), context->appConfig()->language()));
 
     // 信号处理：内核监听端口必须释放后再退出
     std::signal(SIGINT, handleSignal);
@@ -120,7 +140,7 @@ int main(int argc, char *argv[])
         if (!context->startKernel(&startError)) {
             // 首次运行没有订阅属正常情况，不弹窗打扰，只记录日志
             clashqt::AppLogger::instance().info(
-                QStringLiteral("启动失败：%1").arg(startError));
+                QCoreApplication::translate("clashqt::app", "Start failed: %1").arg(startError));
         }
     }
 
@@ -149,7 +169,7 @@ int main(int argc, char *argv[])
     if (!parser.isSet(silentOption)) {
         showWindow();
     } else {
-        clashqt::AppLogger::instance().info(QStringLiteral("静默启动：不显示主窗口"));
+        clashqt::AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "Silent start: not showing the main window"));
     }
 
     // 恢复上次的开关状态（系统代理 / TUN）。放在事件循环启动之后：
@@ -160,7 +180,7 @@ int main(int argc, char *argv[])
     const int code = app.exec();
 
     clashqt::AppLogger::instance().info(
-        QStringLiteral("%1 已退出，退出码 %2")
+        QCoreApplication::translate("clashqt::app", "%1 exited with code %2")
             .arg(QApplication::applicationName())
             .arg(code));
     return code;

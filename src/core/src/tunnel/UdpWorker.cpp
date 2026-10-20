@@ -1,4 +1,5 @@
 #include "tunnel/UdpWorker.h"
+#include <QCoreApplication>
 
 #include "tunnel/UdpChannel.h"
 
@@ -20,13 +21,13 @@ UdpWorker::~UdpWorker()
 void UdpWorker::start()
 {
     if (!m_dial) {
-        emit failed(QStringLiteral("没有可用的拨号实现"));
+        emit failed(QCoreApplication::translate("clashqt::core", "No dialer implementation available"));
         return;
     }
 
     DialResult result = m_dial(m_context);
     if (!result.udpChannel) {
-        emit failed(result.error.isEmpty() ? QStringLiteral("UDP 拨号失败") : result.error);
+        emit failed(result.error.isEmpty() ? QCoreApplication::translate("clashqt::core", "UDP dial failed") : result.error);
         return;
     }
 

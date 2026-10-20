@@ -1,4 +1,5 @@
 #include "updater/UpdateChecker.h"
+#include <QCoreApplication>
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -117,7 +118,7 @@ QUrl UpdateChecker::sourceUrl(Source source) const
 
 QString UpdateChecker::sourceLabel(Source source)
 {
-    return source == Source::Api ? QStringLiteral("API") : QStringLiteral("Atom 订阅源");
+    return source == Source::Api ? QStringLiteral("API") : QCoreApplication::translate("clashqt::app", "Atom feed");
 }
 
 bool UpdateChecker::check(int proxyPort)
@@ -181,7 +182,7 @@ bool UpdateChecker::startSource(int stage)
             continue;
         }
         if (remainingBudgetMs() < kMinBudgetMs) {
-            const QString skipped = QStringLiteral("总耗时超限，未尝试");
+            const QString skipped = QCoreApplication::translate("clashqt::app", "Skipped: overall time budget exhausted");
             if (source == Source::Api) m_apiError = skipped;
             else m_atomError = skipped;
             continue;
@@ -289,7 +290,7 @@ void UpdateChecker::finish(QNetworkReply *reply)
     if (source == Source::Api) noteRateLimit(reply);
 
     const QString reason = timedOut
-                               ? QStringLiteral("请求超时")
+                               ? QCoreApplication::translate("clashqt::app", "Request timed out")
                                : (status >= 400 ? QStringLiteral("HTTP %1").arg(status)
                                                 : reply->errorString());
     if (source == Source::Api) m_apiError = reason;
@@ -369,7 +370,7 @@ QString UpdateChecker::rateLimitReason() const
     const qint64 seconds =
         qMax<qint64>(1, QDateTime::currentDateTimeUtc().secsTo(m_apiBlockedUntil));
     // 配额按出口 IP 计：换节点后出口 IP 变了，额度可能又有了，所以别说得太绝对
-    return QStringLiteral("配额已用尽（约 %1 分钟后重置，当前节点可能共享该出口 IP）")
+    return QCoreApplication::translate("clashqt::app", "Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)")
         .arg((seconds + 59) / 60);
 }
 
@@ -387,12 +388,12 @@ QString UpdateChecker::failureMessage() const
     if (hasAtom && hasApi) {
         return QStringLiteral("%1：%2；%3：%4")
             .arg(sourceLabel(Source::Atom),
-                 m_atomError.isEmpty() ? QStringLiteral("未尝试") : m_atomError,
+                 m_atomError.isEmpty() ? QCoreApplication::translate("clashqt::app", "Not attempted") : m_atomError,
                  sourceLabel(Source::Api),
-                 m_apiError.isEmpty() ? QStringLiteral("未尝试") : m_apiError);
+                 m_apiError.isEmpty() ? QCoreApplication::translate("clashqt::app", "Not attempted") : m_apiError);
     }
     if (hasAtom) return m_atomError;
-    return m_apiError.isEmpty() ? QStringLiteral("没有可用的更新源") : m_apiError;
+    return m_apiError.isEmpty() ? QCoreApplication::translate("clashqt::app", "No update source available") : m_apiError;
 }
 
 bool UpdateChecker::parseApi(const QByteArray &payload)
@@ -400,7 +401,7 @@ bool UpdateChecker::parseApi(const QByteArray &payload)
     QJsonParseError parseError{};
     const QJsonDocument document = QJsonDocument::fromJson(payload, &parseError);
     if (!document.isArray() && !document.isObject()) {
-        m_apiError = QStringLiteral("返回内容无法解析：%1").arg(parseError.errorString());
+        m_apiError = QCoreApplication::translate("clashqt::app", "Could not parse the response: %1").arg(parseError.errorString());
         return false;
     }
 
@@ -482,7 +483,7 @@ bool UpdateChecker::parseAtom(const QByteArray &payload)
     }
 
     if (xml.hasError()) {
-        m_atomError = QStringLiteral("内容无法解析：%1").arg(xml.errorString());
+        m_atomError = QCoreApplication::translate("clashqt::app", "Could not parse the content: %1").arg(xml.errorString());
         return false;
     }
 

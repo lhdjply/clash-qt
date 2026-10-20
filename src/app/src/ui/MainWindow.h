@@ -76,6 +76,7 @@ private:
 
     // 导航标题（顺序与页面一致），刷新图标时按标题取图标
     QStringList m_navTitles;
+    QStringList m_navIcons;
 
     QLabel     *m_uploadLabel = nullptr;
     QLabel     *m_downloadLabel = nullptr;

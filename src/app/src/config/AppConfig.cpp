@@ -1,4 +1,5 @@
 #include "config/AppConfig.h"
+#include <QCoreApplication>
 
 #include "utils/AppLogger.h"
 #include "utils/Paths.h"
@@ -204,7 +205,7 @@ bool AppConfig::load()
             parsed = value->toObject();
         } else if (!error.isEmpty()) {
             AppLogger::instance().error(
-                QStringLiteral("应用配置解析失败，已使用默认配置：%1").arg(error));
+                QCoreApplication::translate("clashqt::app", "Failed to parse the app config; using defaults: %1").arg(error));
         }
     }
 
@@ -224,7 +225,7 @@ bool AppConfig::load()
         QString error;
         if (!safefile::writeAtomic(paths::appConfigPath(), core::Yaml::stringify(m_object),
                                    &error)) {
-            AppLogger::instance().warn(QStringLiteral("应用配置回写失败：%1").arg(error));
+            AppLogger::instance().warn(QCoreApplication::translate("clashqt::app", "Failed to write back the app config: %1").arg(error));
         }
     }
     return true;
@@ -234,7 +235,7 @@ bool AppConfig::save()
 {
     QString error;
     if (!safefile::writeAtomic(paths::appConfigPath(), core::Yaml::stringify(m_object), &error)) {
-        AppLogger::instance().error(QStringLiteral("应用配置保存失败：%1").arg(error));
+        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to save the app config: %1").arg(error));
         return false;
     }
     return true;
@@ -274,6 +275,11 @@ bool AppConfig::autoUpdateProfileOnStart() const
 
 QString AppConfig::appTheme() const { return readString(m_object, QStringLiteral("appTheme"), QStringLiteral("system")); }
 QString AppConfig::language() const { return readString(m_object, QStringLiteral("language"), QStringLiteral("zh-CN")); }
+
+void AppConfig::setLanguage(const QString &language)
+{
+    m_object.insert(QStringLiteral("language"), language);
+}
 
 bool AppConfig::disableTray() const { return readBool(m_object, QStringLiteral("disableTray"), false); }
 bool AppConfig::proxyInTray() const { return readBool(m_object, QStringLiteral("proxyInTray"), true); }

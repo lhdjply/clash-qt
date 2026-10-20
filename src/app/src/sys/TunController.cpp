@@ -62,7 +62,7 @@ bool TunController::hasPermission() const
 bool TunController::grantPermission(QString *error)
 {
     if (!helperExists()) {
-        if (error) *error = QStringLiteral("找不到辅助程序：%1").arg(helperPath());
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Helper not found: %1").arg(helperPath());
         return false;
     }
 
@@ -78,19 +78,19 @@ bool TunController::grantPermission(QString *error)
         QProcess process;
         process.start(QStringLiteral("pkexec"), QStringList{step.first} + step.second);
         if (!process.waitForStarted(5000)) {
-            if (error) *error = QStringLiteral("无法启动 pkexec：%1").arg(process.errorString());
+            if (error) *error = QCoreApplication::translate("clashqt::app", "Could not start pkexec: %1").arg(process.errorString());
             return false;
         }
         // 等用户输密码，给足时间；超时说明用户取消了
         if (!process.waitForFinished(90 * 1000)) {
             process.kill();
             process.waitForFinished(2000);
-            if (error) *error = QStringLiteral("授权超时（可能取消了密码框）");
+            if (error) *error = QCoreApplication::translate("clashqt::app", "Authorization timed out (the password prompt may have been cancelled)");
             return false;
         }
         if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
             if (error) {
-                *error = QStringLiteral("%1 失败（退出码 %2）：%3")
+                *error = QCoreApplication::translate("clashqt::app", "%1 failed (exit code %2): %3")
                              .arg(step.first)
                              .arg(process.exitCode())
                              .arg(QString::fromLocal8Bit(process.readAllStandardError()).trimmed());
@@ -100,7 +100,7 @@ bool TunController::grantPermission(QString *error)
     }
 
     AppLogger::instance().info(
-        QStringLiteral("已授权 TUN 权限（chown root:root + chmod +sx）：%1").arg(helper));
+        QCoreApplication::translate("clashqt::app", "TUN permissions granted (chown root:root + chmod +sx): %1").arg(helper));
     emit stateChanged();
     return true;
 }
@@ -113,19 +113,19 @@ bool TunController::start(const TunOptions &options, QString *error)
         m_pending && m_process && m_process->state() != QProcess::NotRunning;
     if (m_pending && !reallyPending) {
         AppLogger::instance().warn(
-            QStringLiteral("检测到残留的 TUN 启用状态，已自动清理后重试"));
+            QCoreApplication::translate("clashqt::app", "Found a stale TUN-enabled state; cleaned it up and retried"));
         stop();
     }
     if (isRunning() || reallyPending) {
-        if (error) *error = QStringLiteral("TUN 正在启用或已在运行");
+        if (error) *error = QCoreApplication::translate("clashqt::app", "TUN is starting or already running");
         return false;
     }
     if (!helperExists()) {
-        if (error) *error = QStringLiteral("找不到辅助程序：%1").arg(helperPath());
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Helper not found: %1").arg(helperPath());
         return false;
     }
     if (!options.dryRun && !hasPermission()) {
-        if (error) *error = QStringLiteral("尚未授权 TUN 权限（需要先在弹出的窗口里输入密码）");
+        if (error) *error = QCoreApplication::translate("clashqt::app", "TUN permission not granted yet (enter the password in the prompt that appears)");
         return false;
     }
 
@@ -150,7 +150,7 @@ bool TunController::start(const TunOptions &options, QString *error)
     if (pathBytes.size() >= int(sizeof(addr.sun_path))) {
         ::close(m_listenSocket);
         m_listenSocket = -1;
-        if (error) *error = QStringLiteral("socket 路径过长");
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Socket path too long");
         return false;
     }
     std::memcpy(addr.sun_path, pathBytes.constData(), size_t(pathBytes.size()));
@@ -161,7 +161,7 @@ bool TunController::start(const TunOptions &options, QString *error)
                                   sizeof(addr));
     ::umask(oldMask);
     if (bindResult != 0 || ::listen(m_listenSocket, 1) != 0) {
-        if (error) *error = QStringLiteral("监听 socket 失败：%1")
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Failed to listen on the socket: %1")
                                 .arg(QString::fromLocal8Bit(std::strerror(errno)));
         cleanupSocketFile();
         return false;
@@ -191,7 +191,7 @@ bool TunController::start(const TunOptions &options, QString *error)
 
     m_process->start();
     if (!m_process->waitForStarted(5000)) {
-        if (error) *error = QStringLiteral("无法启动辅助程序：%1").arg(m_process->errorString());
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Could not start the helper: %1").arg(m_process->errorString());
         stop();
         return false;
     }
@@ -203,7 +203,7 @@ bool TunController::start(const TunOptions &options, QString *error)
     m_timeout->setSingleShot(true);
     m_timeout->setInterval(20000);
     QObject::connect(m_timeout, &QTimer::timeout, this, [this]() {
-        failAndCleanup(QStringLiteral("等待辅助程序超时（20 秒）"));
+        failAndCleanup(QCoreApplication::translate("clashqt::app", "Timed out waiting for the helper (20 s)"));
     });
     m_timeout->start();
 
@@ -219,15 +219,14 @@ bool TunController::start(const TunOptions &options, QString *error)
                          const QString stderrText =
                              QString::fromLocal8Bit(process->readAllStandardError()).trimmed();
                          failAndCleanup(stderrText.isEmpty()
-                                            ? QStringLiteral("辅助程序意外退出（退出码 %1）")
+                                            ? QCoreApplication::translate("clashqt::app", "The helper exited unexpectedly (exit code %1)")
                                                   .arg(status == QProcess::CrashExit ? -1 : code)
                                             : stderrText);
                      });
 
-    AppLogger::instance().info(QStringLiteral("已拉起 TUN 辅助程序，等待设备就绪：%1")
+    AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "Started the TUN helper; waiting for the device: %1")
                                    .arg(options.device));
-    AppLogger::instance().debug(QStringLiteral("TUN 握手详情：socket=%1 autoRoute=%2 "
-                                               "excludes=%3 cmd=%4 %5")
+    AppLogger::instance().debug(QCoreApplication::translate("clashqt::app", "TUN handshake details: socket=%1 autoRoute=%2 excludes=%3 cmd=%4 %5")
                                     .arg(m_socketPath)
                                     .arg(options.autoRoute ? 1 : 0)
                                     .arg(options.routeExcludes.join(QLatin1Char(',')))
@@ -296,7 +295,7 @@ void TunController::onReadable()
 
     const ssize_t received = (m_socket >= 0) ? ::recvmsg(m_socket, &msg, 0) : -1;
     if (received <= 0) {
-        failAndCleanup(QStringLiteral("TUN 辅助程序连接已断开"));
+        failAndCleanup(QCoreApplication::translate("clashqt::app", "The TUN helper disconnected"));
         return;
     }
 
@@ -345,7 +344,7 @@ void TunController::onReadable()
     Q_UNUSED(written);
 
     if (m_deviceFd < 0) {
-        failAndCleanup(QStringLiteral("辅助程序未传来 TUN fd"));
+        failAndCleanup(QCoreApplication::translate("clashqt::app", "The helper did not send a TUN fd"));
         return;
     }
 
@@ -356,9 +355,9 @@ void TunController::onReadable()
     }
     m_pending = false;
 
-    AppLogger::instance().info(QStringLiteral("TUN 已就绪：%1（%2）")
+    AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "TUN ready: %1 (%2)")
                                    .arg(m_deviceName, m_dryRun ? QStringLiteral("dry-run")
-                                                               : QStringLiteral("真实设备")));
+                                                               : QCoreApplication::translate("clashqt::app", "real device")));
     emit stateChanged();
     emit ready();
 }
@@ -429,7 +428,7 @@ void TunController::stop()
     cleanupSocketFile();
 
     if (wasRunning) {
-        AppLogger::instance().info(QStringLiteral("TUN 已关闭"));
+        AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "TUN is closed"));
         emit stateChanged();
     }
     m_deviceName.clear();

@@ -1,4 +1,5 @@
 #include "component/dns/DnsServer.h"
+#include <QCoreApplication>
 
 #include "common/JsonUtil.h"
 #include "constant/Constants.h"
@@ -64,7 +65,7 @@ void DnsServer::applyDnsConfig(const QJsonObject &dnsConfig)
         QString error;
         if (!startListening(&error)) {
             emit logMessage(QStringLiteral("warning"),
-                            QStringLiteral("DNS 监听未开启：%1").arg(error));
+                            QCoreApplication::translate("clashqt::core", "DNS listener not started: %1").arg(error));
         }
     } else {
         stopListening();
@@ -73,7 +74,7 @@ void DnsServer::applyDnsConfig(const QJsonObject &dnsConfig)
 
 QString DnsServer::listenSummary() const
 {
-    if (!m_udp) return QStringLiteral("未监听");
+    if (!m_udp) return QCoreApplication::translate("clashqt::core", "Not listening");
     return QStringLiteral("%1:%2").arg(m_listenAddr.toString()).arg(m_listenPort);
 }
 
@@ -82,7 +83,7 @@ bool DnsServer::startListening(QString *error)
     stopListening();
 
     if (m_listenPort == 0) {
-        if (error) *error = QStringLiteral("未配置 dns.listen");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "dns.listen is not configured");
         return false;
     }
 
@@ -91,7 +92,7 @@ bool DnsServer::startListening(QString *error)
                    QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
         const QString reason = udp->errorString();
         delete udp;
-        if (error) *error = QStringLiteral("UDP %1:%2 绑定失败：%3")
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to bind UDP %1:%2: %3")
                                 .arg(m_listenAddr.toString())
                                 .arg(m_listenPort)
                                 .arg(reason);
@@ -135,7 +136,7 @@ bool DnsServer::startListening(QString *error)
     }
 
     emit logMessage(QStringLiteral("info"),
-                    QStringLiteral("DNS 监听已开启：%1（enhanced-mode=%2）")
+                    QCoreApplication::translate("clashqt::core", "DNS listener started: %1 (enhanced-mode=%2)")
                         .arg(listenSummary(), m_fakeIpMode ? QStringLiteral("fake-ip")
                                                            : QStringLiteral("normal")));
     return true;
@@ -195,7 +196,7 @@ QList<dns::Answer> DnsServer::answerFor(const dns::Question &question, const QHo
     if (m_fakeIpMode && !m_resolver->shouldSkipFakeIp(host)) {
         if (!isA) {
             emit logMessage(QStringLiteral("debug"),
-                            QStringLiteral("DNS fake-ip：%1 的 AAAA 查询返回空应答").arg(host));
+                            QCoreApplication::translate("clashqt::core", "DNS fake-ip: AAAA query for %1 returned an empty answer").arg(host));
             return answers;
         }
 
@@ -218,7 +219,7 @@ QList<dns::Answer> DnsServer::answerFor(const dns::Question &question, const QHo
     }
 
     emit logMessage(QStringLiteral("debug"),
-                    QStringLiteral("DNS 真实解析：%1 -> %2 条记录")
+                    QCoreApplication::translate("clashqt::core", "DNS real resolution: %1 -> %2 record(s)")
                         .arg(host)
                         .arg(answers.size()));
     return answers;

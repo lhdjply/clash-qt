@@ -14,6 +14,7 @@
 
 #include <QColor>
 #include <QIcon>
+#include <Qt>
 #include <QString>
 
 class QPixmap;
@@ -41,14 +42,11 @@ QPixmap appPixmap(int size = 64, AppIconState state = AppIconState::Normal);
 // 应用图标（渐变圆角方块 + 白色猫头），用于窗口与系统托盘
 QIcon appIcon(int size = 64, AppIconState state = AppIconState::Normal);
 
-// 标题 → 图标映射：让既有 makeCard(标题) 调用自动获得合适的图标，
-// 无需逐个改动页面代码。未收录的标题返回空图标。
-QIcon forCardTitle(const QString &title, const QColor &color, int size = 18);
-QIcon forNavTitle(const QString &title, const QColor &color, int size = 18);
+// 导航项上记录的图标名。标题会被翻译成不同语言，不能再用标题反查图标：
+// 创建导航项时把图标名写进这个 role，重绘（换主题）时读回来即可。
+inline constexpr int IconNameRole = Qt::UserRole + 1;
 
-// 标题对应的图标名（未收录返回空）。需要记录图标以便主题切换后重取时使用。
-QString cardIconName(const QString &title);
-QString navIconName(const QString &title);
+// 标题 → 图标映射（仅用于未翻译的固定标题）。界面文案翻译后标题随语言变化，
 
 } // namespace icons
 } // namespace ui

@@ -1,4 +1,5 @@
 #include "sys/SysProxy.h"
+#include <QCoreApplication>
 
 #include "utils/AppLogger.h"
 
@@ -82,7 +83,7 @@ void SysProxy::detect()
     }
 
     AppLogger::instance().debug(
-        QStringLiteral("系统代理后端：%1（XDG_CURRENT_DESKTOP=%2）")
+        QCoreApplication::translate("clashqt::app", "System-proxy backend: %1 (XDG_CURRENT_DESKTOP=%2)")
             .arg(backendName(), qEnvironmentVariable("XDG_CURRENT_DESKTOP")));
 }
 
@@ -91,9 +92,9 @@ QString SysProxy::backendName() const
     switch (m_backend) {
     case Backend::GSettings: return QStringLiteral("gsettings");
     case Backend::KdeConfig: return QStringLiteral("kioslaverc");
-    case Backend::None:      return QStringLiteral("不可用");
+    case Backend::None:      return QCoreApplication::translate("clashqt::app", "unavailable");
     }
-    return QStringLiteral("不可用");
+    return QCoreApplication::translate("clashqt::app", "unavailable");
 }
 
 bool SysProxy::run(const QString &program, const QStringList &arguments, QString *error)
@@ -101,17 +102,17 @@ bool SysProxy::run(const QString &program, const QStringList &arguments, QString
     QProcess process;
     process.start(program, arguments);
     if (!process.waitForStarted(5000)) {
-        if (error) *error = QStringLiteral("无法启动 %1").arg(program);
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Could not start %1").arg(program);
         return false;
     }
     if (!process.waitForFinished(10000)) {
         process.kill();
-        if (error) *error = QStringLiteral("%1 执行超时").arg(program);
+        if (error) *error = QCoreApplication::translate("clashqt::app", "%1 timed out").arg(program);
         return false;
     }
     if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
         if (error) {
-            *error = QStringLiteral("%1 执行失败：%2")
+            *error = QCoreApplication::translate("clashqt::app", "%1 failed: %2")
                          .arg(program, QString::fromUtf8(process.readAllStandardError()).trimmed());
         }
         return false;
@@ -178,7 +179,7 @@ bool SysProxy::enableGSettings(const QString &host, int port, const QStringList 
              &error2)) {
         // 忽略列表写入失败不影响代理生效，降级为告警
         AppLogger::instance().warn(
-            QStringLiteral("写入系统代理忽略列表失败：%1").arg(error2));
+            QCoreApplication::translate("clashqt::app", "Failed to write the system-proxy ignore list: %1").arg(error2));
     }
     return true;
 }
@@ -240,7 +241,7 @@ bool SysProxy::enableKde(const QString &host, int port, const QStringList &bypas
                                ? QStringLiteral("kwriteconfig6")
                                : QStringLiteral("kwriteconfig5");
     if (writer.isEmpty()) {
-        if (error) *error = QStringLiteral("未找到 kwriteconfig5/6");
+        if (error) *error = QCoreApplication::translate("clashqt::app", "kwriteconfig5/6 not found");
         return false;
     }
 
@@ -283,7 +284,7 @@ bool SysProxy::disableKde(QString *error)
                                ? QStringLiteral("kwriteconfig6")
                                : QStringLiteral("kwriteconfig5");
     if (writer.isEmpty()) {
-        if (error) *error = QStringLiteral("未找到 kwriteconfig5/6");
+        if (error) *error = QCoreApplication::translate("clashqt::app", "kwriteconfig5/6 not found");
         return false;
     }
     // ProxyType=0 表示不使用代理
@@ -344,8 +345,7 @@ bool SysProxy::isEnabled() const
 bool SysProxy::enable(const QString &host, int port, const QStringList &bypass, QString *error)
 {
     if (m_backend == Backend::None) {
-        m_lastError = QStringLiteral("未检测到可用的系统代理后端"
-                                     "（需要 gsettings 或 kwriteconfig5/6）");
+        m_lastError = QCoreApplication::translate("clashqt::app", "No usable system-proxy backend detected (gsettings or kwriteconfig5/6 is required)");
         if (error) *error = m_lastError;
         return false;
     }
@@ -361,20 +361,20 @@ bool SysProxy::enable(const QString &host, int port, const QStringList &bypass, 
     if (!ok) {
         m_lastError = localError;
         if (error) *error = localError;
-        AppLogger::instance().error(QStringLiteral("启用系统代理失败：%1").arg(localError));
+        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to enable the system proxy: %1").arg(localError));
         return false;
     }
 
     m_lastError.clear();
     AppLogger::instance().info(
-        QStringLiteral("系统代理已启用（%1）：%2:%3").arg(backendName(), host).arg(port));
+        QCoreApplication::translate("clashqt::app", "System proxy enabled (%1): %2:%3").arg(backendName(), host).arg(port));
     return true;
 }
 
 bool SysProxy::disable(QString *error)
 {
     if (m_backend == Backend::None) {
-        m_lastError = QStringLiteral("未检测到可用的系统代理后端");
+        m_lastError = QCoreApplication::translate("clashqt::app", "No usable system-proxy backend detected");
         if (error) *error = m_lastError;
         return false;
     }
@@ -390,12 +390,12 @@ bool SysProxy::disable(QString *error)
     if (!ok) {
         m_lastError = localError;
         if (error) *error = localError;
-        AppLogger::instance().error(QStringLiteral("关闭系统代理失败：%1").arg(localError));
+        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to turn off the system proxy: %1").arg(localError));
         return false;
     }
 
     m_lastError.clear();
-    AppLogger::instance().info(QStringLiteral("系统代理已关闭"));
+    AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "System proxy disabled"));
     return true;
 }
 

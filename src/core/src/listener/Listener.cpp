@@ -1,4 +1,5 @@
 #include "listener/Listener.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 
@@ -41,7 +42,7 @@ bool Listener::start(const QString &bindAddress, quint16 port)
         address = QHostAddress::AnyIPv6;
     } else if (!address.setAddress(normalized)) {
         emit logMessage(QStringLiteral("error"),
-                        QStringLiteral("%1 监听地址无效：%2").arg(m_type, normalized));
+                        QCoreApplication::translate("clashqt::core", "%1 has an invalid listen address: %2").arg(m_type, normalized));
         delete m_server;
         m_server = nullptr;
         return false;
@@ -49,7 +50,7 @@ bool Listener::start(const QString &bindAddress, quint16 port)
 
     if (!m_server->listen(address, port)) {
         emit logMessage(QStringLiteral("error"),
-                        QStringLiteral("%1 监听 %2:%3 失败：%4")
+                        QCoreApplication::translate("clashqt::core", "%1 failed to listen on %2:%3: %4")
                             .arg(m_type, normalized)
                             .arg(port)
                             .arg(m_server->errorString()));
@@ -63,7 +64,7 @@ bool Listener::start(const QString &bindAddress, quint16 port)
     m_accepting.store(true, std::memory_order_release);
 
     emit logMessage(QStringLiteral("info"),
-                    QStringLiteral("%1 入站已启动：%2:%3（并发上限 %4）")
+                    QCoreApplication::translate("clashqt::core", "%1 inbound started: %2:%3 (concurrency limit %4)")
                         .arg(m_type, normalized)
                         .arg(m_port)
                         .arg(effectiveWorkerLimit()));
@@ -90,7 +91,7 @@ void Listener::stop()
     const int remaining = m_activeWorkers.load(std::memory_order_acquire);
     if (remaining > 0) {
         emit logMessage(QStringLiteral("warning"),
-                        QStringLiteral("%1 仍有 %2 条连接未结束").arg(m_type).arg(remaining));
+                        QCoreApplication::translate("clashqt::core", "%1 still has %2 open connection(s)").arg(m_type).arg(remaining));
     }
 }
 
@@ -118,7 +119,7 @@ void Listener::onNewConnection()
         const int workerLimit = effectiveWorkerLimit();
         if (m_activeWorkers.load(std::memory_order_acquire) >= workerLimit) {
             emit logMessage(QStringLiteral("warning"),
-                            QStringLiteral("并发连接已达上限 %1，拒绝新连接").arg(workerLimit));
+                            QCoreApplication::translate("clashqt::core", "Concurrency limit %1 reached; rejecting new connections").arg(workerLimit));
             socket->abort();
             socket->deleteLater();
             continue;
@@ -138,7 +139,7 @@ void Listener::onNewConnection()
 
         if (workerFd < 0) {
             emit logMessage(QStringLiteral("warning"),
-                            QStringLiteral("复制连接描述符失败，连接已丢弃"));
+                            QCoreApplication::translate("clashqt::core", "Failed to duplicate the connection descriptor; connection dropped"));
             continue;
         }
 
@@ -162,7 +163,7 @@ void Listener::spawnWorker(qintptr descriptor, const QHostAddress &peerAddress, 
 
             Logger::instance().debug(
                 LogCategory::Listener,
-                QStringLiteral("%1 接受连接 %2:%3").arg(m_type, peerAddress.toString()).arg(peerPort));
+                QCoreApplication::translate("clashqt::core", "%1 accepted connection %2:%3").arg(m_type, peerAddress.toString()).arg(peerPort));
 
             if (m_accepting.load(std::memory_order_acquire)) {
                 handleConnection(&socket);
@@ -170,7 +171,7 @@ void Listener::spawnWorker(qintptr descriptor, const QHostAddress &peerAddress, 
         } else {
             Logger::instance().warn(
                 LogCategory::Listener,
-                QStringLiteral("无法从描述符 %1 重建套接字").arg(qint64(descriptor)));
+                QCoreApplication::translate("clashqt::core", "Could not rebuild a socket from descriptor %1").arg(qint64(descriptor)));
         }
 
         socket.abort();

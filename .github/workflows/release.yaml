@@ -1,4 +1,4 @@
-name: 发布
+name: Release
 
 on:
   push:
@@ -22,7 +22,7 @@ env:
 
 jobs:
   build-deb:
-    name: 打包 (Linux deb)
+    name: Package (Linux deb)
     runs-on: ubuntu-26.04
     continue-on-error: true
     strategy:
@@ -39,21 +39,21 @@ jobs:
           - platform: riscv64
             image: linuxdeepin/deepin:crimson-riscv64
     steps:
-      - name: 安装 QEMU
+      - name: Install QEMU
         uses: docker/setup-qemu-action@v4
         with:
           platforms: ${{ matrix.platform }}
 
-      - name: 安装 Docker Buildx
+      - name: Install Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: 检出代码（含子模块）
+      - name: Checkout (with submodules)
         uses: actions/checkout@v6
         with:
           # 容器只挂载工作区，子模块必须在宿主侧先拉好
           submodules: recursive
 
-      - name: 构建 ${{ matrix.platform }} 安装包
+      - name: Build ${{ matrix.platform }} package
         run: |
           docker run --rm --platform linux/${{ matrix.platform }} -v ${{ github.workspace }}:/workspace \
             ${{ matrix.image }} \
@@ -61,7 +61,7 @@ jobs:
             set -e
             cd /workspace &&
             Jobs=\$(nproc) &&
-            echo \"容器内 CPU 数：\$Jobs\" &&
+            echo \"CPUs in container: \$Jobs\" &&
             apt update &&
             apt install -y build-essential devscripts dh-make equivs &&
             mk-build-deps -i -t 'apt-get -y' './debian/control' &&
@@ -78,7 +78,7 @@ jobs:
       #   时是单线程。绝不能写成不带数字的 --parallel —— Make 生成器下 CMake
       #   会翻译成 `make -j`（无限并发），容器直接卡死。
 
-      - name: 归集 deb 安装包
+      - name: Collect deb packages
         run: |
           if ls ./*dbgsym*.deb 1> /dev/null 2>&1; then
             rm ./*dbgsym*.deb
@@ -91,7 +91,7 @@ jobs:
           cp ./*.deb deb_package
           ls -l deb_package
 
-      - name: 上传 deb 产物
+      - name: Upload deb artifacts
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.APP_NAME }}_linux_deb_${{ matrix.platform }}
@@ -99,7 +99,7 @@ jobs:
           if-no-files-found: error
 
   create-release:
-    name: 发布 Release
+    name: Publish release
     runs-on: ubuntu-26.04
     needs: [build-deb]
     # PR 只验证四个架构能不能打包，不建 Release
@@ -115,18 +115,18 @@ jobs:
       # 发布说明来自仓库根目录的 VERSION 与 CHANGELOG.md，必须先检出代码。
       # 之前这一步漏了 checkout，工作区里只有 release 产物，于是
       # `sed VERSION` 直接报 No such file，awk 也读不到 CHANGELOG.md。
-      - name: 检出代码（读取 VERSION / CHANGELOG.md）
+      - name: Checkout (to read VERSION / CHANGELOG.md)
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: 下载构建产物
+      - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
 
-      - name: 计算 SHA-256 校验和
+      - name: Compute SHA-256 checksums
         run: |
           cd artifacts
           > hashes.sha256
@@ -142,7 +142,7 @@ jobs:
       #                   找不到（或忘了写）就退回 GitHub 自动生成的提交说明，
       #                   并打一条 warning，避免悄悄发出一版没有更新日志的 Release。
       #   持续构建       → 一小段说明 + 指向 CHANGELOG.md，不占用版本节。
-      - name: 准备发布信息
+      - name: Prepare release metadata
         run: |
           NOTES_FILE="$RUNNER_TEMP/release-notes.md"
           : > "$NOTES_FILE"
@@ -154,7 +154,7 @@ jobs:
             # 缺文件时给一句人话，别让 sed / awk 抛 No such file 这种难懂的报错
             for f in VERSION CHANGELOG.md; do
               if [ ! -f "$f" ]; then
-                echo "::error::仓库根目录缺少 $f，无法生成发布说明（检查是否漏了 checkout）"
+                echo "::error::$f is missing from the repository root; cannot generate release notes (check that checkout ran)"
                 exit 1
               fi
             done
@@ -164,7 +164,7 @@ jobs:
             # 发布前先对账：tag 和 VERSION 必须是同一个版本，否则会出现
             # 「tag 是 v1.0.1、deb 却叫 1.0.0」这种装上去还显示旧版本的情况
             if [ "$VERSION" != "$FILE_VERSION" ]; then
-              echo "::error::tag（$TAG）与 VERSION（$(cat VERSION)）不一致，请先把 VERSION 改成 v$VERSION 再打 tag"
+              echo "::error::Tag ($TAG) does not match VERSION ($(cat VERSION)); set VERSION to v$VERSION before tagging"
               exit 1
             fi
 
@@ -188,31 +188,31 @@ jobs:
             ' CHANGELOG.md > "$NOTES_FILE"
           else
             echo "PRERELEASE=-p" >> $GITHUB_ENV
-            echo "RELEASE_NAME=持续构建" >> $GITHUB_ENV
+            echo "RELEASE_NAME=Continuous build" >> $GITHUB_ENV
             echo "TAG_NAME=continuous_build" >> $GITHUB_ENV
 
             {
-              echo "由 CI 自动生成，对应提交 [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})。"
+              echo "Generated automatically by CI for commit [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})."
               echo
-              echo "完整更新日志见仓库根目录 [\`CHANGELOG.md\`](https://github.com/${{ github.repository }}/blob/${{ github.sha }}/CHANGELOG.md)。"
+              echo "See [\`CHANGELOG.md\`](https://github.com/${{ github.repository }}/blob/${{ github.sha }}/CHANGELOG.md) at the repository root for the full changelog."
             } > "$NOTES_FILE"
           fi
 
           # 正式版必须带更新日志：宁可让 job 失败，也不要发出一版没有说明的 Release
           if [ ! -s "$NOTES_FILE" ]; then
             if [ "${{ github.ref_type }}" == "tag" ]; then
-              echo "::error::CHANGELOG.md 里没有 ## [v$VERSION]（或 ## [$VERSION]）小节，请补上再发版"
+              echo "::error::CHANGELOG.md has no ## [v$VERSION] (or ## [$VERSION]) section; add one before releasing"
             else
-              echo "::error::发布说明为空"
+              echo "::error::Release notes are empty"
             fi
             exit 1
           fi
 
           # 不再把 "--notes-file /路径" 塞进 $GITHUB_ENV 再用表达式展开：
           # 那样一旦路径带空格就会拆成两个参数。下一步直接引用 $RUNNER_TEMP。
-          echo "Release 正文：使用 $NOTES_FILE（$(wc -l < "$NOTES_FILE") 行）"
+          echo "Release body: using $NOTES_FILE ($(wc -l < "$NOTES_FILE") lines)"
 
-      - name: 创建 GitHub Release
+      - name: Create GitHub Release
         continue-on-error: false
         run: |
           NOTES_FILE="$RUNNER_TEMP/release-notes.md"
@@ -220,7 +220,7 @@ jobs:
           hash_files=$(find artifacts -name "*.sha256" -print0 | xargs -0 echo)
 
           if [ -z "$deb_files" ]; then
-            echo "::error::没有拿到任何 deb 产物，放弃发布。"
+            echo "::error::No deb artifacts were produced; aborting the release."
             exit 1
           fi
 
@@ -231,7 +231,7 @@ jobs:
             else
               gh release delete ${{ env.TAG_NAME }} --repo $GITHUB_REPOSITORY --yes
             fi
-            echo "已删除 ${{ env.TAG_NAME }}"
+            echo "Deleted ${{ env.TAG_NAME }}"
           fi
 
           gh release create ${{ env.TAG_NAME }} \
@@ -242,8 +242,8 @@ jobs:
                             --title "${{ env.RELEASE_NAME }}" \
                             --notes-file "$NOTES_FILE"
 
-          echo "已创建 release: ${{ env.TAG_NAME }}"
-          echo "包含产物："
+          echo "Created release: ${{ env.TAG_NAME }}"
+          echo "Artifacts:"
           echo "$deb_files"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

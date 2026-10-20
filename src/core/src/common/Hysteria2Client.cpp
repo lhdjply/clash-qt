@@ -1,4 +1,5 @@
 #include "common/Hysteria2Client.h"
+#include <QCoreApplication>
 
 #include "base/Common.h"
 
@@ -310,7 +311,7 @@ qint64 nowMs()
 QString sslErrorText()
 {
     const unsigned long code = ERR_peek_last_error();
-    if (code == 0) return QStringLiteral("未知错误");
+    if (code == 0) return QCoreApplication::translate("clashqt::core", "Unknown error");
     char buffer[256] = {0};
     ERR_error_string_n(code, buffer, sizeof(buffer));
     return QString::fromLatin1(buffer);
@@ -547,7 +548,7 @@ void Hysteria2Stream::pullFromQuic()
 qint64 Hysteria2Stream::write(const QByteArray &data)
 {
     if (!m_stream || m_closed || m_eof) {
-        if (m_error.isEmpty()) m_error = QStringLiteral("流已关闭");
+        if (m_error.isEmpty()) m_error = QCoreApplication::translate("clashqt::core", "Stream closed");
         return -1;
     }
     if (data.isEmpty()) return 0;
@@ -564,11 +565,11 @@ qint64 Hysteria2Stream::write(const QByteArray &data)
         if (sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE) {
             // 流控窗口已满：驱动网络把窗口腾出来
             if (nowMs() > deadline) {
-                m_error = QStringLiteral("写入超时（流控窗口未放开）");
+                m_error = QCoreApplication::translate("clashqt::core", "Write timed out (flow-control window stayed closed)");
                 return -1;
             }
             if (!m_session) {
-                m_error = QStringLiteral("会话已释放");
+                m_error = QCoreApplication::translate("clashqt::core", "Session released");
                 return -1;
             }
             m_session->pump();
@@ -625,7 +626,7 @@ Hysteria2Session::Hysteria2Session(QObject *parent) : QObject(parent) {}
 
 Hysteria2Session::~Hysteria2Session()
 {
-    closeNow(QStringLiteral("会话释放"));
+    closeNow(QCoreApplication::translate("clashqt::core", "Session release"));
 }
 
 bool Hysteria2Session::openSocket(QString *error)
@@ -654,7 +655,7 @@ bool Hysteria2Session::openSocket(QString *error)
         const QHostInfo info = QHostInfo::fromName(m_server);
         if (info.error() != QHostInfo::NoError || info.addresses().isEmpty()) {
             if (error) {
-                *error = QStringLiteral("无法解析服务器地址 %1（%2）")
+                *error = QCoreApplication::translate("clashqt::core", "Could not parse server address %1 (%2)")
                              .arg(m_server, info.errorString());
             }
             return false;
@@ -672,7 +673,7 @@ bool Hysteria2Session::openSocket(QString *error)
                                                                           : AF_INET;
     const int fd     = ::socket(family, SOCK_DGRAM, 0);
     if (fd < 0) {
-        if (error) *error = QStringLiteral("创建 UDP 套接字失败：%1").arg(strerror(errno));
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to create the UDP socket: %1").arg(strerror(errno));
         return false;
     }
 
@@ -686,7 +687,7 @@ bool Hysteria2Session::openSocket(QString *error)
         peer.sin_port   = htons(m_peerPort);
         peer.sin_addr.s_addr = htonl(address.toIPv4Address());
         if (::connect(fd, reinterpret_cast<sockaddr *>(&peer), sizeof(peer)) != 0) {
-            if (error) *error = QStringLiteral("连接 UDP 失败：%1").arg(strerror(errno));
+            if (error) *error = QCoreApplication::translate("clashqt::core", "UDP connect failed: %1").arg(strerror(errno));
             ::close(fd);
             return false;
         }
@@ -697,7 +698,7 @@ bool Hysteria2Session::openSocket(QString *error)
         const Q_IPV6ADDR v6 = address.toIPv6Address();
         std::memcpy(&peer.sin6_addr, v6.c, 16);
         if (::connect(fd, reinterpret_cast<sockaddr *>(&peer), sizeof(peer)) != 0) {
-            if (error) *error = QStringLiteral("连接 UDP 失败：%1").arg(strerror(errno));
+            if (error) *error = QCoreApplication::translate("clashqt::core", "UDP connect failed: %1").arg(strerror(errno));
             ::close(fd);
             return false;
         }
@@ -711,7 +712,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
 {
     SSL_CTX *ctx = SSL_CTX_new(OSSL_QUIC_client_method());
     if (!ctx) {
-        if (error) *error = QStringLiteral("创建 QUIC 上下文失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to create the QUIC context");
         return false;
     }
     if (config.skipVerify) {
@@ -725,7 +726,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
     SSL *ssl = SSL_new(ctx);
     SSL_CTX_free(ctx); // SSL 已持有引用
     if (!ssl) {
-        if (error) *error = QStringLiteral("创建 QUIC 连接对象失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to create the QUIC connection");
         return false;
     }
 
@@ -736,7 +737,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
 
     BIO *bio = BIO_new_dgram(m_fd, BIO_NOCLOSE);
     if (!bio) {
-        if (error) *error = QStringLiteral("绑定 UDP 套接字失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to bind the UDP socket");
         SSL_free(ssl);
         return false;
     }
@@ -749,7 +750,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
     sockaddr_storage storage{};
     socklen_t        storageLen = 0;
     if (::getpeername(m_fd, reinterpret_cast<sockaddr *>(&storage), &storageLen) != 0) {
-        if (error) *error = QStringLiteral("读取对端地址失败：%1").arg(strerror(errno));
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to read the peer address: %1").arg(strerror(errno));
         SSL_free(ssl);
         return false;
     }
@@ -769,7 +770,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
     if (addrOk) SSL_set1_initial_peer_addr(ssl, peerAddress);
     BIO_ADDR_free(peerAddress);
     if (!addrOk) {
-        if (error) *error = QStringLiteral("构造 QUIC 初始对端地址失败");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to build the initial QUIC peer address");
         SSL_free(ssl);
         return false;
     }
@@ -784,7 +785,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
         const int sslError = SSL_get_error(m_ssl, rv);
         if (sslError != SSL_ERROR_WANT_READ && sslError != SSL_ERROR_WANT_WRITE) {
             if (error) {
-                *error = QStringLiteral("QUIC 握手失败：%1").arg(sslErrorText());
+                *error = QCoreApplication::translate("clashqt::core", "QUIC handshake failed: %1").arg(sslErrorText());
             }
             return false;
         }
@@ -799,12 +800,12 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
         struct pollfd pfd{m_fd, POLLIN, 0};
         ::poll(&pfd, 1, waitMs);
         if (SSL_handle_events(m_ssl) != 1) {
-            if (error) *error = QStringLiteral("QUIC 事件处理失败：%1").arg(sslErrorText());
+            if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             return false;
         }
         if (nowMs() > deadline) {
             if (error) {
-                *error = QStringLiteral("QUIC 握手超时（端口 %1）").arg(m_peerPort);
+                *error = QCoreApplication::translate("clashqt::core", "QUIC handshake timed out (port %1)").arg(m_peerPort);
             }
             return false;
         }
@@ -814,7 +815,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
     if (!config.fingerprint.isEmpty()) {
         X509 *cert = SSL_get1_peer_certificate(m_ssl);
         if (!cert) {
-            if (error) *error = QStringLiteral("服务器未提供证书");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "The server provided no certificate");
             return false;
         }
         unsigned char digest[EVP_MAX_MD_SIZE] = {0};
@@ -825,7 +826,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
             || QByteArray(reinterpret_cast<const char *>(digest), 32)
                    != config.fingerprint) {
             if (error) {
-                *error = QStringLiteral("服务器证书指纹与配置不符（fingerprint 校验失败）");
+                *error = QCoreApplication::translate("clashqt::core", "Server certificate fingerprint does not match the config (fingerprint check failed)");
             }
             return false;
         }
@@ -846,17 +847,17 @@ SSL *Hysteria2Session::openQuicStream(bool uni, const QByteArray &payload, bool 
         if (stream) break;
         const int sslError = SSL_get_error(m_ssl, 0);
         if (sslError != SSL_ERROR_WANT_READ && sslError != SSL_ERROR_WANT_WRITE) {
-            if (error) *error = QStringLiteral("创建 QUIC 流失败：%1").arg(sslErrorText());
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to create a QUIC stream: %1").arg(sslErrorText());
             return nullptr;
         }
         if (nowMs() > deadline) {
-            if (error) *error = QStringLiteral("创建 QUIC 流超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Timed out creating a QUIC stream");
             return nullptr;
         }
         struct pollfd pfd{m_fd, POLLIN, 0};
         ::poll(&pfd, 1, 100);
         if (SSL_handle_events(m_ssl) != 1) {
-            if (error) *error = QStringLiteral("QUIC 事件处理失败：%1").arg(sslErrorText());
+            if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             return nullptr;
         }
     }
@@ -871,26 +872,26 @@ SSL *Hysteria2Session::openQuicStream(bool uni, const QByteArray &payload, bool 
         }
         const int sslError = SSL_get_error(stream, n);
         if (sslError != SSL_ERROR_WANT_READ && sslError != SSL_ERROR_WANT_WRITE) {
-            if (error) *error = QStringLiteral("写入 QUIC 流失败：%1").arg(sslErrorText());
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to write to a QUIC stream: %1").arg(sslErrorText());
             SSL_free(stream);
             return nullptr;
         }
         if (nowMs() > deadline) {
-            if (error) *error = QStringLiteral("写入 QUIC 流超时");
+            if (error) *error = QCoreApplication::translate("clashqt::core", "Timed out writing to a QUIC stream");
             SSL_free(stream);
             return nullptr;
         }
         struct pollfd pfd{m_fd, POLLIN, 0};
         ::poll(&pfd, 1, 100);
         if (SSL_handle_events(m_ssl) != 1) {
-            if (error) *error = QStringLiteral("QUIC 事件处理失败：%1").arg(sslErrorText());
+            if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             SSL_free(stream);
             return nullptr;
         }
     }
     if (conclude) SSL_stream_conclude(stream, 0);
     if (SSL_handle_events(m_ssl) != 1) {
-        if (error) *error = QStringLiteral("QUIC 事件处理失败：%1").arg(sslErrorText());
+        if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
         SSL_free(stream);
         return nullptr;
     }
@@ -944,7 +945,7 @@ bool Hysteria2Session::authenticate(int timeoutMs, QString *error)
         struct pollfd pfd{m_fd, POLLIN, 0};
         ::poll(&pfd, 1, 200);
         if (SSL_handle_events(m_ssl) != 1) {
-            if (error) *error = QStringLiteral("QUIC 事件处理失败：%1").arg(sslErrorText());
+            if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             SSL_free(request);
             return false;
         }
@@ -968,7 +969,7 @@ bool Hysteria2Session::authenticate(int timeoutMs, QString *error)
 
     if (!parsed) {
         if (error) {
-            *error = QStringLiteral("鉴权无应答（超时或连接被重置，端口 %1）")
+            *error = QCoreApplication::translate("clashqt::core", "No response to authentication (timeout or connection reset, port %1)")
                          .arg(m_peerPort);
         }
         return false;
@@ -976,7 +977,7 @@ bool Hysteria2Session::authenticate(int timeoutMs, QString *error)
     if (status != kStatusAuthOk) {
         m_authRejected = true; // 密码错误等确定性问题，重试无意义
         if (error) {
-            *error = QStringLiteral("鉴权被拒绝（HTTP 状态 %1，请检查 password）").arg(status);
+            *error = QCoreApplication::translate("clashqt::core", "Authentication rejected (HTTP status %1; check the password)").arg(status);
         }
         return false;
     }
@@ -1005,22 +1006,22 @@ std::shared_ptr<Hysteria2Session> Hysteria2Session::create(const Hysteria2Config
     session->m_password  = config.password;
 
     if (config.server.isEmpty()) {
-        if (error) *error = QStringLiteral("节点缺少 server");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Node is missing server");
         return nullptr;
     }
     if (config.password.isEmpty()) {
-        if (error) *error = QStringLiteral("节点缺少 password");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Node is missing password");
         return nullptr;
     }
 
     // 从这里开始都是网络环节，失败多半是瞬时丢包（节点/链路抖动），值得换端口重试
     if (retryable) *retryable = true;
 
-    if (!session->openSocket(&failure)) return fail(QStringLiteral("套接字准备"));
-    if (!session->handshake(config, timeoutMs, &failure)) return fail(QStringLiteral("握手"));
+    if (!session->openSocket(&failure)) return fail(QCoreApplication::translate("clashqt::core", "Socket setup"));
+    if (!session->handshake(config, timeoutMs, &failure)) return fail(QCoreApplication::translate("clashqt::core", "Handshake"));
     if (!session->authenticate(timeoutMs, &failure)) {
         if (retryable) *retryable = !session->m_authRejected;
-        return fail(QStringLiteral("鉴权"));
+        return fail(QCoreApplication::translate("clashqt::core", "Authentication"));
     }
 
     session->m_lastError.clear();
@@ -1031,11 +1032,11 @@ std::shared_ptr<Hysteria2Stream> Hysteria2Session::openTcp(const QString &addr,
                                                            int timeoutMs, QString *error)
 {
     if (!m_open) {
-        if (error) *error = QStringLiteral("会话不可用");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Session unavailable");
         return nullptr;
     }
     if (addr.isEmpty() || addr.size() > kMaxAddressLength) {
-        if (error) *error = QStringLiteral("目标地址非法");
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Invalid target address");
         return nullptr;
     }
 
@@ -1087,7 +1088,7 @@ std::shared_ptr<Hysteria2Stream> Hysteria2Session::openTcp(const QString &addr,
         ::poll(&pfd, 1, 200);
         if (SSL_handle_events(m_ssl) != 1) {
             SSL_free(stream);
-            if (error) *error = QStringLiteral("QUIC 事件处理失败：%1").arg(sslErrorText());
+            if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             return nullptr;
         }
         for (;;) {
@@ -1104,7 +1105,7 @@ std::shared_ptr<Hysteria2Stream> Hysteria2Session::openTcp(const QString &addr,
     if (buffer.isEmpty()) {
         SSL_free(stream);
         if (error) {
-            *error = QStringLiteral("目标 %1 无应答（超时）").arg(addr);
+            *error = QCoreApplication::translate("clashqt::core", "Target %1 did not respond (timeout)").arg(addr);
         }
         return nullptr;
     }
@@ -1112,8 +1113,8 @@ std::shared_ptr<Hysteria2Stream> Hysteria2Session::openTcp(const QString &addr,
         SSL_free(stream);
         if (error) {
             *error = message.isEmpty()
-                         ? QStringLiteral("目标 %1 连接被拒绝").arg(addr)
-                         : QStringLiteral("目标 %1 连接被拒绝：%2").arg(addr, message);
+                         ? QCoreApplication::translate("clashqt::core", "Connection to target %1 refused").arg(addr)
+                         : QCoreApplication::translate("clashqt::core", "Connection to target %1 refused: %2").arg(addr, message);
         }
         return nullptr;
     }
@@ -1150,7 +1151,7 @@ void Hysteria2Session::flushOutgoing()
     if (!m_ssl || !m_open) return;
     for (int i = 0; i < 16; ++i) {
         if (SSL_handle_events(m_ssl) != 1) {
-            closeNow(QStringLiteral("QUIC 事件处理失败：%1").arg(sslErrorText()));
+            closeNow(QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText()));
             return;
         }
         struct pollfd pfd{m_fd, POLLIN, 0};
@@ -1167,7 +1168,7 @@ void Hysteria2Session::pump()
     if (!m_ssl || !m_open) return;
     drainIncomingStreams();
     if (SSL_handle_events(m_ssl) != 1) {
-        closeNow(QStringLiteral("QUIC 事件处理失败：%1").arg(sslErrorText()));
+        closeNow(QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText()));
         return;
     }
     drainIncomingStreams();

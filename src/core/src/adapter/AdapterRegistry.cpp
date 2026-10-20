@@ -1,4 +1,5 @@
 #include "adapter/AdapterRegistry.h"
+#include <QCoreApplication>
 
 #include "adapter/Adapters.h"
 #include "adapter/Hysteria2Adapter.h"
@@ -63,7 +64,7 @@ std::shared_ptr<Adapter> AdapterRegistry::buildNode(const ProxyConfig &config)
         // 关键点是绝不能退化为直连——那会让用户流量在无感知的情况下绕过代理。
         m_unsupported.append(config.name);
         return std::make_shared<UnsupportedAdapter>(
-            config, QStringLiteral("该协议尚未实现"));
+            config, QCoreApplication::translate("clashqt::core", "This protocol is not implemented yet"));
     }
 }
 
@@ -75,7 +76,7 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
     const QJsonArray proxies = config.proxies();
     for (const QJsonValue &value : proxies) {
         if (!value.isObject()) {
-            m_warnings << QStringLiteral("proxies 中存在非映射条目，已跳过");
+            m_warnings << QCoreApplication::translate("clashqt::core", "Skipped non-mapping entries in proxies");
             continue;
         }
         const QJsonObject object = value.toObject();
@@ -84,12 +85,12 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
             const QString name = jsonutil::stringValue(object, QStringLiteral("name"));
             const QString type = jsonutil::stringValue(object, QStringLiteral("type"));
             m_unsupported.append(name.isEmpty() ? type : name);
-            m_warnings << QStringLiteral("无法识别的节点：%1（type=%2）")
-                              .arg(name.isEmpty() ? QStringLiteral("<未命名>") : name, type);
+            m_warnings << QCoreApplication::translate("clashqt::core", "Unrecognized node: %1 (type=%2)")
+                              .arg(name.isEmpty() ? QCoreApplication::translate("clashqt::core", "<unnamed>") : name, type);
             continue;
         }
         if (m_adapters.count(parsed->name) > 0) {
-            m_warnings << QStringLiteral("节点名重复，后出现的定义被忽略：%1").arg(parsed->name);
+            m_warnings << QCoreApplication::translate("clashqt::core", "Duplicate node name; ignoring the later definition: %1").arg(parsed->name);
             continue;
         }
         m_adapters.insert_or_assign(parsed->name, buildNode(*parsed));
@@ -107,7 +108,7 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
         const auto parsed = ProxyGroupConfig::parse(object);
         if (!parsed) {
             const QString message =
-                QStringLiteral("无法识别的代理组：%1（type=%2）")
+                QCoreApplication::translate("clashqt::core", "Unrecognized proxy group: %1 (type=%2)")
                     .arg(jsonutil::stringValue(object, QStringLiteral("name")),
                          jsonutil::stringValue(object, QStringLiteral("type")));
             m_warnings.append(message);
@@ -146,7 +147,7 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
             // proxy-provider 引用的节点由资源层在注册前展开并写入 proxies 列表，
             // 到这里时 `use` 只用于界面展示 provider 归属，不参与成员解析。
             if (members.empty() && it->proxies.isEmpty() && it->use.isEmpty()) {
-                m_warnings << QStringLiteral("代理组 %1 没有任何成员").arg(it->name);
+                m_warnings << QCoreApplication::translate("clashqt::core", "Proxy group %1 has no members").arg(it->name);
             }
 
             auto group = std::make_shared<ProxyGroup>(*it, std::move(members));
@@ -160,8 +161,7 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
 
     for (const ProxyGroupConfig &leftover : pendingGroups) {
         const QString message =
-            QStringLiteral("代理组 %1 的成员无法解析（引用了不存在的节点，"
-                           "或存在循环引用），已跳过；成员：%2")
+            QCoreApplication::translate("clashqt::core", "Proxy group %1 has members that cannot be resolved (a missing node or a reference cycle); skipped. Members: %2")
                 .arg(leftover.name, leftover.proxies.join(QStringLiteral(", ")));
         m_warnings.append(message);
         Logger::instance().warn(LogCategory::Adapter, message);
@@ -169,7 +169,7 @@ void AdapterRegistry::loadFromConfig(const RawConfig &config)
 
     Logger::instance().info(
         LogCategory::Adapter,
-        QStringLiteral("适配器加载完成：节点/组共 %1 个，未实现协议 %2 个，告警 %3 条")
+        QCoreApplication::translate("clashqt::core", "Adapters loaded: %1 nodes/groups, %2 unimplemented protocols, %3 warnings")
             .arg(m_adapters.size())
             .arg(m_unsupported.size())
             .arg(m_warnings.size()));

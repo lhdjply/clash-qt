@@ -45,23 +45,23 @@ LogsPage::LogsPage(AppContext *context, QWidget *parent) : QWidget(parent), m_co
     root->setSpacing(12);
 
     root->addWidget(ui::makePageHeader(
-        QStringLiteral("日志"),
-        QStringLiteral("应用运行日志。日志同时写入数据目录下的 logs/ 文件。")));
+        tr("Logs"),
+        tr("Application log. Logs are also written to the logs/ folder in the data directory."), QStringLiteral("logs")));
 
     auto *toolbar = new QHBoxLayout();
     toolbar->setSpacing(8);
 
-    toolbar->addWidget(new QLabel(QStringLiteral("等级"), this));
+    toolbar->addWidget(new QLabel(tr("Level"), this));
     m_levelFilter = new QComboBox(this);
     m_levelFilter->addItems({QStringLiteral("debug"), QStringLiteral("info"),
                              QStringLiteral("warning"), QStringLiteral("error")});
     m_levelFilter->setCurrentText(QStringLiteral("info"));
     toolbar->addWidget(m_levelFilter);
 
-    m_pauseScroll = new QCheckBox(QStringLiteral("暂停滚动"), this);
+    m_pauseScroll = new QCheckBox(tr("Pause scrolling"), this);
     toolbar->addWidget(m_pauseScroll);
 
-    m_clearButton = new QPushButton(QStringLiteral("清空显示"), this);
+    m_clearButton = new QPushButton(tr("Clear view"), this);
     ui::decorate(m_clearButton, QStringLiteral("eraser"));
     toolbar->addWidget(m_clearButton);
     toolbar->addStretch(1);

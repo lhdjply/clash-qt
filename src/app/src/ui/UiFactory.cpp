@@ -1,4 +1,5 @@
 #include "ui/UiFactory.h"
+#include <QCoreApplication>
 
 #include "ui/Icons.h"
 #include "utils/AppLogger.h"
@@ -384,7 +385,9 @@ void refreshIcons()
             QListWidgetItem *item = list->item(i);
             if (!item) continue;
             const QColor color = (i == list->currentRow()) ? t.onAccent : t.text;
-            item->setIcon(icons::forNavTitle(item->text(), color, 18));
+            // 图标名存在 data role 里：item 文本会随语言变化，不能拿它反查
+            const QString name = item->data(icons::IconNameRole).toString();
+            if (!name.isEmpty()) item->setIcon(icons::get(name, color, 18));
         }
     }
 }
@@ -462,7 +465,7 @@ QColor       accent() { return g_theme.accent; }
 QColor       textColor() { return g_theme.text; }
 QColor       mutedColor() { return g_theme.textMuted; }
 
-QGroupBox *makeCard(const QString &title, QWidget *parent)
+QGroupBox *makeCard(const QString &title, QWidget *parent, const QString &iconName)
 {
     auto *card = new QGroupBox(parent);
     card->setObjectName(QStringLiteral("card"));
@@ -481,12 +484,13 @@ QGroupBox *makeCard(const QString &title, QWidget *parent)
         headerLayout->setContentsMargins(0, 0, 0, 0);
         headerLayout->setSpacing(9);
 
-        const QString iconName = icons::cardIconName(title);
-        if (!iconName.isEmpty()) {
+        // 翻译后的标题不能再反查图标表，调用方显式给出图标名时优先用它
+        const QString icon = iconName;
+        if (!icon.isEmpty()) {
             auto *iconLabel = new QLabel(header);
             iconLabel->setObjectName(QStringLiteral("cardIcon"));
             iconLabel->setFixedSize(18, 18);
-            applyIconToLabel(iconLabel, iconName, g_theme.accent, 18);
+            applyIconToLabel(iconLabel, icon, g_theme.accent, 18);
             headerLayout->addWidget(iconLabel);
         }
 
@@ -531,7 +535,8 @@ QWidget *makeFormRow(const QString &label, QWidget *field, const QString &hint, 
     return row;
 }
 
-QWidget *makePageHeader(const QString &title, const QString &description, QWidget *parent)
+QWidget *makePageHeader(const QString &title, const QString &description,
+                        const QString &iconName, QWidget *parent)
 {
     auto *header = new QWidget(parent);
     header->setObjectName(QStringLiteral("pageHeader"));
@@ -541,13 +546,13 @@ QWidget *makePageHeader(const QString &title, const QString &description, QWidge
     layout->setSpacing(13);
 
     // 图标徽标：强调色的柔和底 + 线性图标
-    const QString iconName = icons::navIconName(title);
-    if (!iconName.isEmpty()) {
+    const QString icon = iconName;
+    if (!icon.isEmpty()) {
         auto *badge = new QLabel(header);
         badge->setObjectName(QStringLiteral("pageBadge"));
         badge->setFixedSize(42, 42);
         badge->setAlignment(Qt::AlignCenter);
-        applyIconToLabel(badge, iconName, g_theme.accent, 22);
+        applyIconToLabel(badge, icon, g_theme.accent, 22);
         layout->addWidget(badge, 0, Qt::AlignTop);
     }
 
@@ -695,13 +700,13 @@ void applyTheme(bool dark)
     // 一并记录实际生效的 style 与调色板底色：调色板若被平台主题覆盖，
     // 会出现「浅色主题 + 深色原生控件」的错配，只看主题名不易发现
     AppLogger::instance().info(
-        QStringLiteral("界面样式：Fusion（%1）style=%2 控件底色=%3 强调色=%4 桌面深色=%5")
-            .arg(dark ? QStringLiteral("深色") : QStringLiteral("浅色"),
+        QCoreApplication::translate("clashqt::app", "UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5")
+            .arg(dark ? QCoreApplication::translate("clashqt::app", "dark") : QCoreApplication::translate("clashqt::app", "light"),
                  qApp ? QString::fromLatin1(qApp->style()->metaObject()->className())
                      : QStringLiteral("-"),
                  qApp ? qApp->palette().color(QPalette::Base).name() : QStringLiteral("-"),
                  g_theme.accent.name(),
-                 systemPrefersDark() ? QStringLiteral("是") : QStringLiteral("否")));
+                 systemPrefersDark() ? QCoreApplication::translate("clashqt::app", "yes") : QCoreApplication::translate("clashqt::app", "no")));
 }
 
 bool themeIsDark(const QString &themeName)

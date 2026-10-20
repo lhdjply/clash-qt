@@ -29,7 +29,7 @@ bool AutoRun::writeDesktopFile(const QString &content, QString *error)
 {
     const QString path = desktopFilePath();
     if (!paths::ensureParentDir(path)) {
-        if (error) *error = QStringLiteral("无法创建自启动目录");
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Could not create the autostart directory");
         return false;
     }
     return safefile::writeAtomic(path, content, error);
@@ -72,10 +72,10 @@ bool AutoRun::enable(bool silent, QString *error)
             .arg(execLine);
 
     if (!writeDesktopFile(content, error)) {
-        AppLogger::instance().error(QStringLiteral("启用自启动失败：%1").arg(*error));
+        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to enable autostart: %1").arg(*error));
         return false;
     }
-    AppLogger::instance().info(QStringLiteral("已启用开机自启动：%1").arg(desktopFilePath()));
+    AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "Autostart enabled: %1").arg(desktopFilePath()));
     return true;
 }
 
@@ -85,11 +85,11 @@ bool AutoRun::disable(QString *error)
     if (!QFile::exists(path)) return true;
 
     if (!QFile::remove(path)) {
-        if (error) *error = QStringLiteral("无法删除自启动项：%1").arg(path);
+        if (error) *error = QCoreApplication::translate("clashqt::app", "Could not remove the autostart entry: %1").arg(path);
         AppLogger::instance().error(*error);
         return false;
     }
-    AppLogger::instance().info(QStringLiteral("已关闭开机自启动"));
+    AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "Autostart disabled"));
     return true;
 }
 
