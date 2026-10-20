@@ -24,6 +24,9 @@ clash-qt/
 │   │   │                rules / tunnel
 │   │   └── src/
 │   └── app/         clash-qt — the Qt6 Widgets GUI
+│       ├── include/     one directory per module: config / i18n / sys / ui /
+│       │                updater / utils (plus AppContext.h at the root)
+│       └── src/
 ├── tests/           unit tests (Qt Test + CTest, off by default)
 └── third_party/     git submodules: yaml-cpp, ml-kem, sha3, randomshake, subtle
 ```

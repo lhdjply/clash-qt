@@ -418,41 +418,41 @@ set(APP_SOURCES
 )
 
 set(APP_HEADERS
-    src/app/src/AppContext.h
+    src/app/include/AppContext.h
 
-    src/app/src/utils/Paths.h
-    src/app/src/utils/AppLogger.h
-    src/app/src/utils/SafeFile.h
-    src/app/src/utils/Calc.h
-    src/app/src/utils/CrashHandler.h
+    src/app/include/utils/Paths.h
+    src/app/include/utils/AppLogger.h
+    src/app/include/utils/SafeFile.h
+    src/app/include/utils/Calc.h
+    src/app/include/utils/CrashHandler.h
 
-    src/app/src/config/AppConfig.h
-    src/app/src/config/ControledKernelConfig.h
-    src/app/src/config/ProfileConfig.h
-    src/app/src/config/OverrideConfig.h
-    src/app/src/config/Factory.h
+    src/app/include/config/AppConfig.h
+    src/app/include/config/ControledKernelConfig.h
+    src/app/include/config/ProfileConfig.h
+    src/app/include/config/OverrideConfig.h
+    src/app/include/config/Factory.h
 
-    src/app/src/updater/UpdateChecker.h
+    src/app/include/updater/UpdateChecker.h
 
-    src/app/src/i18n/I18n.h
+    src/app/include/i18n/I18n.h
 
-    src/app/src/sys/SysProxy.h
-    src/app/src/sys/AutoRun.h
-    src/app/src/sys/SingleInstance.h
-    src/app/src/sys/TunController.h
+    src/app/include/sys/SysProxy.h
+    src/app/include/sys/AutoRun.h
+    src/app/include/sys/SingleInstance.h
+    src/app/include/sys/TunController.h
 
-    src/app/src/ui/MainWindow.h
-    src/app/src/ui/UiFactory.h
-    src/app/src/ui/UpdateDialog.h
-    src/app/src/ui/Icons.h
-    src/app/src/ui/pages/ProxiesPage.h
-    src/app/src/ui/pages/ProfilesPage.h
-    src/app/src/ui/pages/ConnectionsPage.h
-    src/app/src/ui/pages/RulesPage.h
-    src/app/src/ui/pages/LogsPage.h
-    src/app/src/ui/pages/OverridePage.h
-    src/app/src/ui/pages/TrafficPage.h
-    src/app/src/ui/pages/SettingsPage.h
+    src/app/include/ui/MainWindow.h
+    src/app/include/ui/UiFactory.h
+    src/app/include/ui/UpdateDialog.h
+    src/app/include/ui/Icons.h
+    src/app/include/ui/pages/ProxiesPage.h
+    src/app/include/ui/pages/ProfilesPage.h
+    src/app/include/ui/pages/ConnectionsPage.h
+    src/app/include/ui/pages/RulesPage.h
+    src/app/include/ui/pages/LogsPage.h
+    src/app/include/ui/pages/OverridePage.h
+    src/app/include/ui/pages/TrafficPage.h
+    src/app/include/ui/pages/SettingsPage.h
 )
 
 # 图标资源：项目根 resources/icons/ 下的 .svg 为真实文件，由 clash-qt.qrc 经 Qt 资源
@@ -501,7 +501,10 @@ else()
         "需要中文请安装 qt6-l10n-tools。")
 endif()
 
-target_include_directories(${CLASHQT_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app/src")
+target_include_directories(${CLASHQT_TARGET} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/app/include"   # 公开头文件（按模块分目录）
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/app/src"       # 仅 .cpp 自身所在目录
+)
 
 target_link_libraries(${CLASHQT_TARGET}
     PRIVATE

@@ -23,8 +23,12 @@ function(clashqt_add_test name)
     add_executable(${name} ${name}.cpp ${ARGN})
 
     target_link_libraries(${name} PRIVATE clashqt_core Qt6::Test)
-    # 应用侧源码（Calc / Factory 等）与主程序用同样的 include 根
-    target_include_directories(${name} PRIVATE "${CMAKE_SOURCE_DIR}/src/app/src")
+    # 应用侧头文件（Calc / Factory 等）与主程序用同样的 include 根：
+    # 头文件在 src/app/include，与 src/core/include 的组织方式一致
+    target_include_directories(${name} PRIVATE
+        "${CMAKE_SOURCE_DIR}/src/app/include"
+        "${CMAKE_SOURCE_DIR}/src/app/src"
+    )
 
     target_compile_options(${name} PRIVATE
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wno-unused-parameter>
@@ -63,7 +67,8 @@ clashqt_add_test(test_calc
 
 # 检查更新：版本号比较决定「有没有更新」，判错会天天提示同一个版本
 clashqt_add_test(test_update_checker
-    "${CMAKE_SOURCE_DIR}/src/app/src/updater/UpdateChecker.cpp")
+    "${CMAKE_SOURCE_DIR}/src/app/src/updater/UpdateChecker.cpp"
+    "${CMAKE_SOURCE_DIR}/src/app/include/updater/UpdateChecker.h")
 target_link_libraries(test_update_checker PRIVATE Qt6::Network)
 
 # 数据目录约定：<XDG_CONFIG_HOME>/clash-qt（不能再多一层），以及旧布局的迁移
@@ -81,4 +86,11 @@ clashqt_add_test(test_rule_override
     "${CMAKE_SOURCE_DIR}/src/app/src/config/Factory.cpp"
     "${CMAKE_SOURCE_DIR}/src/app/src/utils/Paths.cpp"
     "${CMAKE_SOURCE_DIR}/src/app/src/utils/AppLogger.cpp"
-    "${CMAKE_SOURCE_DIR}/src/app/src/utils/SafeFile.cpp")
+    "${CMAKE_SOURCE_DIR}/src/app/src/utils/SafeFile.cpp"
+    # 带 Q_OBJECT 的头文件必须列进目标源，AUTOMOC 才会为它们生成 moc：
+    # 头文件迁到 src/app/include 后，不再有「.h 与 .cpp 同目录」的自动配对
+    "${CMAKE_SOURCE_DIR}/src/app/include/config/AppConfig.h"
+    "${CMAKE_SOURCE_DIR}/src/app/include/config/ControledKernelConfig.h"
+    "${CMAKE_SOURCE_DIR}/src/app/include/config/ProfileConfig.h"
+    "${CMAKE_SOURCE_DIR}/src/app/include/config/OverrideConfig.h"
+    "${CMAKE_SOURCE_DIR}/src/app/include/utils/AppLogger.h")

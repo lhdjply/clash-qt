@@ -21,6 +21,9 @@ clash-qt/
 │   │   │                config / constant / hub / listener / rules / tunnel
 │   │   └── src/
 │   └── app/         clash-qt —— Qt6 Widgets 图形界面
+│       ├── include/     按模块分目录：config / i18n / sys / ui / updater /
+│       │                utils（另有根目录下的 AppContext.h）
+│       └── src/
 ├── tests/           单元测试（Qt Test + CTest，默认不参与构建）
 └── third_party/     git 子模块：yaml-cpp、ml-kem、sha3、randomshake、subtle
 ```
