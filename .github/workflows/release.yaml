@@ -98,11 +98,521 @@ jobs:
           path: deb_package/*.deb
           if-no-files-found: error
 
+  build-windows:
+    name: Package (Windows ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            msystem: ucrt64
+            compiler: gcc
+            # pacman 里的包名前缀（等于 MSYS2 环境名 + 目标三元组简写）
+            mingw_prefix: mingw-w64-ucrt-x86_64
+            arch: x64
+            # MyArch 只用于文件名；Inno 的目标架构约束值是另一个（6.3+ 才有）
+            arch_allowed: x64compatible
+            # wintun 包里的目录名：x64 对应 amd64
+            wintun_arch: amd64
+          - os: windows-11-arm
+            msystem: clangarm64
+            compiler: clang
+            mingw_prefix: mingw-w64-clang-aarch64
+            arch: arm64
+            arch_allowed: arm64
+            wintun_arch: arm64
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      # action 只负责把 MSYS2 装起来。它的 update: true 是用一条 pacman 命令跑完
+      # 上千个包，任何一次镜像限速都让整步失败且无法重试——arm64 上就挂在
+      # harfbuzz 的 .sig 上（Operation too slow, Less than 1 bytes/sec）。
+      # 升级与装包放到下一步自己做：可以在命令外加重试，并带上
+      # --disable-download-timeout 关掉 libcurl 的低速中断，那条报错正是它产生的。
+      - name: Install MSYS2 (base only)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: false
+          cache: true
+
+      # msys2-runtime 的升级会让 pacman 终止所有 MSYS2 进程——包括执行它的这个
+      # shell，所以本步骤可能以 exit 1 结束。这不是失败：包已经装好并入库，只是
+      # shell 连同尚未执行的命令一起没了。用 continue-on-error 放过它，真正的判据
+      # 放在下一步：新 shell 里幂等补完升级与装包，再逐个确认工具能跑。
+      - name: Upgrade the MSYS2 core
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+
+          # pacman 没有重试开关，在命令外做三次；已下完的包留在缓存里，重试只补缺的
+          retry() {
+            local attempt
+            for attempt in 1 2 3; do
+              echo "--- attempt $attempt: $*"
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                echo "::warning::attempt $attempt failed; retrying in 10s"
+                sleep 10
+              fi
+            done
+            echo "::error::giving up after 3 attempts: $*"
+            return 1
+          }
+
+          # MSYS2 不支持部分升级：运行时与库必须同版本，装包前先整系统升到最新。
+          # 这里的失败不判死（镜像抖动很常见），下一步会以硬失败的标准重试一次。
+          retry pacman -Syu --noconfirm --needed --disable-download-timeout \
+            || echo "::warning::the core upgrade did not complete; the next step retries it"
+
+      - name: Install the toolchain
+        run: |
+          set -euo pipefail
+
+          retry() {
+            local attempt
+            for attempt in 1 2 3; do
+              echo "--- attempt $attempt: $*"
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                echo "::warning::attempt $attempt failed; retrying in 10s"
+                sleep 10
+              fi
+            done
+            echo "::error::giving up after 3 attempts: $*"
+            return 1
+          }
+
+          # 上一步若被 msys2-runtime 的替换打断，这里在新 shell 里把剩余部分补完；
+          # 系统已经是最新时，这条只会打印 "there is nothing to do"
+          retry pacman -Syu --noconfirm --needed --disable-download-timeout
+
+          # 直接点名 mingw-w64-<env>-<arch>-*，不用 pacboy 的 :p 后缀：pacboy 来自
+          # pactoys 包，不保证在 update: false 的基础安装里已经存在
+          retry pacman -S --noconfirm --needed --disable-download-timeout \
+            "${{ matrix.mingw_prefix }}-cmake" \
+            "${{ matrix.mingw_prefix }}-ninja" \
+            "${{ matrix.mingw_prefix }}-${{ matrix.compiler }}" \
+            "${{ matrix.mingw_prefix }}-binutils" \
+            "${{ matrix.mingw_prefix }}-pkgconf" \
+            "${{ matrix.mingw_prefix }}-qt6-base" \
+            "${{ matrix.mingw_prefix }}-qt6-svg" \
+            "${{ matrix.mingw_prefix }}-qt6-charts" \
+            "${{ matrix.mingw_prefix }}-qt6-tools" \
+            "${{ matrix.mingw_prefix }}-openssl"
+
+          # 以「工具真的能跑」为准：上一步的退出码既可能来自成功，也可能来自被
+          # 中断，唯一可靠的判据是命令存不存在
+          missing=0
+          for tool in cmake ninja pkgconf "${{ matrix.compiler }}"; do
+            if command -v "$tool" >/dev/null 2>&1; then
+              echo "ok: $tool -> $(command -v "$tool")"
+            else
+              echo "::error::$tool is missing after the package installation"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      # 发布用 Release：不保留调试信息，体积与优化都按用户实际安装的那一版走。
+      # 测试仍由 test.yaml 的 Debug/RelWithDebInfo 覆盖，这里不重复。
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCLASHQT_BUILD_TESTS=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # 解压后是一个可直接运行的目录：只放 exe 与许可证类文本，
+      # Qt 运行时由下一步的 windeployqt 填进来。
+      - name: Stage the package
+        run: |
+          set -euo pipefail
+          version=$(sed 's/^[vV]//' VERSION | tr -d '[:space:]')
+          stage="dist/clash-qt-${version}-windows-${{ matrix.arch }}"
+          mkdir -p "$stage"
+
+          cp build/bin/clash-qt.exe "$stage/"
+          # Apache-2.0 要求随二进制分发许可证正文；README 说明 TUN 模式的前提
+          cp LICENSE "$stage/LICENSE"
+          cp README-zh.md "$stage/README-zh.md"
+
+          echo "STAGE=$stage" >> "$GITHUB_ENV"
+          echo "PKG_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Deploy the Qt runtime (windeployqt)
+        run: |
+          set -euo pipefail
+          # 工具名在 Qt 6.7+ 上游与 MSYS2 打包之间不统一（windeployqt / windeployqt6），
+          # 按实际存在的那个取，不把名字写死
+          deploy=$(ls "$MINGW_PREFIX"/bin/windeployqt*.exe 2>/dev/null | head -1)
+          if [ -z "$deploy" ]; then
+            deploy=$(find "$MINGW_PREFIX" -maxdepth 3 -name 'windeployqt*.exe' | head -1)
+          fi
+          if [ -z "$deploy" ]; then
+            echo "::error::windeployqt not found under $MINGW_PREFIX"
+            exit 1
+          fi
+          echo "using $deploy"
+
+          # --release            Release 构建，让工具按 release 版 Qt 收集依赖
+          # --compiler-runtime   带上 libstdc++ / libgcc / libwinpthread：
+          #                      目标机没有 MSYS2，缺一个就是双击没反应
+          # --no-opengl-sw       不发 ~20MB 的软件光栅化器，纯 Widgets 用不到
+          # --no-translations    Qt 自带 .qm 不需要；本程序的翻译已编进 exe 资源
+          "$deploy" --release --compiler-runtime \
+                    --no-opengl-sw --no-translations \
+                    --dir "$STAGE" "$STAGE/clash-qt.exe"
+
+      - name: Complete the runtime (OpenSSL + transitive DLLs)
+        run: |
+          set -euo pipefail
+          # windeployqt 只认 Qt 自己的依赖表，Qt 之外的三方库要自己补：
+          # REALITY 的 TLS 1.3 直接吃 OpenSSL，Qt6Network 的 TLS 后端也要它
+          cp "$MINGW_PREFIX"/bin/libssl-*.dll "$STAGE"/ 2>/dev/null || true
+          cp "$MINGW_PREFIX"/bin/libcrypto-*.dll "$STAGE"/ 2>/dev/null || true
+
+          # 依赖闭包读 PE 导入表，不用 ldd：ldd 会把 PE 真的加载一遍，结果随
+          # PATH 里先出现的同名 DLL 变化；objdump -p 只解析头。x64 的 objdump 由
+          # gcc 带进来，arm64 的没有依赖关系可搭（clang 不带 binutils），所以上面
+          # 的包列表里单独点了 binutils。
+          if ! command -v objdump >/dev/null 2>&1; then
+            echo "::error::objdump not found; the dependency closure cannot be computed"
+            exit 1
+          fi
+
+          imports() {
+            objdump -p "$@" 2>/dev/null | awk '/DLL Name:/ {print $3}' | sort -u
+          }
+
+          # 解析器读不出导入表时，闭包会「一个都不缺」地通过，最后发出去的包少一堆
+          # DLL 却没人拦——这类静默失败必须在源头挡住。arm64 的 objdump 实际是
+          # llvm-objdump（binutils 由 llvm-tools 提供），输出格式与 GNU 有出入时，
+          # 这里会第一时间报出来。
+          if [ -z "$(imports "$STAGE/clash-qt.exe")" ]; then
+            echo "::error::no imports could be parsed from clash-qt.exe; objdump output format not recognised"
+            objdump -p "$STAGE/clash-qt.exe" | head -20
+            exit 1
+          fi
+
+          # 反复补：每补进一个 DLL，它自己的依赖就会出现在下一轮里。
+          max_rounds=20
+          round=0
+          while :; do
+            round=$((round + 1))
+            if [ "$round" -gt "$max_rounds" ]; then
+              echo "::error::dependency closure did not converge after $max_rounds rounds"
+              exit 1
+            fi
+
+            added=0
+            while read -r name; do
+              [ -n "$name" ] || continue
+              if [ -e "$STAGE/$name" ]; then
+                continue
+              fi
+              if [ -e "$MINGW_PREFIX/bin/$name" ]; then
+                cp "$MINGW_PREFIX/bin/$name" "$STAGE/"
+                echo "  + $name"
+                added=$((added + 1))
+              fi
+            done < <(imports "$STAGE"/*.exe "$STAGE"/*.dll)
+
+            echo "round $round: added $added"
+            if [ "$added" -eq 0 ]; then
+              break
+            fi
+          done
+
+          # 补齐后还缺的：lib* / Qt6* 只可能来自 MSYS2，缺了就是把包打漏了，
+          # 目标机没有 MSYS2，双击就是没反应——直接不发这个包。
+          # 其余（KERNEL32.dll、api-ms-win-* 之类）由 Windows 自带，列出来备查。
+          missing=0
+          for name in $(imports "$STAGE"/*.exe "$STAGE"/*.dll); do
+            if [ -e "$STAGE/$name" ]; then
+              continue
+            fi
+            case "$name" in
+              lib*|Qt6*)
+                if [ -e "$MINGW_PREFIX/bin/$name" ]; then
+                  echo "::error::$name is imported but was not staged (it exists in $MINGW_PREFIX/bin)"
+                else
+                  echo "::error::$name is imported but missing from both the package and $MINGW_PREFIX/bin"
+                fi
+                missing=$((missing + 1))
+                ;;
+              *)
+                echo "  (system) $name"
+                ;;
+            esac
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          echo "--- staged files ---"
+          ls -1 "$STAGE" | head -50
+
+      - name: Fetch wintun.dll
+        env:
+          WINTUN_VERSION: 0.14.1
+          # wintun.net 公布的 SHA2-256；升级版本时两个值必须一起改
+          WINTUN_SHA256: 07c256185d6ee3652e09fa55c0b673e2624b565e02c4b9091c79ca7d2f24ef51
+        run: |
+          set -euo pipefail
+          # TUN 模式在运行期才 LoadLibrary("wintun.dll")，官方不提供导入库，
+          # 只发签名过的预编译 zip；README 要求它与 clash-qt.exe 同目录。
+          # 固定版本 + 校验和：供应链上少一个可变因素。
+          curl -fsSL -o wintun.zip \
+            "https://www.wintun.net/builds/wintun-${WINTUN_VERSION}.zip"
+          echo "${WINTUN_SHA256}  wintun.zip" | sha256sum -c -
+
+          powershell -NoProfile -Command \
+            "Expand-Archive -LiteralPath '$(cygpath -wa wintun.zip)' -DestinationPath '$(cygpath -wa wintun-src)' -Force"
+          # 包里同时有 amd64 / arm64 / x86 / arm 四份，按矩阵取。取错架构不会
+          # 立刻报错——LoadLibrary 照样成功，直到真去建 TUN 会话才失败
+          cp "wintun-src/wintun/bin/${{ matrix.wintun_arch }}/wintun.dll" "$STAGE/"
+
+          # 预编译 DLL 走 WireGuard LLC 的独立许可（非 GPL），允许随宿主软件
+          # 分发，但要求随附这份条文
+          cp wintun-src/wintun/LICENSE.txt "$STAGE/wintun-LICENSE.txt"
+
+      - name: Verify the package
+        run: |
+          set -euo pipefail
+          # 关键文件一个都不能少，缺了就没人能在干净机器上跑起来
+          for f in clash-qt.exe wintun.dll wintun-LICENSE.txt LICENSE; do
+            if [ ! -f "$STAGE/$f" ]; then
+              echo "::error::$f is missing from the package"
+              exit 1
+            fi
+          done
+          if [ ! -f "$STAGE/platforms/qwindows.dll" ]; then
+            echo "::error::the Qt platform plugin (platforms/qwindows.dll) was not deployed"
+            exit 1
+          fi
+          if ! ls "$STAGE"/libssl-*.dll > /dev/null 2>&1; then
+            echo "::error::OpenSSL runtime is missing; REALITY TLS and Qt6Network need it"
+            exit 1
+          fi
+
+          # 子系统与架构：与 build.yaml 的同名检查一致，避免发出去的是控制台
+          # 程序或者错架构的二进制（arm64 作业编出 x64 包，构建照样"成功"）。
+          # 子系统字段 GNU objdump 打十六进制（00000002），llvm-objdump 打
+          # 符号名（IMAGE_SUBSYSTEM_WINDOWS_GUI），两种都认。
+          file_info=$(objdump -f "$STAGE/clash-qt.exe")
+          echo "$file_info" | grep -E 'file format|architecture'
+          case "${{ matrix.arch }}" in
+            x64)
+              echo "$file_info" | grep -qiE 'x86-64|x86_64|amd64' || {
+                echo "::error::clash-qt.exe is not an x86-64 binary"
+                exit 1
+              }
+              ;;
+            arm64)
+              echo "$file_info" | grep -qiE 'aarch64|arm64' || {
+                echo "::error::clash-qt.exe is not an ARM64 binary"
+                exit 1
+              }
+              ;;
+          esac
+
+          subsystem=$(objdump -p "$STAGE/clash-qt.exe" | awk '/^ *Subsystem/ {print $2; exit}' | tr -d '\r')
+          echo "subsystem=$subsystem"
+          case "$subsystem" in
+            00000002|2|IMAGE_SUBSYSTEM_WINDOWS_GUI) ;;
+            *)
+              echo "::error::clash-qt.exe is not a GUI-subsystem binary (subsystem=$subsystem)"
+              exit 1
+              ;;
+          esac
+
+      - name: Create the zip
+        run: |
+          set -euo pipefail
+          zip="dist/clash-qt-${PKG_VERSION}-windows-${{ matrix.arch }}.zip"
+
+          # 交给 PowerShell 的路径先转成 Windows 形式：msys2 的 /d/a/... 它不认。
+          # 压缩目录本身（而不是目录内容），解压后正好是一个完整文件夹。
+          stage_win=$(cygpath -wa "$STAGE")
+          zip_win=$(cygpath -wa "$zip")
+          powershell -NoProfile -Command \
+            "Compress-Archive -Path '$stage_win' -DestinationPath '$zip_win' -Force"
+          ls -lh "$zip"
+
+          # 数一下归档里的条目：压缩中途失败会留下一个能打开但残缺的 zip，
+          # 只看文件存在与否发现不了
+          count=$(powershell -NoProfile -Command "
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            \$z = [IO.Compression.ZipFile]::OpenRead('$zip_win')
+            \$n = \$z.Entries.Count
+            \$z.Dispose()
+            Write-Output \$n" | tr -d '\r')
+          echo "entries in archive: $count"
+          if [ -z "$count" ] || [ "$count" -lt 10 ]; then
+            echo "::error::the archive looks incomplete ($count entries)"
+            exit 1
+          fi
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v7
+        with:
+          # 两条矩阵的产物必须各自一个 artifact，否则 download-artifact 的
+          # merge-multiple 会把同名文件互相覆盖
+          name: ${{ env.APP_NAME }}_windows_${{ matrix.arch }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+      # 安装包排在 zip 之后：便携包此时已经上传，即使 ISCC 这一步挂了，
+      # Release 里仍然有一个能用的 Windows 产物。
+      # 源目录就是上一步打进 zip 的那棵暂存树，两种形态内容一致，不会各装一套东西。
+      #
+      # arm64 矩阵上 ISCC 本身是 x64 程序、靠 Windows 的模拟层跑；产出的
+      # setup.exe 则由 Inno 6.3+ 自带的 ARM64 加载器原生执行，不受影响。
+      - name: Build the installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ver = ((Get-Content VERSION -First 1).Trim() -replace '^[vV]', '')
+          $src = Join-Path $env:GITHUB_WORKSPACE "dist\clash-qt-$ver-windows-${{ matrix.arch }}"
+          $out = Join-Path $env:GITHUB_WORKSPACE 'dist'
+          if (-not (Test-Path $src)) { throw "staging tree not found: $src" }
+
+          # runner 镜像不再自带 Inno Setup（2025-09 起移除），而且
+          # resources/win/ChineseSimplified.isl 要求 6.5.0+，所以自己探测并保证版本。
+          #
+          # 版本必须从**注册表**读：ISCC.exe 是 GUI 子系统程序，`ISCC /?` 不写 stdout，
+          # 用 `& $iscc /?` 捕获输出只会拿到空串（LyCAD 侧踩过这个坑）。
+          function Find-IsccInstall {
+            $roots = @(
+              'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+              'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+            )
+            foreach ($root in $roots) {
+              $entries = Get-ItemProperty $root -ErrorAction SilentlyContinue |
+                         Where-Object { $_.DisplayName -like 'Inno Setup*' }
+              foreach ($entry in $entries) {
+                if ($entry.InstallLocation) {
+                  $candidate = Join-Path $entry.InstallLocation 'ISCC.exe'
+                  if (Test-Path $candidate) {
+                    # DisplayVersion 不保证是干净的 x.y.z，转 [version] 要防抛异常
+                    $parsed = $null
+                    if ($entry.DisplayVersion) {
+                      [void] [version]::TryParse($entry.DisplayVersion, [ref] $parsed)
+                    }
+                    return [pscustomobject]@{ Path = $candidate; Version = $parsed }
+                  }
+                }
+              }
+            }
+            return $null
+          }
+
+          # 兜底：按路径找 ISCC.exe，版本从 exe 的文件版本读
+          function Find-IsccByPath {
+            $candidates = @()
+            $onPath = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+            if ($onPath) { $candidates += $onPath }
+            if ($env:ChocolateyInstall) { $candidates += "$env:ChocolateyInstall\bin\ISCC.exe" }
+            foreach ($base in @($env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+              if (-not $base -or -not (Test-Path $base)) { continue }
+              $hit = Get-ChildItem -Path $base -Filter 'ISCC.exe' -Recurse -Depth 3 `
+                                   -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($hit) { $candidates += $hit.FullName }
+            }
+            foreach ($candidate in $candidates) {
+              if (-not (Test-Path $candidate)) { continue }
+              $fileVersion = $null
+              try {
+                $info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($candidate)
+                if ($info.FileVersion) {
+                  $parsed = $null
+                  if ([version]::TryParse($info.FileVersion, [ref] $parsed)) { $fileVersion = $parsed }
+                }
+              } catch { }
+              return [pscustomobject]@{ Path = $candidate; Version = $fileVersion }
+            }
+            return $null
+          }
+
+          $minVersion = [version] '6.5.0'
+          $found = Find-IsccInstall
+          if (-not $found) { $found = Find-IsccByPath }
+          Write-Host "ISCC probe: $(if ($found) { $found.Path } else { 'not found' }), version $(if ($found -and $found.Version) { $found.Version } else { 'unknown' })"
+
+          if (-not $found -or -not $found.Version -or $found.Version -lt $minVersion) {
+            Write-Host 'Installing/upgrading Inno Setup 6…'
+            # runner 上 choco 是预装的；万一没有，给一句人话而不是 CommandNotFound
+            if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+              throw 'Inno Setup is missing and Chocolatey is unavailable; install Inno Setup 6.5+ or put ISCC.exe on PATH.'
+            }
+            # 已装但版本过低时 choco 会拒绝重装，所以要 --force
+            choco install innosetup -y --no-progress --force
+            # 1641/3010 = 装好了但需要重启，不算失败
+            if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1641 -and $LASTEXITCODE -ne 3010) {
+              throw "choco install innosetup failed with exit code $LASTEXITCODE"
+            }
+            $found = Find-IsccInstall
+            if (-not $found) { $found = Find-IsccByPath }
+          }
+
+          if (-not $found) { throw 'ISCC.exe not found (registry, PATH and Program Files all missed).' }
+          # 版本未知时不阻断：能跑就行，这个检查只用来拦「明确过低」
+          if ($found.Version -and $found.Version -lt $minVersion) {
+            throw "ISCC $($found.Version) is older than the required $minVersion (ChineseSimplified.isl needs 6.5.0+)."
+          }
+          Write-Host "Using ISCC: $($found.Path)"
+
+          & $found.Path "/DMyAppVersion=$ver" `
+                  "/DMyArch=${{ matrix.arch }}" `
+                  "/DMyArchAllowed=${{ matrix.arch_allowed }}" `
+                  "/DMySourceDir=$src" `
+                  "/DMyOutputDir=$out" `
+                  "/DMyRepoRoot=$env:GITHUB_WORKSPACE" `
+                  "/DMyChineseIsl=$env:GITHUB_WORKSPACE\resources\win\ChineseSimplified.isl" `
+                  "/DMyIconFile=$env:GITHUB_WORKSPACE\resources\win\clash-qt.ico" `
+                  'resources\win\clash-qt.iss'
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+
+          # 产物名由 .iss 的 OutputBaseFilename 决定，这里按同一个规则断言，
+          # 免得命名漂移后 create-release 的 *-setup.exe 匹配不到
+          $setup = Join-Path $out "clash-qt-$ver-windows-${{ matrix.arch }}-setup.exe"
+          if (-not (Test-Path $setup)) { throw "expected installer was not produced: $setup" }
+
+          # 主程序 + Qt 运行时压完至少是 MB 级；只有几百 KB 说明 [Files] 没真正打进去
+          $len = (Get-Item $setup).Length
+          Write-Host ("installer: {0} ({1:N1} MiB)" -f $setup, ($len / 1MB))
+          if ($len -lt 5MB) { throw "installer looks too small ($len bytes); check the [Files] source tree" }
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.APP_NAME }}_windows_${{ matrix.arch }}_setup
+          path: dist/*-setup.exe
+          if-no-files-found: error
+
   create-release:
     name: Publish release
     runs-on: ubuntu-26.04
-    needs: [build-deb]
-    # PR 只验证四个架构能不能打包，不建 Release
+    needs: [build-deb, build-windows]
+    # PR 只验证各平台能不能打包（Linux 四架构 + Windows x64 / arm64），不建 Release
     if: github.event_name != 'pull_request'
 
     # 所有分支 / 标签的发布都会去删改同一个 continuous_build tag，
@@ -130,7 +640,9 @@ jobs:
         run: |
           cd artifacts
           > hashes.sha256
-          for file in $(find . -type f -name "*.deb"); do
+          # deb、Windows 便携包与安装包一起进校验清单，格式保持一致（`哈希 *文件名`），
+          # Linux 侧可直接 sha256sum -c 校验
+          for file in $(find . -type f \( -name "*.deb" -o -name "*.zip" -o -name "*-setup.exe" \)); do
             filename=$(basename "$file")
             sha256sum "$file" | awk -v fname="$filename" '{print $1 " *" fname}' >> hashes.sha256
           done
@@ -217,11 +729,48 @@ jobs:
         run: |
           NOTES_FILE="$RUNNER_TEMP/release-notes.md"
           deb_files=$(find artifacts -name "*.deb" -print0 | xargs -0 echo)
+          win_files=$(find artifacts -name "*.zip" -print0 | xargs -0 echo)
+          setup_files=$(find artifacts -name "*-setup.exe" -print0 | xargs -0 echo)
           hash_files=$(find artifacts -name "*.sha256" -print0 | xargs -0 echo)
+          # 逐架构点名，才能区分「少了一个架构」和「一个架构都没有」
+          win_x64=$(find artifacts -name "*windows-x64.zip" -print0 | xargs -0 echo)
+          win_arm64=$(find artifacts -name "*windows-arm64.zip" -print0 | xargs -0 echo)
+          setup_x64=$(find artifacts -name "*windows-x64-setup.exe" -print0 | xargs -0 echo)
+          setup_arm64=$(find artifacts -name "*windows-arm64-setup.exe" -print0 | xargs -0 echo)
 
           if [ -z "$deb_files" ]; then
             echo "::error::No deb artifacts were produced; aborting the release."
             exit 1
+          fi
+
+          # Windows 产物缺失时的策略，按缺到什么程度分三档：
+          #   连 x64 包都没有
+          #     · 正式版（打 tag）—— 一条 Release 不该少掉整个 Windows 平台，
+          #                          直接失败；否则「正式版少一个平台」没人察觉；
+          #     · 持续构建        —— 只是验证当前提交能不能出包，宁可只发 Linux，
+          #                          也不让 Windows 打包的一次失败堵住整条流水线。
+          #   少了 arm64 包
+          #     · 一律 warning：ARM64 是次要平台，而且 ARM 版 Windows 能模拟跑
+          #       x64 包，缺它不等于平台缺失；ARM runner 抖动不该卡住发版。
+          #   少了安装包（zip 在、setup.exe 不在）
+          #     · 一律 warning：便携包解压即用，平台本身是完整的；
+          #       不该因为 choco / ISCC 的一次抖动就整条 Release 发不出去。
+          if [ -z "$win_x64" ]; then
+            if [ "${{ github.ref_type }}" == "tag" ]; then
+              echo "::error::The Windows x64 package is missing from a tagged release; check the 'Package (Windows x64)' job."
+              exit 1
+            else
+              echo "::warning::The Windows x64 package is missing; publishing Linux packages only."
+            fi
+          fi
+          if [ -n "$win_x64" ] && [ -z "$win_arm64" ]; then
+            echo "::warning::The Windows arm64 package is missing; only x64 is published for Windows."
+          fi
+          if [ -n "$win_x64" ] && [ -z "$setup_x64" ]; then
+            echo "::warning::The Windows x64 installer (setup.exe) is missing; the portable zip is still published."
+          fi
+          if [ -n "$win_arm64" ] && [ -z "$setup_arm64" ]; then
+            echo "::warning::The Windows arm64 installer (setup.exe) is missing; the portable zip is still published."
           fi
 
           # 同名 release 已存在就先删掉（continuous_build 连带删 tag）
@@ -236,6 +785,8 @@ jobs:
 
           gh release create ${{ env.TAG_NAME }} \
                             $deb_files \
+                            $win_files \
+                            $setup_files \
                             $hash_files \
                             ${{ env.PRERELEASE }} \
                             --repo $GITHUB_REPOSITORY \
@@ -245,5 +796,7 @@ jobs:
           echo "Created release: ${{ env.TAG_NAME }}"
           echo "Artifacts:"
           echo "$deb_files"
+          echo "$win_files"
+          echo "$setup_files"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

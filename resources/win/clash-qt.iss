@@ -1,0 +1,129 @@
+; Clash Qt — Windows 安装包脚本（Inno Setup 6.5+）
+;
+; 本地编译（在仓库根目录，先跑过 windeployqt 那套打包流程，暂存目录里要有
+; 主程序 + Qt 运行时 + wintun.dll）：
+;   set /p MyVer=<VERSION
+;   iscc /DMyAppVersion=%MyVer% /DMyArch=x64 /DMyArchAllowed=x64compatible ^
+;        /DMySourceDir=%CD%\dist\clash-qt-%MyVer%-windows-x64 ^
+;        /DMyOutputDir=%CD%\dist /DMyRepoRoot=%CD% ^
+;        /DMyChineseIsl=%CD%\resources\win\ChineseSimplified.isl ^
+;        /DMyIconFile=%CD%\resources\win\clash-qt.ico ^
+;        resources\win\clash-qt.iss
+;
+; CI 的调用方式见 .github/workflows/release.yaml 的「Build the installer」步骤。
+;
+; 说明：源目录（MySourceDir）就是便携包 zip 打包的那棵暂存树——两者内容完全一致，
+; 安装包只是把「解压到某个目录」换成「装到 Program Files 并建快捷方式」。
+; 与 LyCAD 一样，Windows 产物有 zip 与 setup.exe 两种形态：zip 解压即用，
+; setup.exe 走本脚本。
+;
+; 本目录里的 ChineseSimplified.isl 是社区维护的简体中文语言包
+; （jrsoftware 的 istrans 收集，维护者 Zhenghan Yang <847320916@qq.com>，
+;   https://github.com/kira-96/Inno-Setup-Chinese-Simplified-Translation），
+; 按原样随仓库分发，要求 Inno Setup 6.5.0+。
+;
+; clash-qt.ico 由 resources/icons/app.svg 生成（16/24/32/48/64/128 为 BMP 帧、
+; 256 为 PNG 帧）。主程序 exe 目前没有 PE 图标资源，所以这个 ico 会随包装进
+; {app}，供安装程序、快捷方式与「应用和功能」里的卸载项使用。
+
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0"
+#endif
+
+; MyArch 只用于产物文件名；MyArchAllowed 是 Inno 的目标架构约束。
+; 两者分开是因为文件名想写 x64，而 Inno 的约束值要写 x64compatible（6.3+）。
+#ifndef MyArch
+  #define MyArch "x64"
+#endif
+#ifndef MyArchAllowed
+  #define MyArchAllowed "x64compatible"
+#endif
+
+#ifndef MySourceDir
+  #define MySourceDir "..\..\dist\clash-qt-" + MyAppVersion + "-windows-x64"
+#endif
+#ifndef MyOutputDir
+  #define MyOutputDir "..\..\dist"
+#endif
+; 仓库根目录，用来取 LICENSE（相对本脚本所在目录）。
+#ifndef MyRepoRoot
+  #define MyRepoRoot "..\.."
+#endif
+; 中文翻译文件路径。ISPP 的 SourcePath 本身就是**脚本所在目录**（不是含文件名的
+; 完整路径），这里补一个反斜杠再拼文件名。脚本用相对路径调用 ISCC 时 SourcePath
+; 也可能是相对路径，那种情况请按上面命令行显式传绝对路径。
+#ifndef MyChineseIsl
+  #define MyChineseIsl AddBackslash(SourcePath) + "ChineseSimplified.isl"
+#endif
+; 安装程序图标；默认取本脚本同目录下的 ico。
+#ifndef MyIconFile
+  #define MyIconFile AddBackslash(SourcePath) + "clash-qt.ico"
+#endif
+
+; 显示名与可执行文件名分开：程序叫 Clash Qt，进程与安装目录用 clash-qt。
+#define MyAppName "Clash Qt"
+#define MyAppExeName "clash-qt.exe"
+#define MyAppPublisher "lhdjply"
+#define MyAppUrl "https://github.com/lhdjply/clash-qt"
+
+[Setup]
+; AppId 一旦发布就不要再改：升级安装与卸载识别都靠它。
+; 这个 GUID 是 Clash Qt 自己的，不能与其他项目复用（否则两个软件会互相覆盖安装）。
+AppId={{48BA13CD-5D7B-499B-9A4D-7C59E4D94F26}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppUrl}
+AppSupportURL={#MyAppUrl}
+AppUpdatesURL={#MyAppUrl}
+DefaultDirName={autopf}\{#MyAppName}
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+AllowNoIcons=yes
+; 默认按用户安装（装到 %LOCALAPPDATA%\Programs，不弹 UAC）。程序的配置、订阅、
+; 日志都在 %LOCALAPPDATA%\clash-qt，不写安装目录，所以装到哪都不影响使用；
+; 需要全机器安装时可在向导里切换。
+PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
+ArchitecturesAllowed={#MyArchAllowed}
+ArchitecturesInstallIn64BitMode={#MyArchAllowed}
+OutputDir={#MyOutputDir}
+OutputBaseFilename=clash-qt-{#MyAppVersion}-windows-{#MyArch}-setup
+SetupIconFile={#MyIconFile}
+UninstallDisplayIcon={app}\clash-qt.ico
+LicenseFile={#MyRepoRoot}\LICENSE
+Compression=lzma2
+SolidCompression=yes
+WizardStyle=modern
+; 升级安装时程序可能正在托盘里跑：让 Inno 提示关闭并代为结束进程，
+; 避免「装完了但跑的还是旧版本」。
+CloseApplications=yes
+RestartApplications=no
+MinVersion=10.0
+
+[Languages]
+; 中文放首位 = 默认语言。ChineseSimplified.isl 需要 Inno Setup 6.5.0+。
+Name: "chinese"; MessagesFile: "compiler:Default.isl,{#MyChineseIsl}"
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+; 暂存树是平的：主程序、Qt DLL、OpenSSL、wintun.dll 在根上，插件在
+; platforms/、imageformats/、styles/ 这类子目录里——必须递归，否则装完起不来。
+Source: "{#MySourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+; 图标单独装一份：exe 没有 PE 图标资源，快捷方式与卸载项都指向这个文件
+Source: "{#MyIconFile}"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\clash-qt.ico"
+Name: "{group}\卸载 {#MyAppName}"; Filename: "{uninstallexe}"; IconFilename: "{app}\clash-qt.ico"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\clash-qt.ico"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+; 不写 [UninstallDelete] 清理 %LOCALAPPDATA%\clash-qt：订阅、规则、日志属于
+; 用户数据，卸载程序不该替用户决定删不删。
