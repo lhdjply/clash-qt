@@ -1,3 +1,14 @@
+clash-qt (1.0.2) unstable; urgency=medium
+
+  * 新增 Windows 支持：系统代理、开机自启动、TUN 模式与崩溃现场记录均已适配，
+    并发布便携压缩包与安装包（x64 / arm64）。
+  * 界面支持中英文切换，源语言改为英文；设置页新增「界面」卡片统一主题与语言。
+  * 修复全局模式完全无法联网：内核补上自带的 GLOBAL 组，界面只在全局模式下展示。
+  * 修复托盘「退出」要卡数秒：停止监听时主动打断在途连接，实测约 6 秒降到
+    150 毫秒以内。
+
+ -- Clash Qt Maintainers <lhdjply@users.noreply.github.com>  Wed, 21 Oct 2026 14:30:00 +0800
+
 clash-qt (1.0.1) unstable; urgency=medium
 
   * 代理页新增节点排序（名称 / 类型 / 延迟），排序模式写入配置并在重启后保持。
