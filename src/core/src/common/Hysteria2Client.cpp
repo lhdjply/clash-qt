@@ -3,13 +3,7 @@
 
 #include "base/Common.h"
 
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <poll.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#include "base/Platform.h"
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -30,6 +24,10 @@
 
 namespace core {
 namespace {
+
+// 平台差异集中在 clashqt::platform（见 base/Platform.h）；这里起个别名，
+// 让下文的 platform:: 在 core 命名空间内可解析
+namespace platform = clashqt::platform;
 
 // ---------------------------------------------------------------------------
 //  QUIC 变长整数（RFC 9000 §16）
@@ -671,24 +669,25 @@ bool Hysteria2Session::openSocket(QString *error)
 
     const int family = address.protocol() == QAbstractSocket::IPv6Protocol ? AF_INET6
                                                                           : AF_INET;
-    const int fd     = ::socket(family, SOCK_DGRAM, 0);
-    if (fd < 0) {
-        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to create the UDP socket: %1").arg(strerror(errno));
+    platform::ensureWinsock();
+    const platform::SocketHandle fd =
+        ::socket(family, SOCK_DGRAM, IPPROTO_UDP);
+    if (fd == platform::kInvalidSocket) {
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to create the UDP socket: %1").arg(platform::socketErrorText());
         return false;
     }
 
     // 非阻塞：QUIC 事件驱动要求套接字不阻塞读取
-    const int flags = ::fcntl(fd, F_GETFL, 0);
-    ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    platform::setNonBlocking(fd);
 
     if (family == AF_INET) {
         sockaddr_in peer{};
         peer.sin_family = AF_INET;
         peer.sin_port   = htons(m_peerPort);
         peer.sin_addr.s_addr = htonl(address.toIPv4Address());
-        if (::connect(fd, reinterpret_cast<sockaddr *>(&peer), sizeof(peer)) != 0) {
-            if (error) *error = QCoreApplication::translate("clashqt::core", "UDP connect failed: %1").arg(strerror(errno));
-            ::close(fd);
+        if (::connect(fd, reinterpret_cast<sockaddr *>(&peer), int(sizeof(peer))) != 0) {
+            if (error) *error = QCoreApplication::translate("clashqt::core", "UDP connect failed: %1").arg(platform::socketErrorText());
+            platform::closeSocket(fd);
             return false;
         }
     } else {
@@ -697,13 +696,13 @@ bool Hysteria2Session::openSocket(QString *error)
         peer.sin6_port   = htons(m_peerPort);
         const Q_IPV6ADDR v6 = address.toIPv6Address();
         std::memcpy(&peer.sin6_addr, v6.c, 16);
-        if (::connect(fd, reinterpret_cast<sockaddr *>(&peer), sizeof(peer)) != 0) {
-            if (error) *error = QCoreApplication::translate("clashqt::core", "UDP connect failed: %1").arg(strerror(errno));
-            ::close(fd);
+        if (::connect(fd, reinterpret_cast<sockaddr *>(&peer), int(sizeof(peer))) != 0) {
+            if (error) *error = QCoreApplication::translate("clashqt::core", "UDP connect failed: %1").arg(platform::socketErrorText());
+            platform::closeSocket(fd);
             return false;
         }
     }
-    m_fd = fd;
+    m_fd = qintptr(fd);
     return true;
 }
 
@@ -735,7 +734,9 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
     static const unsigned char kAlpn[] = {2, 'h', '3'};
     SSL_set_alpn_protos(ssl, kAlpn, sizeof(kAlpn));
 
-    BIO *bio = BIO_new_dgram(m_fd, BIO_NOCLOSE);
+    // OpenSSL 的 BIO 用 int 承载描述符；Windows 上 SOCKET 是 64 位句柄，
+    // 但句柄值本身是 32 位索引，这里显式收窄（OpenSSL 内部同样按 int 处理）。
+    BIO *bio = BIO_new_dgram(int(m_fd), BIO_NOCLOSE);
     if (!bio) {
         if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to bind the UDP socket");
         SSL_free(ssl);
@@ -748,9 +749,11 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
     SSL_set_incoming_stream_policy(ssl, SSL_INCOMING_STREAM_POLICY_ACCEPT, 0);
 
     sockaddr_storage storage{};
-    socklen_t        storageLen = 0;
-    if (::getpeername(m_fd, reinterpret_cast<sockaddr *>(&storage), &storageLen) != 0) {
-        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to read the peer address: %1").arg(strerror(errno));
+    // addrlen 是 value-result 参数，必须带上缓冲区大小，传 0 会直接 EINVAL
+    socklen_t        storageLen = sizeof(storage);
+    if (::getpeername(platform::SocketHandle(m_fd), reinterpret_cast<sockaddr *>(&storage),
+                      &storageLen) != 0) {
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Failed to read the peer address: %1").arg(platform::socketErrorText());
         SSL_free(ssl);
         return false;
     }
@@ -797,8 +800,7 @@ bool Hysteria2Session::handshake(const Hysteria2Config &config, int timeoutMs,
             const int suggested = int(tv.tv_sec) * 1000 + int(tv.tv_usec) / 1000;
             if (suggested >= 0 && suggested < waitMs) waitMs = suggested;
         }
-        struct pollfd pfd{m_fd, POLLIN, 0};
-        ::poll(&pfd, 1, waitMs);
+        platform::pollSocket(platform::SocketHandle(m_fd), false, waitMs);
         if (SSL_handle_events(m_ssl) != 1) {
             if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             return false;
@@ -854,8 +856,7 @@ SSL *Hysteria2Session::openQuicStream(bool uni, const QByteArray &payload, bool 
             if (error) *error = QCoreApplication::translate("clashqt::core", "Timed out creating a QUIC stream");
             return nullptr;
         }
-        struct pollfd pfd{m_fd, POLLIN, 0};
-        ::poll(&pfd, 1, 100);
+        platform::pollSocket(platform::SocketHandle(m_fd), false, 100);
         if (SSL_handle_events(m_ssl) != 1) {
             if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             return nullptr;
@@ -881,8 +882,7 @@ SSL *Hysteria2Session::openQuicStream(bool uni, const QByteArray &payload, bool 
             SSL_free(stream);
             return nullptr;
         }
-        struct pollfd pfd{m_fd, POLLIN, 0};
-        ::poll(&pfd, 1, 100);
+        platform::pollSocket(platform::SocketHandle(m_fd), false, 100);
         if (SSL_handle_events(m_ssl) != 1) {
             if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             SSL_free(stream);
@@ -942,8 +942,7 @@ bool Hysteria2Session::authenticate(int timeoutMs, QString *error)
         if (parsed) break;
 
         // 数据不足：继续驱动网络
-        struct pollfd pfd{m_fd, POLLIN, 0};
-        ::poll(&pfd, 1, 200);
+        platform::pollSocket(platform::SocketHandle(m_fd), false, 200);
         if (SSL_handle_events(m_ssl) != 1) {
             if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
             SSL_free(request);
@@ -1084,8 +1083,7 @@ std::shared_ptr<Hysteria2Stream> Hysteria2Session::openTcp(const QString &addr,
     };
 
     while (!tryParse() && nowMs() < deadline) {
-        struct pollfd pfd{m_fd, POLLIN, 0};
-        ::poll(&pfd, 1, 200);
+        platform::pollSocket(platform::SocketHandle(m_fd), false, 200);
         if (SSL_handle_events(m_ssl) != 1) {
             SSL_free(stream);
             if (error) *error = QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText());
@@ -1154,8 +1152,7 @@ void Hysteria2Session::flushOutgoing()
             closeNow(QCoreApplication::translate("clashqt::core", "QUIC event handling failed: %1").arg(sslErrorText()));
             return;
         }
-        struct pollfd pfd{m_fd, POLLIN, 0};
-        if (::poll(&pfd, 1, 0) <= 0) break;
+        if (platform::pollSocket(platform::SocketHandle(m_fd), false, 0) <= 0) break;
     }
     const QList<Hysteria2Stream *> streams = m_streams;
     for (Hysteria2Stream *stream : streams) {
@@ -1225,8 +1222,8 @@ void Hysteria2Session::closeNow(const QString &reason)
         SSL_free(m_ssl);
         m_ssl = nullptr;
     }
-    if (m_fd >= 0) {
-        ::close(m_fd);
+    if (m_fd != -1) {
+        platform::closeSocket(platform::SocketHandle(m_fd));
         m_fd = -1;
     }
 

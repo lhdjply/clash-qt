@@ -31,6 +31,9 @@ public:
         None,
         GSettings,
         KdeConfig,
+        // Windows：注册表 HKCU\...\Internet Settings + WinINet 刷新通知。
+        // detect() 只会在 Windows 构建上选中它，Linux 上不会出现该值。
+        WinInet,
     };
 
     explicit SysProxy(QObject *parent = nullptr);

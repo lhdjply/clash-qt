@@ -45,6 +45,40 @@ cmake --build build -j$(nproc)
 依赖：Qt 6.2+（Core / Network / Widgets / Sql / Svg / Charts）、CMake 3.21+、
 支持 C++20 的编译器（GCC 11+ / Clang 13+）。
 
+### Windows
+
+Windows 没有 rpath，也没有 pkg-config，Qt 与 OpenSSL 只能靠显式前缀找到：
+
+```powershell
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release `
+      -DCMAKE_PREFIX_PATH=D:/Qt -DOPENSSL_ROOT_DIR=D:/OpenSSL
+cmake --build build -j
+```
+
+Qt 必须是与该编译器配套的 MinGW 版本 —— MSVC 编的 Qt 无法和 MinGW 目标文件链接。
+运行 `build/bin/clash-qt.exe` 前要把 `<Qt>/bin` 加进 `PATH`：Qt 的 DLL 和
+`platforms/qwindows.dll` 插件都在那里。
+
+Windows 上当前的能力：
+
+| 功能 | 实现方式 |
+|---|---|
+| 内核（规则 / DNS / fake-ip / VLESS / Hysteria2 / HTTP+SOCKS 入站） | 与 Linux 相同；唯一的移植改动是把连接交给工作线程时用 `WSADuplicateSocket` 而不是 `dup()` |
+| 系统代理 | `HKCU\...\Internet Settings`（ProxyEnable / ProxyServer / ProxyOverride）+ `InternetSetOption(INTERNET_OPTION_REFRESH)`，让已运行的程序立刻重读 |
+| 开机自启动 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` |
+| 崩溃记录 | `crash-<tid>.txt`（经 dbghelp 符号化的调用栈）+ `crash-<tid>.dmp`（minidump） |
+| 界面里的内存占用 | `GetProcessMemoryInfo` 的工作集 |
+| TUN 模式 | Wintun 适配器（运行时加载 `wintun.dll`）+ IP Helper 配地址与路由；只接管 fake-ip 网段，不动系统默认路由 |
+
+TUN 模式在 Windows 上的两个前提：`wintun.dll` 必须与 `clash-qt.exe` 同目录（缺失时
+开关会直接报错并说明原因），并且程序要以管理员身份运行（UAC 提权无法在进程内完成）。
+收发的数据面在 Wintun 会话上跑，由专职读线程成批交给用户态协议栈；DNS 指向 TUN 地址
+并在该地址上监听 53，与 Linux 侧等价。
+
+另外两处 Windows 固有限制需要知道：`ProxyOverride` 不认 CIDR，忽略列表里只有 8 位和
+16 位前缀能转成通配符（`10.*`、`192.168.*`），`/12` 这类跨段区间会被跳过；DNS 未做
+NRPT，多网卡环境下不保证「只走 TUN 的 DNS」（只接管 fake-ip 网段时不影响连通性）。
+
 `yaml-cpp` 的取用顺序：系统已安装（`find_package`）→ 内置子模块 → 报错并提示修复命令。
 0.8 之前的发行版包只导出不带命名空间的 `yaml-cpp` 目标，CMakeLists 里按实际存在的
 目标名选择，两者都能链接。

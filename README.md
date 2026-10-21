@@ -48,6 +48,43 @@ cmake --build build -j$(nproc)
 Requirements: Qt 6.2+ (Core / Network / Widgets / Sql / Svg / Charts), CMake 3.21+, and
 a C++20 compiler (GCC 11+ / Clang 13+).
 
+### Windows
+
+Windows has no rpath and no pkg-config, so Qt and OpenSSL are found only through
+explicit prefixes at configure time:
+
+```powershell
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release `
+      -DCMAKE_PREFIX_PATH=D:/Qt -DOPENSSL_ROOT_DIR=D:/OpenSSL
+cmake --build build -j
+```
+
+Qt must be the MinGW build that matches the compiler — an MSVC-built Qt cannot
+link against MinGW objects. To run `build/bin/clash-qt.exe`, put `<Qt>/bin` on
+`PATH`: the Qt DLLs and the `platforms/qwindows.dll` plugin live there.
+
+What Windows supports today:
+
+| Feature | Implementation |
+|---|---|
+| Kernel (rules / DNS / fake-ip / VLESS / Hysteria2 / HTTP+SOCKS inbounds) | identical to Linux; the only portability change is `WSADuplicateSocket` instead of `dup()` when handing a connection to a worker thread |
+| System proxy | `HKCU\...\Internet Settings` (ProxyEnable / ProxyServer / ProxyOverride) + `InternetSetOption(INTERNET_OPTION_REFRESH)` so running apps pick it up immediately |
+| Autostart | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` |
+| Crash report | `crash-<tid>.txt` (symbolized stack via dbghelp) plus `crash-<tid>.dmp` (minidump) |
+| Memory usage in the UI | `GetProcessMemoryInfo` working set |
+| TUN mode | Wintun adapter (loads `wintun.dll` at runtime) with addresses and routes configured through IP Helper; only the fake-ip range is routed into TUN, the system default route is left alone |
+
+TUN mode on Windows needs two things: `wintun.dll` next to `clash-qt.exe` (the switch
+reports an explicit error when it is missing) and an elevated process (UAC cannot be
+satisfied from inside a running one). The data plane runs on a Wintun session, with a
+dedicated reader thread handing packets to the user-space stack in batches; DNS points
+at the TUN address and is answered on port 53 there, the same arrangement as on Linux.
+
+Two more Windows-specific limits worth knowing: `ProxyOverride` has no CIDR syntax, so
+only the 8-bit and 16-bit entries of the bypass list become wildcards (`10.*`,
+`192.168.*`); and DNS does not use an NRPT, so on multi-homed machines nothing forces
+every query through the tunnel (harmless while only the fake-ip range is routed).
+
 `yaml-cpp` is picked up in this order: system install (`find_package`) → bundled
 submodule → error with a hint on how to fix it. Distro packages older than 0.8 only
 export the un-namespaced `yaml-cpp` target; CMakeLists picks whichever target actually

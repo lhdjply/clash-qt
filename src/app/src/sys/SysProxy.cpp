@@ -1,24 +1,187 @@
+#include <QtGlobal> // Q_OS_WIN 等平台宏（必须早于下面的平台分支）
+
+// 系统代理：Linux 走 gsettings / kioslaverc，Windows 写注册表 Internet Settings
+// 并发 WinINet 刷新通知（只写注册表不会通知已启动的进程）。
+// 平台分支写在函数内部，同一函数的两种实现上下相邻，便于逐函数对照。
+
 #include "sys/SysProxy.h"
+
 #include <QCoreApplication>
+#include <QRegularExpression>
 
 #include "utils/AppLogger.h"
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <wininet.h>
+
+#include <string>
+#else
 #include <QFile>
 #include <QFileInfo>
 #include <QProcess>
-#include <QRegularExpression>
 #include <QStandardPaths>
+#endif
 
 namespace clashqt {
 namespace {
 
-// 系统代理的默认忽略列表：本机与私有网段不应走代理
+// 系统代理的默认忽略列表：本机与私有网段不应走代理（两平台共用）
 QStringList defaultBypass()
 {
     return {QStringLiteral("localhost"), QStringLiteral("127.0.0.1"), QStringLiteral("::1"),
             QStringLiteral("10.0.0.0/8"), QStringLiteral("172.16.0.0/12"),
             QStringLiteral("192.168.0.0/16"), QStringLiteral("*.local")};
 }
+
+#ifdef Q_OS_WIN
+
+// Windows 专有辅助：注册表读写
+
+constexpr auto kInternetSettings =
+    L"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
+
+HKEY openSettings(REGSAM access)
+{
+    HKEY key = nullptr;
+    if (::RegOpenKeyExW(HKEY_CURRENT_USER, kInternetSettings, 0, access, &key) != ERROR_SUCCESS) {
+        return nullptr;
+    }
+    return key;
+}
+
+bool readDword(const wchar_t *name, DWORD *value)
+{
+    HKEY key = openSettings(KEY_READ);
+    if (!key) return false;
+
+    DWORD type = 0;
+    DWORD size = sizeof(DWORD);
+    const bool ok = ::RegQueryValueExW(key, name, nullptr, &type,
+                                       reinterpret_cast<LPBYTE>(value), &size)
+                        == ERROR_SUCCESS
+                    && type == REG_DWORD;
+    ::RegCloseKey(key);
+    return ok;
+}
+
+QString readString(const wchar_t *name)
+{
+    HKEY key = openSettings(KEY_READ);
+    if (!key) return QString();
+
+    wchar_t buffer[2048] = {0};
+    DWORD   type = 0;
+    DWORD   size = sizeof(buffer);
+    const bool ok = ::RegQueryValueExW(key, name, nullptr, &type,
+                                       reinterpret_cast<LPBYTE>(buffer), &size)
+                    == ERROR_SUCCESS
+                    && (type == REG_SZ || type == REG_EXPAND_SZ);
+    ::RegCloseKey(key);
+    return ok ? QString::fromWCharArray(buffer) : QString();
+}
+
+bool writeDword(const wchar_t *name, DWORD value)
+{
+    HKEY key = openSettings(KEY_SET_VALUE);
+    if (!key) return false;
+
+    const bool ok = ::RegSetValueExW(key, name, 0, REG_DWORD,
+                                     reinterpret_cast<const BYTE *>(&value), sizeof(value))
+                    == ERROR_SUCCESS;
+    ::RegCloseKey(key);
+    return ok;
+}
+
+bool writeString(const wchar_t *name, const QString &value)
+{
+    HKEY key = openSettings(KEY_SET_VALUE);
+    if (!key) return false;
+
+    const std::wstring text  = value.toStdWString();
+    const DWORD      bytes   = DWORD((text.size() + 1) * sizeof(wchar_t));
+    const bool       ok      = ::RegSetValueExW(key, name, 0, REG_SZ,
+                                                reinterpret_cast<const BYTE *>(text.c_str()), bytes)
+                         == ERROR_SUCCESS;
+    ::RegCloseKey(key);
+    return ok;
+}
+
+// 通知 WinINet 重新读取设置；失败不影响注册表已经写入的内容
+void notifySettingsChanged()
+{
+    ::InternetSetOptionW(nullptr, INTERNET_OPTION_SETTINGS_CHANGED, nullptr, 0);
+    ::InternetSetOptionW(nullptr, INTERNET_OPTION_REFRESH, nullptr, 0);
+}
+
+// ProxyOverride 不支持 CIDR，只认主机名、IPv4 通配符和 <local>。
+// 这里把默认列表里能表达的转过去，表达不了的（/12 这类跨段区间）跳过 ——
+// 宁可少绕一项，也不写一条无效规则让用户以为已绕开。
+QString buildOverride(const QStringList &bypass)
+{
+    const QStringList source = bypass.isEmpty() ? defaultBypass() : bypass;
+
+    QStringList out;
+    out << QStringLiteral("<local>");
+
+    static const QRegularExpression cidr(QStringLiteral(R"(^(\d+)\.(\d+)\.\d+\.\d+/(\d+)$)"));
+
+    for (const QString &entry : source) {
+        const QString trimmed = entry.trimmed();
+        if (trimmed.isEmpty()) continue;
+
+        // IPv6 字面量在 ProxyOverride 里无效，<local> 已覆盖本机
+        if (trimmed.contains(QLatin1Char(':'))) continue;
+
+        const auto match = cidr.match(trimmed);
+        if (match.hasMatch()) {
+            const QString first  = match.captured(1);
+            const QString second = match.captured(2);
+            const int     prefix = match.captured(3).toInt();
+            if (prefix == 8) {
+                out << first + QStringLiteral(".*");
+            } else if (prefix == 16) {
+                out << first + QLatin1Char('.') + second + QStringLiteral(".*");
+            }
+            // 其它前缀无法用通配符精确表达，直接跳过
+            continue;
+        }
+        out << trimmed;
+    }
+
+    out.removeDuplicates();
+    return out.join(QLatin1Char(';'));
+}
+
+// 解析 "http=1.2.3.4:80;https=...;socks=..."；也接受单一地址形式
+bool parseProxyServer(const QString &server, QString *http, QString *https, QString *socks)
+{
+    if (server.isEmpty()) return false;
+
+    if (!server.contains(QLatin1Char('='))) {
+        // 只写一个地址：对三种协议都生效
+        *http  = server.trimmed();
+        *https = *http;
+        *socks = *http;
+        return true;
+    }
+
+    const QStringList parts = server.split(QLatin1Char(';'), Qt::SkipEmptyParts);
+    for (const QString &part : parts) {
+        const int separator = part.indexOf(QLatin1Char('='));
+        if (separator <= 0) continue;
+        const QString scheme = part.left(separator).trimmed().toLower();
+        const QString value  = part.mid(separator + 1).trimmed();
+        if (scheme == QLatin1String("http")) *http = value;
+        else if (scheme == QLatin1String("https")) *https = value;
+        else if (scheme == QLatin1String("socks")) *socks = value;
+    }
+    return !http->isEmpty() || !https->isEmpty() || !socks->isEmpty();
+}
+
+#else // !Q_OS_WIN
+
+// Linux 专有辅助：kioslaverc 解析
 
 QString kdeConfigPath()
 {
@@ -53,6 +216,8 @@ bool parseKdeProxy(const QString &value, QString *host, int *port)
     return ok && !host->isEmpty();
 }
 
+#endif // Q_OS_WIN
+
 } // namespace
 
 SysProxy::SysProxy(QObject *parent) : QObject(parent)
@@ -62,6 +227,13 @@ SysProxy::SysProxy(QObject *parent) : QObject(parent)
 
 void SysProxy::detect()
 {
+#ifdef Q_OS_WIN
+    // Windows 上这条链路始终可用（注册表是系统自带的），没有「后端探测」这一步
+    m_backend = Backend::WinInet;
+    AppLogger::instance().debug(
+        QCoreApplication::translate("clashqt::app", "System-proxy backend: %1")
+            .arg(backendName()));
+#else
     m_backend = Backend::None;
 
     const QString desktop =
@@ -85,17 +257,178 @@ void SysProxy::detect()
     AppLogger::instance().debug(
         QCoreApplication::translate("clashqt::app", "System-proxy backend: %1 (XDG_CURRENT_DESKTOP=%2)")
             .arg(backendName(), qEnvironmentVariable("XDG_CURRENT_DESKTOP")));
+#endif
 }
 
 QString SysProxy::backendName() const
 {
+    // 名称映射与平台无关：WinInet 只会在 Windows 构建里被 detect() 选中，
+    // gsettings / kioslaverc 只会在 Linux 构建里被选中，所以一个 switch 够用
     switch (m_backend) {
     case Backend::GSettings: return QStringLiteral("gsettings");
     case Backend::KdeConfig: return QStringLiteral("kioslaverc");
-    case Backend::None:      return QCoreApplication::translate("clashqt::app", "unavailable");
+    case Backend::WinInet:   return QStringLiteral("wininet");
+    case Backend::None:      break;
     }
     return QCoreApplication::translate("clashqt::app", "unavailable");
 }
+
+bool SysProxy::isEnabled() const
+{
+#ifdef Q_OS_WIN
+    DWORD enabled = 0;
+    if (!readDword(L"ProxyEnable", &enabled)) return false;
+    return enabled != 0;
+#else
+    switch (m_backend) {
+    case Backend::GSettings: return gsettingsEnabled();
+    case Backend::KdeConfig: return kdeEnabled();
+    case Backend::WinInet:
+    case Backend::None:      return false;
+    }
+    return false;
+#endif
+}
+
+bool SysProxy::targets(const QString &host, int port) const
+{
+#ifdef Q_OS_WIN
+    DWORD enabled = 0;
+    if (!readDword(L"ProxyEnable", &enabled) || enabled == 0) return false;
+
+    QString http;
+    QString https;
+    QString socks;
+    if (!parseProxyServer(readString(L"ProxyServer"), &http, &https, &socks)) return false;
+
+    const QString expected = QStringLiteral("%1:%2").arg(host).arg(port);
+    const auto equalToExpected = [&expected](const QString &value) {
+        return value.compare(expected, Qt::CaseInsensitive) == 0;
+    };
+    return equalToExpected(http) && equalToExpected(https) && equalToExpected(socks);
+#else
+    switch (m_backend) {
+    case Backend::GSettings: return gsettingsTargets(host, port);
+    case Backend::KdeConfig: return kdeTargets(host, port);
+    case Backend::WinInet:
+    case Backend::None:      return false;
+    }
+    return false;
+#endif
+}
+
+bool SysProxy::enable(const QString &host, int port, const QStringList &bypass, QString *error)
+{
+#ifdef Q_OS_WIN
+    const QString proxy  = QStringLiteral("%1:%2").arg(host).arg(port);
+    const QString server = QStringLiteral("http=%1;https=%1;socks=%1").arg(proxy);
+
+    if (!writeString(L"ProxyServer", server)) {
+        m_lastError = QCoreApplication::translate(
+            "clashqt::app", "Could not write ProxyServer to the registry");
+        if (error) *error = m_lastError;
+        AppLogger::instance().error(m_lastError);
+        return false;
+    }
+    if (!writeString(L"ProxyOverride", buildOverride(bypass))) {
+        // 忽略列表写失败不影响代理本身，降级为告警（与 Linux 版一致）
+        AppLogger::instance().warn(QCoreApplication::translate(
+            "clashqt::app", "Failed to write the system-proxy ignore list"));
+    }
+    if (!writeDword(L"ProxyEnable", 1)) {
+        m_lastError = QCoreApplication::translate(
+            "clashqt::app", "Could not enable the system proxy in the registry");
+        if (error) *error = m_lastError;
+        AppLogger::instance().error(m_lastError);
+        return false;
+    }
+
+    notifySettingsChanged();
+
+    m_lastError.clear();
+    AppLogger::instance().info(
+        QCoreApplication::translate("clashqt::app", "System proxy enabled (%1): %2:%3")
+            .arg(backendName(), host)
+            .arg(port));
+    return true;
+#else
+    if (m_backend == Backend::None) {
+        m_lastError = QCoreApplication::translate("clashqt::app", "No usable system-proxy backend detected (gsettings or kwriteconfig5/6 is required)");
+        if (error) *error = m_lastError;
+        return false;
+    }
+
+    QString localError;
+    bool    ok = false;
+    switch (m_backend) {
+    case Backend::GSettings: ok = enableGSettings(host, port, bypass, &localError); break;
+    case Backend::KdeConfig: ok = enableKde(host, port, bypass, &localError); break;
+    case Backend::None:      break;
+    }
+
+    if (!ok) {
+        m_lastError = localError;
+        if (error) *error = localError;
+        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to enable the system proxy: %1").arg(localError));
+        return false;
+    }
+
+    m_lastError.clear();
+    AppLogger::instance().info(
+        QCoreApplication::translate("clashqt::app", "System proxy enabled (%1): %2:%3").arg(backendName(), host).arg(port));
+    return true;
+#endif
+}
+
+bool SysProxy::disable(QString *error)
+{
+#ifdef Q_OS_WIN
+    if (!writeDword(L"ProxyEnable", 0)) {
+        m_lastError = QCoreApplication::translate(
+            "clashqt::app", "Could not turn off the system proxy in the registry");
+        if (error) *error = m_lastError;
+        AppLogger::instance().error(m_lastError);
+        return false;
+    }
+
+    notifySettingsChanged();
+
+    m_lastError.clear();
+    AppLogger::instance().info(
+        QCoreApplication::translate("clashqt::app", "System proxy disabled"));
+    return true;
+#else
+    if (m_backend == Backend::None) {
+        m_lastError = QCoreApplication::translate("clashqt::app", "No usable system-proxy backend detected");
+        if (error) *error = m_lastError;
+        return false;
+    }
+
+    QString localError;
+    bool    ok = false;
+    switch (m_backend) {
+    case Backend::GSettings: ok = disableGSettings(&localError); break;
+    case Backend::KdeConfig: ok = disableKde(&localError); break;
+    case Backend::None:      break;
+    }
+
+    if (!ok) {
+        m_lastError = localError;
+        if (error) *error = localError;
+        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to turn off the system proxy: %1").arg(localError));
+        return false;
+    }
+
+    m_lastError.clear();
+    AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "System proxy disabled"));
+    return true;
+#endif
+}
+
+#ifndef Q_OS_WIN
+
+// 以下只有 Linux 后端（gsettings / kioslaverc）需要：没有 Windows 对等物，
+// 只能整段守卫，而不是函数内的 #ifdef。
 
 bool SysProxy::run(const QString &program, const QStringList &arguments, QString *error)
 {
@@ -318,85 +651,6 @@ bool SysProxy::kdeTargets(const QString &host, int port) const
     return true;
 }
 
-// ---------------------------------------------------------------------------
-//  对外接口
-// ---------------------------------------------------------------------------
-
-bool SysProxy::targets(const QString &host, int port) const
-{
-    switch (m_backend) {
-    case Backend::GSettings: return gsettingsTargets(host, port);
-    case Backend::KdeConfig: return kdeTargets(host, port);
-    case Backend::None:      return false;
-    }
-    return false;
-}
-
-bool SysProxy::isEnabled() const
-{
-    switch (m_backend) {
-    case Backend::GSettings: return gsettingsEnabled();
-    case Backend::KdeConfig: return kdeEnabled();
-    case Backend::None:      return false;
-    }
-    return false;
-}
-
-bool SysProxy::enable(const QString &host, int port, const QStringList &bypass, QString *error)
-{
-    if (m_backend == Backend::None) {
-        m_lastError = QCoreApplication::translate("clashqt::app", "No usable system-proxy backend detected (gsettings or kwriteconfig5/6 is required)");
-        if (error) *error = m_lastError;
-        return false;
-    }
-
-    QString localError;
-    bool    ok = false;
-    switch (m_backend) {
-    case Backend::GSettings: ok = enableGSettings(host, port, bypass, &localError); break;
-    case Backend::KdeConfig: ok = enableKde(host, port, bypass, &localError); break;
-    case Backend::None:      break;
-    }
-
-    if (!ok) {
-        m_lastError = localError;
-        if (error) *error = localError;
-        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to enable the system proxy: %1").arg(localError));
-        return false;
-    }
-
-    m_lastError.clear();
-    AppLogger::instance().info(
-        QCoreApplication::translate("clashqt::app", "System proxy enabled (%1): %2:%3").arg(backendName(), host).arg(port));
-    return true;
-}
-
-bool SysProxy::disable(QString *error)
-{
-    if (m_backend == Backend::None) {
-        m_lastError = QCoreApplication::translate("clashqt::app", "No usable system-proxy backend detected");
-        if (error) *error = m_lastError;
-        return false;
-    }
-
-    QString localError;
-    bool    ok = false;
-    switch (m_backend) {
-    case Backend::GSettings: ok = disableGSettings(&localError); break;
-    case Backend::KdeConfig: ok = disableKde(&localError); break;
-    case Backend::None:      break;
-    }
-
-    if (!ok) {
-        m_lastError = localError;
-        if (error) *error = localError;
-        AppLogger::instance().error(QCoreApplication::translate("clashqt::app", "Failed to turn off the system proxy: %1").arg(localError));
-        return false;
-    }
-
-    m_lastError.clear();
-    AppLogger::instance().info(QCoreApplication::translate("clashqt::app", "System proxy disabled"));
-    return true;
-}
+#endif // !Q_OS_WIN
 
 } // namespace clashqt

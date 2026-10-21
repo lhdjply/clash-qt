@@ -3,9 +3,8 @@
 
 #include "sys/TunController.h"
 
-#ifdef Q_OS_UNIX
-#include <unistd.h>
-#endif
+// 平台差异（close / socket / 非阻塞）统一走这里，避免在 app 层散落 #ifdef
+#include "base/Platform.h"
 
 #include "config/AppConfig.h"
 #include "config/ControledKernelConfig.h"
@@ -427,6 +426,9 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
 
     // ---- 开启：前置条件 ----
     if (!m_tun) m_tun = std::make_unique<TunController>();
+#ifndef Q_OS_WIN
+    // Linux 才需要「辅助程序 + setuid 授权」这套前置检查；
+    // Windows 走 UAC，没有独立辅助程序，由 start() 直接给出可操作的原因。
     if (!m_tun->helperExists()) {
         if (error) {
             *error = tr("TUN helper not found (it should sit next to the main executable): %1")
@@ -443,6 +445,7 @@ bool AppContext::setTunEnabled(bool enabled, QString *error)
             return false;
         }
     }
+#endif
 
     // ---- 迁移：fake-ip-filter 里的通配 "*" ----
     // 早期默认配置带了 "*"，它会命中所有域名 → 所有域名都跳过 fake-ip：
@@ -574,15 +577,19 @@ void AppContext::finishTunStart()
     m_tunStarting = false;
     if (!m_tun || !m_hub) return;
 
-    const int fd = m_tun->takeDeviceFd();
-    int       dnsUdp = -1;
-    int       dnsTcp = -1;
+    const qintptr fd     = m_tun->takeDeviceFd();
+    int           dnsUdp = -1;
+    int           dnsTcp = -1;
     m_tun->takeDnsFds(&dnsUdp, &dnsTcp);
     QString   startError;
-    if (fd < 0 || !m_hub->startTun(fd, dnsUdp, dnsTcp, &startError)) {
-        if (fd >= 0) ::close(fd);
-        if (dnsUdp >= 0) ::close(dnsUdp);
-        if (dnsTcp >= 0) ::close(dnsTcp);
+    if (fd < 0 || !m_hub->startTun(fd, dnsUdp, dnsTcp, &startError, m_tun->dnsBindAddress())) {
+#ifndef Q_OS_WIN
+        // POSIX 的设备所有权到这一步才真正转移，失败要自己关；
+        // Windows 传的是适配器 LUID，句柄由 TunController 持有并在 stop() 里关闭
+        if (fd >= 0) platform::closeDescriptor(int(fd));
+        if (dnsUdp >= 0) platform::closeDescriptor(dnsUdp);
+        if (dnsTcp >= 0) platform::closeDescriptor(dnsTcp);
+#endif
         stopTunInternal();
         emit toast(QStringLiteral("error"),
                    tr("Failed to enable TUN: %1")

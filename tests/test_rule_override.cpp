@@ -19,6 +19,7 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QStandardPaths>
 #include <QTemporaryDir>
 
 #include "common/Yaml.h"
@@ -84,22 +85,22 @@ private:
 
 void TestRuleOverride::initTestCase()
 {
-    QVERIFY(m_configHome.isValid());
-
-    // 必须在构造任何配置对象之前改环境变量：dataDir() 是实时读取
-    // QStandardPaths 的，晚设置会让对象读写到用户的真实配置目录
-    qputenv("XDG_CONFIG_HOME", m_configHome.path().toUtf8());
+    // 用 Qt 的测试模式隔离配置目录：Windows 上 GenericConfigLocation 走 Known
+    // Folder API，进程内改 XDG_CONFIG_HOME / LOCALAPPDATA 都不生效，断言会落到
+    // 用户真实配置目录上。测试模式下配置根指向 Qt 自己的临时目录。
+    QStandardPaths::setTestModeEnabled(true);
     QCoreApplication::setApplicationName(QStringLiteral("clash-qt"));
     QCoreApplication::setOrganizationName(QStringLiteral("clash-qt"));
 
-    // 回归：数据目录只能是 <XDG_CONFIG_HOME>/clash-qt。
+    const QString configRoot =
+        QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+    const QString expected = configRoot + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME);
+
+    // 回归：数据目录只能是 <通用配置根>/clash-qt。
     // 曾经用 QStandardPaths::AppConfigLocation 计算，而它会把组织名与应用名
     // 拼成 <config>/<org>/<app>，两者都叫 clash-qt 时多出一层嵌套。
-    QCOMPARE(paths::dataDir(),
-             m_configHome.path() + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME));
-    QVERIFY(!QFileInfo::exists(m_configHome.path() + QLatin1Char('/')
-                               + QStringLiteral(CLASHQT_APP_NAME) + QLatin1Char('/')
-                               + QStringLiteral(CLASHQT_APP_NAME)));
+    QCOMPARE(paths::dataDir(), expected);
+    QVERIFY(!QFileInfo::exists(expected + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME)));
 
     m_appConfig = std::make_unique<AppConfig>();
     QVERIFY(m_appConfig->load());

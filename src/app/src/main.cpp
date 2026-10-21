@@ -26,6 +26,7 @@
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QNetworkProxyFactory>
 #include <QTimer>
 
 #include <csignal>
@@ -46,6 +47,10 @@ int main(int argc, char *argv[])
 {
     // Qt 图形应用必须先构造 QApplication 再创建任何窗口部件
     QApplication app(argc, argv);
+
+    // 本程序自己就是代理：出站读系统代理会绕回 127.0.0.1:7890（自己的入站）形成自环。
+    // Linux 默认即 false，显式关闭不改变其行为。
+    QNetworkProxyFactory::setUseSystemConfiguration(false);
     // 名字全部来自 CMakeLists 的 project()（见 CLASHQT_APP_* 宏），
     // 源码里不再出现字面量，改软件名只改 CMake
     QApplication::setApplicationName(QStringLiteral(CLASHQT_APP_NAME));

@@ -40,9 +40,19 @@ function(clashqt_add_test name)
 
     add_test(NAME ${name} COMMAND ${name})
 
-    # 测试不写用户真实配置：统一的 XDG_CONFIG_HOME / 日志级别隔离
+    # 测试不写用户真实配置：统一的配置根目录隔离 + 日志级别。
+    # Windows 的 QStandardPaths 不认 XDG_CONFIG_HOME（GenericConfigLocation
+    # 取 %LOCALAPPDATA%），所以按平台给不同的环境变量。
+    if(WIN32)
+        set(_clashqt_test_home
+            "LOCALAPPDATA=${CMAKE_BINARY_DIR}/test-home"
+            "APPDATA=${CMAKE_BINARY_DIR}/test-home")
+    else()
+        set(_clashqt_test_home "XDG_CONFIG_HOME=${CMAKE_BINARY_DIR}/test-home")
+    endif()
+
     set_tests_properties(${name} PROPERTIES
-        ENVIRONMENT "XDG_CONFIG_HOME=${CMAKE_BINARY_DIR}/test-home;QT_QPA_PLATFORM=offscreen"
+        ENVIRONMENT "${_clashqt_test_home};QT_QPA_PLATFORM=offscreen"
         TIMEOUT 120
     )
 endfunction()

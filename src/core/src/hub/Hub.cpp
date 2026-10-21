@@ -1,10 +1,23 @@
 #include "hub/Hub.h"
+
+// 平台头必须在 windows.h 之前：它先引入 winsock2.h，
+// 否则旧版 winsock.h 会抢先被带入（Qt 的 socket 头随后就会报 #warning）
+#include "base/Platform.h"
+
 #include <QCoreApplication>
+
+// Windows 的进程驻留集走 PSAPI（GetProcessMemoryInfo）；必须早于 Qt 的
+// socket 头包含，避免 windows.h 在 winsock2.h 之后引入旧版 winsock.h。
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <psapi.h>
+#endif
 
 #include "tunnel/TunDevice.h"
 
 #include "adapter/Adapters.h"
 #include "base/Common.h"
+
 #include "common/JsonUtil.h"
 #include "listener/HttpListener.h"
 #include "listener/MixedListener.h"
@@ -367,13 +380,21 @@ void Hub::setMode(OutboundMode mode)
 //  早期版本把这一切放在 GUI 线程，结果是界面卡死 + 嵌套事件循环导致
 //  onPackets 重入、段错误闪退。线程边界见 TunDevice 的头文件说明。
 // ---------------------------------------------------------------------------
-#ifdef Q_OS_UNIX
-bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
+bool Hub::startTun(qintptr deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error,
+                   const QString &dnsBindAddress)
 {
+#ifdef Q_OS_WIN
+    // Windows 传的是适配器 LUID（0 表示无效）
+    if (deviceFd == 0) {
+        if (error) *error = QCoreApplication::translate("clashqt::core", "Invalid TUN adapter");
+        return false;
+    }
+#else
     if (deviceFd < 0) {
         if (error) *error = QCoreApplication::translate("clashqt::core", "Invalid TUN device fd");
         return false;
     }
+#endif
     if (m_tunDevice) {
         if (error) *error = QCoreApplication::translate("clashqt::core", "TUN is already running");
         return false;
@@ -477,14 +498,14 @@ bool Hub::startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error)
     m_tunThread->start();
 
     TunDevice *device = m_tunDevice;
-    QMetaObject::invokeMethod(device, [device, deviceFd, dnsUdpFd, dnsTcpFd]() {
-        device->start(deviceFd, dnsUdpFd, dnsTcpFd);
+    QMetaObject::invokeMethod(device, [device, deviceFd, dnsUdpFd, dnsTcpFd, dnsBindAddress]() {
+        device->start(deviceFd, dnsUdpFd, dnsTcpFd, dnsBindAddress);
     }, Qt::QueuedConnection);
 
-    m_tunFd = -1; // 所有权已交给 TunDevice（由它关闭）
+    m_tunFd = -1; // 所有权已交给 TunDevice（由它释放）
     Logger::instance().info(LogCategory::Core,
-                            QCoreApplication::translate("clashqt::core", "TUN taken over (fd=%1); data plane running on a worker thread")
-                                .arg(deviceFd));
+                            QCoreApplication::translate("clashqt::core", "TUN taken over (device=%1); data plane running on a worker thread")
+                                .arg(qint64(deviceFd)));
     emit configChanged();
     return true;
 }
@@ -493,7 +514,7 @@ void Hub::stopTun()
 {
     if (!m_tunDevice) {
         if (m_tunFd >= 0) {
-            ::close(m_tunFd);
+            clashqt::platform::closeDescriptor(m_tunFd);
             m_tunFd = -1;
         }
         return;
@@ -534,14 +555,6 @@ void Hub::stopTun()
     Logger::instance().info(LogCategory::Core, QCoreApplication::translate("clashqt::core", "TUN is closed"));
     emit configChanged();
 }
-#else
-bool Hub::startTun(int, int, int, QString *error)
-{
-    if (error) *error = QCoreApplication::translate("clashqt::core", "TUN is not implemented on this platform yet");
-    return false;
-}
-void Hub::stopTun() {}
-#endif
 
 void Hub::setDnsEnabled(bool enabled)
 {
@@ -824,6 +837,14 @@ int Hub::closeConnectionsByChain(const QString &chain)
 
 qint64 Hub::memoryInUse() const
 {
+#ifdef Q_OS_WIN
+    // 内嵌内核与应用同进程：取本进程的工作集即可
+    PROCESS_MEMORY_COUNTERS counters{};
+    if (::GetProcessMemoryInfo(::GetCurrentProcess(), &counters, sizeof(counters))) {
+        return qint64(counters.WorkingSetSize);
+    }
+    return 0;
+#else
     // 内嵌内核与应用同进程，读取自身驻留集作为「内核内存占用」
     QFile file(QStringLiteral("/proc/self/statm"));
     if (!file.open(QIODevice::ReadOnly)) return 0;
@@ -835,6 +856,7 @@ qint64 Hub::memoryInUse() const
     const qint64 pages = fields.at(1).toLongLong(&ok);
     if (!ok) return 0;
     return pages * 4096; // 页大小按 Linux 常见值 4KB 计
+#endif
 }
 
 qint64 Hub::uploadBytes() const { return m_tunnel->uploadedBytes(); }

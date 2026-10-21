@@ -1,12 +1,17 @@
 // ---------------------------------------------------------------------------
 //  数据目录约定
 //
-//  只验证一条规则：Linux 上数据目录是 <XDG_CONFIG_HOME>/clash-qt，不再有
-//  第二层 clash-qt。这条当初算错过一次 —— QStandardPaths::AppConfigLocation
-//  在 Linux 上是 <config>/<org>/<app>，而组织名与应用名都叫 clash-qt，于是
-//  落到了 ~/.config/clash-qt/clash-qt，用户升级后看着像配置全丢了。
+//  只验证一条规则：数据目录是 <通用配置根>/clash-qt，不再有第二层 clash-qt。
+//  这条当初算错过一次 —— QStandardPaths::AppConfigLocation 会把组织名与应用名
+//  拼成 <config>/<org>/<app>，而两者都叫 clash-qt，于是落到了
+//  ~/.config/clash-qt/clash-qt，用户升级后看着像配置全丢了。
 //
 //  另外验证旧布局的一次性迁移：内容上移一层，旧目录消失。
+//
+//  隔离方式：用 QStandardPaths::setTestModeEnabled(true)，让通用配置根指向
+//  Qt 的测试目录。不能用「改 XDG_CONFIG_HOME / LOCALAPPDATA」那套 ——
+//  Windows 上 GenericConfigLocation 走 Known Folder API，进程内改环境变量
+//  根本不生效，断言会落到用户真实目录上。
 // ---------------------------------------------------------------------------
 
 #include <QtTest>
@@ -14,7 +19,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QTemporaryDir>
+#include <QStandardPaths>
 
 #include "utils/Paths.h"
 
@@ -30,6 +35,14 @@ bool writeFile(const QString &path, const QByteArray &content)
     return file.write(content) == content.size();
 }
 
+// 期望的数据目录：通用配置根 + 应用名（只有一层）
+QString expectedDataDir()
+{
+    const QString root =
+        QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+    return root + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME);
+}
+
 } // namespace
 
 class TestPaths : public QObject
@@ -37,23 +50,33 @@ class TestPaths : public QObject
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void init();
     void dataDirIsUnderConfigHome();
     void migratesNestedLegacyLayout();
     void keepsExistingFilesWhenBothLayoutsPresent();
     void portableModeWins();
-
-private:
-    // 每个用例独立一个 XDG_CONFIG_HOME，互不影响
-    QTemporaryDir m_home;
 };
+
+void TestPaths::initTestCase()
+{
+    QStandardPaths::setTestModeEnabled(true);
+    QCoreApplication::setApplicationName(QStringLiteral("clash-qt"));
+    QCoreApplication::setOrganizationName(QStringLiteral("clash-qt"));
+}
+
+void TestPaths::init()
+{
+    // 每个用例从干净目录开始：测试模式下路径是固定的，上次运行的残留会干扰
+    QDir(expectedDataDir()).removeRecursively();
+}
 
 void TestPaths::dataDirIsUnderConfigHome()
 {
-    QVERIFY(m_home.isValid());
-    qputenv("XDG_CONFIG_HOME", m_home.path().toUtf8());
+    const QString expected = expectedDataDir();
 
     const QString data = paths::dataDir();
-    QCOMPARE(data, m_home.path() + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME));
+    QCOMPARE(data, expected);
     QVERIFY(QFileInfo(data).isDir());
 
     // 关键断言：不允许出现 <data>/clash-qt 这种嵌套
@@ -62,10 +85,7 @@ void TestPaths::dataDirIsUnderConfigHome()
 
 void TestPaths::migratesNestedLegacyLayout()
 {
-    QVERIFY(m_home.isValid());
-    qputenv("XDG_CONFIG_HOME", m_home.path().toUtf8());
-
-    const QString base   = m_home.path() + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME);
+    const QString base   = expectedDataDir();
     const QString legacy = base + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME);
 
     QVERIFY(writeFile(legacy + QStringLiteral("/config.yaml"), "mixed-port: 7890\n"));
@@ -86,10 +106,7 @@ void TestPaths::migratesNestedLegacyLayout()
 
 void TestPaths::keepsExistingFilesWhenBothLayoutsPresent()
 {
-    QVERIFY(m_home.isValid());
-    qputenv("XDG_CONFIG_HOME", m_home.path().toUtf8());
-
-    const QString base   = m_home.path() + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME);
+    const QString base   = expectedDataDir();
     const QString legacy = base + QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME);
 
     // 新目录里已有同名文件（用户已经在新位置改过配置），旧文件不能覆盖它

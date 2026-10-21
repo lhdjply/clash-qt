@@ -69,7 +69,15 @@ QString dataDir()
     // 两者都叫 clash-qt 时就会得到 ~/.config/clash-qt/clash-qt 这种多余的一层。
     // 这里只取通用配置根目录，再拼一次应用目录名，与 AppConfigLocation 无关。
     QString base = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
-    if (base.isEmpty()) base = QDir::homePath() + QStringLiteral("/.config");
+    if (base.isEmpty()) {
+        // 兜底路径按平台给：Windows 的通用配置根是 %LOCALAPPDATA%，
+        // Linux 是 $XDG_CONFIG_HOME（默认 ~/.config）
+#ifdef Q_OS_WIN
+        base = QDir::homePath() + QStringLiteral("/AppData/Local");
+#else
+        base = QDir::homePath() + QStringLiteral("/.config");
+#endif
+    }
     base += QLatin1Char('/') + QStringLiteral(CLASHQT_APP_NAME);
 
     // 迁移必须早于任何子目录的创建：否则 profiles/、rules/ 这类空目录会先

@@ -316,6 +316,7 @@ set(CORE_SOURCES
     src/core/src/tunnel/TunIpStack.cpp
     src/core/src/tunnel/Tunnel.cpp
     src/core/src/tunnel/VisionStream.cpp
+    src/core/src/tunnel/Wintun.cpp
     src/core/src/tunnel/WsStream.cpp
     src/core/src/hub/Hub.cpp
 )
@@ -350,7 +351,14 @@ target_link_libraries(clashqt_core
 
 target_compile_options(clashqt_core PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wno-unused-parameter>
+    $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /W4>
 )
+
+# Windows：GetProcessMemoryInfo 在 psapi 里（Hub::memoryInUse）；
+# IP Helper（iphlpapi）用于 TUN 的地址/路由配置与 LUID→别名转换
+if(WIN32)
+    target_link_libraries(clashqt_core PUBLIC psapi iphlpapi)
+endif()
 
 set_target_properties(clashqt_core PROPERTIES
     POSITION_INDEPENDENT_CODE ON
@@ -516,8 +524,19 @@ target_link_libraries(${CLASHQT_TARGET}
         Qt6::Charts
 )
 
+# Windows 系统集成所需的系统库：
+#   wininet —— InternetSetOption，系统代理写入注册表后通知 WinINet 重读
+#   advapi32 —— 注册表（Internet Settings / Run 键），MSVC 默认已带，MinGW 显式声明
+#   shell32 —— UAC 相关（ShellExecuteEx / TokenElevation 的配套声明）
+if(WIN32)
+    target_link_libraries(${CLASHQT_TARGET} PRIVATE wininet advapi32 shell32)
+endif()
+
 target_compile_options(${CLASHQT_TARGET} PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wno-unused-parameter>
+    # 源码注释与界面文案含中文：MSVC 必须显式声明源文件为 UTF-8，
+    # 否则会按本地代码页解析并报 C4819 / 乱码
+    $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /W4>
 )
 
 # -rdynamic：把可执行文件的符号导出到动态符号表，崩溃记录器（CrashHandler）

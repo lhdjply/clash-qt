@@ -116,7 +116,9 @@ private:
     void closeNow(const QString &reason);
 
     SSL    *m_ssl  = nullptr;  // 连接级 SSL 对象
-    int     m_fd   = -1;       // UDP 套接字（非阻塞）
+    // UDP 套接字（非阻塞）。Windows 的 SOCKET 是 64 位句柄，不能塞进 int，
+    // 这里用 qintptr 承载两个平台；使用处再转 platform::SocketHandle。
+    qintptr m_fd   = -1;
     bool    m_open = false;
     bool    m_serverUdp = false;
     bool    m_authRejected = false; // 鉴权被服务端明确拒绝（不可重试）

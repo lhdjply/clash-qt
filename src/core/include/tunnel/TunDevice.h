@@ -53,9 +53,15 @@ public:
     // 协议栈在 start() 里才创建，之后设置就赶不上已经建立的连接。
     void setConnectionTracker(std::shared_ptr<ConnectionTracker> tracker);
 
-    // 在工作线程中调用：接管 fd 并开始收发
-    void start(int fd, int dnsUdpFd, int dnsTcpFd);
-    // 在工作线程中调用：停止并关闭 fd
+    // 在工作线程中调用：接管设备并开始收发
+    //
+    // device：POSIX 是 TUN 设备 fd；Windows 是 Wintun 适配器 LUID
+    // dnsUdpFd / dnsTcpFd：辅助程序在 TUN 地址上绑好的 53 端口（POSIX）
+    // dnsBindAddress：Windows 上 TUN 地址是本机地址，发往它不进入 Wintun 会话，
+    //                 所以要在该地址上自己监听 53（POSIX 忽略此参数）
+    void start(qintptr device, int dnsUdpFd, int dnsTcpFd,
+               const QString &dnsBindAddress = QString());
+    // 在工作线程中调用：停止并释放设备
     void shutdown();
 
 signals:
@@ -68,6 +74,10 @@ private:
     void serveDnsUdp();
     void serveDnsTcp();
 
+    // Windows 数据面（Wintun 会话 + 读包线程）全部收在这个不透明结构里，
+    // 免得头文件被 windows.h 拖进来
+    struct WinBackend;
+
     TunIpStack::DialFn         m_dial;
     std::shared_ptr<Resolver>  m_resolver;
     std::shared_ptr<DnsServer> m_dns;
@@ -76,13 +86,16 @@ private:
     std::unique_ptr<TunIpStack> m_stack;
     TunIpStack::TrafficSink     m_trafficSink;
     QSocketNotifier            *m_notifier = nullptr;
-    int                         m_fd       = -1;
+    qintptr                     m_fd       = -1;
     // 已进入关闭流程：读循环此时报 EBADF 属正常，不再刷警告
     bool                        m_closing  = false;
     int                         m_dnsUdpFd = -1;
     int                         m_dnsTcpFd = -1;
     QSocketNotifier            *m_dnsUdpNotifier = nullptr;
     QSocketNotifier            *m_dnsTcpNotifier = nullptr;
+#ifdef Q_OS_WIN
+    std::unique_ptr<WinBackend> m_win;
+#endif
 };
 
 } // namespace core

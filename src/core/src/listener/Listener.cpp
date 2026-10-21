@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 
 #include "base/Common.h"
+#include "base/Platform.h"
 
 #include <QElapsedTimer>
 #include <QFile>
@@ -15,6 +16,9 @@
 #include <unistd.h>
 
 namespace core {
+
+// 平台差异集中在 clashqt::platform（见 base/Platform.h）
+namespace platform = clashqt::platform;
 
 Listener::Listener(QString type, QString name, std::shared_ptr<Tunnel> tunnel, QObject *parent)
     : QObject(parent), m_tunnel(std::move(tunnel)), m_type(std::move(type)), m_name(std::move(name))
@@ -127,23 +131,31 @@ void Listener::onNewConnection()
 
         const QHostAddress peer       = socket->peerAddress();
         const quint16      peerPort   = socket->peerPort();
-        const int          sourceFd   = int(socket->socketDescriptor());
+        const platform::SocketHandle sourceHandle =
+            platform::SocketHandle(socket->socketDescriptor());
 
-        // 用 dup() 复制一份描述符交给工作线程：两份描述符指向同一条 TCP 连接，
+        // 复制一份套接字句柄交给工作线程：两份句柄指向同一条 TCP 连接，
         // 各自独立关闭互不影响。这样避免了「QTcpSocket 析构是否会关闭
-        // 原描述符」的所有权歧义，比 setSocketDescriptor(-1) 更可靠。
-        const int workerFd = sourceFd >= 0 ? ::dup(sourceFd) : -1;
+        // 原句柄」的所有权歧义，比 setSocketDescriptor(-1) 更可靠。
+        //
+        // 平台差异：POSIX 用 dup()，Winsock 的等价物是 WSADuplicateSocket +
+        // WSASocket（见 base/Platform.h）。注意不能用 CRT 的 _dup —— 它只认
+        // 文件描述符，对 socket 句柄无效，会返回 -1 把所有连接都丢掉。
+        const platform::SocketHandle workerHandle =
+            sourceHandle == platform::kInvalidSocket
+                ? platform::kInvalidSocket
+                : platform::duplicateSocket(sourceHandle);
 
         socket->abort();
         socket->deleteLater();
 
-        if (workerFd < 0) {
+        if (workerHandle == platform::kInvalidSocket) {
             emit logMessage(QStringLiteral("warning"),
                             QCoreApplication::translate("clashqt::core", "Failed to duplicate the connection descriptor; connection dropped"));
             continue;
         }
 
-        spawnWorker(qintptr(workerFd), peer, peerPort);
+        spawnWorker(qintptr(workerHandle), peer, peerPort);
     }
 }
 

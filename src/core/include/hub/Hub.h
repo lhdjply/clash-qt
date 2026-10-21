@@ -90,11 +90,15 @@ public:
     std::shared_ptr<Resolver>  resolver() const { return m_resolver; }
 
     // ---- TUN ----
-    // 接管一个已打开的 TUN 设备 fd（由特权辅助程序经 SCM_RIGHTS 传来）：
-    // 内核在 fd 上做事件驱动读写，跑用户态协议栈并复用规则/出站拨号。
-    // 接管后 fd 的所有权归 Hub（stopTun 会关闭它）。
-    // dnsUdpFd / dnsTcpFd 是辅助程序在 TUN 地址上绑好的 53 端口（可为 -1）
-    bool startTun(int deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error = nullptr);
+    // 接管一个已打开的 TUN 设备：内核在它上面做事件驱动读写，跑用户态协议栈
+    // 并复用规则/出站拨号。接管后设备的所有权归 Hub（stopTun 会释放它）。
+    //
+    // deviceFd：POSIX 是辅助程序经 SCM_RIGHTS 传来的 fd；
+    //           Windows 是 Wintun 适配器的 LUID（由 TunController 建好并配好）
+    // dnsUdpFd / dnsTcpFd：辅助程序在 TUN 地址上绑好的 53 端口（可为 -1，仅 POSIX）
+    // dnsBindAddress：Windows 在 TUN 地址上自己监听 53 用的地址（POSIX 忽略）
+    bool startTun(qintptr deviceFd, int dnsUdpFd, int dnsTcpFd, QString *error = nullptr,
+                  const QString &dnsBindAddress = QString());
     void stopTun();
     bool tunActive() const { return m_tunDevice != nullptr; }
     void setSnifferEnabled(bool enabled);

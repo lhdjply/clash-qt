@@ -60,27 +60,31 @@ public:
     // 弹系统授权窗口（pkexec）完成 chown/chmod +sx
     bool grantPermission(QString *error = nullptr);
 
-    bool isRunning() const { return m_socket >= 0; }
-    // 收到的 TUN 设备 fd（未打开时为 -1）。
-    int  deviceFd() const { return m_deviceFd; }
+    // 是否已建立到辅助程序/设备的连接（Linux：辅助程序 socket 已建立；
+    // Windows：Wintun 适配器与路由已就绪）
+    bool isRunning() const;
+    // 拿到的 TUN 设备标识（POSIX 是 fd，Windows 是适配器 LUID；未打开时为 -1 / 0）
+    qintptr deviceId() const { return m_deviceFd; }
     // 辅助程序在 TUN 地址上接管的 DNS socket（未接管时都是 -1）
-    int  dnsUdpFd() const { return m_dnsUdpFd; }
-    int  dnsTcpFd() const { return m_dnsTcpFd; }
+    int  dnsUdpFd() const { return int(m_dnsUdpFd); }
+    int  dnsTcpFd() const { return int(m_dnsTcpFd); }
     void takeDnsFds(int *udp, int *tcp)
     {
-        if (udp) *udp = m_dnsUdpFd;
-        if (tcp) *tcp = m_dnsTcpFd;
+        if (udp) *udp = int(m_dnsUdpFd);
+        if (tcp) *tcp = int(m_dnsTcpFd);
         m_dnsUdpFd = -1;
         m_dnsTcpFd = -1;
     }
 
-    // 交出 fd 的所有权（交给内核 Hub::startTun）：调用后本类不再关闭它
-    int  takeDeviceFd()
+    // 交出设备的所有权（交给内核 Hub::startTun）：调用后本类不再释放它
+    qintptr takeDeviceFd()
     {
-        const int fd = m_deviceFd;
-        m_deviceFd   = -1;
+        const qintptr fd = m_deviceFd;
+        m_deviceFd       = -1;
         return fd;
     }
+    // Windows：内核要在 TUN 地址上自己监听 53（POSIX 由辅助程序递回 fd，返回空）
+    QString dnsBindAddress() const { return m_dnsAddress; }
     // 辅助程序在握手里报告的信息（设备名 / 地址 / 是否 dry-run）
     QString deviceName() const { return m_deviceName; }
     bool    isDryRun() const { return m_dryRun; }
@@ -118,16 +122,33 @@ private:
     QTimer          *m_timeout  = nullptr;
     bool             m_pending  = false;
     bool             m_cleaning = false;
+    // Windows 没有辅助程序 socket，运行状态单独记一份；Linux 由 m_socket 推导
+    bool             m_running  = false;
 
     int     m_listenSocket = -1;
     int     m_socket       = -1; // 与辅助程序的连接
-    int     m_deviceFd     = -1; // TUN 设备
-    int     m_dnsUdpFd     = -1; // TUN 地址上的 DNS(UDP)
-    int     m_dnsTcpFd     = -1; // TUN 地址上的 DNS(TCP)
+    qintptr m_deviceFd     = -1; // TUN 设备（POSIX: fd；Windows: 适配器 LUID）
+    qintptr m_dnsUdpFd     = -1; // TUN 地址上的 DNS(UDP)
+    qintptr m_dnsTcpFd     = -1; // TUN 地址上的 DNS(TCP)
     QString m_socketPath;
     QString m_deviceName;
     QString m_pendingHeader;
     bool    m_dryRun = false;
+    // Windows：TUN 地址（内核要在它上面监听 53）
+    QString m_dnsAddress;
+#ifdef Q_OS_WIN
+    // 本次加过的路由：关闭时逐条删掉（不删的话重启后仍在，会把流量继续引向 TUN）
+    struct RouteEntry {
+        quint64 luid    = 0;
+        quint32 network = 0;
+        int     prefix  = 0;
+        quint32 nextHop = 0;   // 删除时也要一致，否则 DeleteIpForwardEntry2 匹配不到
+    };
+    quintptr m_adapter    = 0;   // Wintun 适配器句柄（本类持有，stop 时关闭）
+    quint64  m_luid       = 0;   // 适配器 LUID（配地址/路由用）
+    QString  m_adapterName;
+    QList<RouteEntry> m_addedRoutes;
+#endif
 };
 
 } // namespace clashqt
