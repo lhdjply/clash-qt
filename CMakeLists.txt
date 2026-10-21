@@ -474,6 +474,11 @@ qt_add_executable(${CLASHQT_TARGET} ${APP_SOURCES} ${APP_HEADERS} ${APP_RESOURCE
 # .qrc 由 AUTORCC 编译出 qrc_*.cpp 参与链接
 set_target_properties(${CLASHQT_TARGET} PROPERTIES AUTORCC ON)
 
+# Windows：把图标写进 PE 资源段（qrc 只作用于运行期窗口图标）
+if(WIN32)
+    target_sources(${CLASHQT_TARGET} PRIVATE resources/win/clash-qt.rc)
+endif()
+
 # ---------------------------------------------------------------------------
 #  界面翻译
 #

@@ -23,8 +23,8 @@
 ; 按原样随仓库分发，要求 Inno Setup 6.5.0+。
 ;
 ; clash-qt.ico 由 resources/icons/app.svg 生成（16/24/32/48/64/128 为 BMP 帧、
-; 256 为 PNG 帧）。主程序 exe 目前没有 PE 图标资源，所以这个 ico 会随包装进
-; {app}，供安装程序、快捷方式与「应用和功能」里的卸载项使用。
+; 256 为 PNG 帧）。exe 自身的 PE 图标来自 resources/win/clash-qt.rc，与本脚本
+; 是同一份 ico；这里仍随包装进 {app}，供安装程序、快捷方式与卸载项使用。
 
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"
