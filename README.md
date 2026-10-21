@@ -103,7 +103,7 @@ TUN helper (`<name>-tun`), TUN interface name, desktop entry and icon name are a
 derived from `project()` (`CLASHQT_TARGET` / `CLASHQT_APP_NAME` / `CLASHQT_TUN_HELPER`
 and friends); there is no `"clash-qt"` literal in the sources. The display name
 (`Clash Qt`) lives separately in `CLASHQT_APP_DISPLAY_NAME`, and the desktop entry is
-generated at configure time from the `resources/clash-qt.desktop.in` template. The
+generated at configure time from the `resources/linux/clash-qt.desktop.in` template. The
 Debian package name (`debian/control`) is a distro-side identifier and still has to be
 changed by hand.
 

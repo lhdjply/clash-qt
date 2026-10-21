@@ -581,7 +581,7 @@ install(TARGETS ${CLASHQT_TARGET}
 # desktop 文件里的 Icon= 一致（源文件叫 app.svg，安装时改名）。
 # desktop 文件是模板：Exec / Icon / StartupWMClass 与显示名都来自上面的
 # 变量，避免改名时漏掉其中一处。
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/resources/clash-qt.desktop.in"
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/resources/linux/clash-qt.desktop.in"
     "${CMAKE_BINARY_DIR}/${CLASHQT_DESKTOP_FILE}" @ONLY)
 install(FILES "${CMAKE_BINARY_DIR}/${CLASHQT_DESKTOP_FILE}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"

@@ -94,7 +94,7 @@ FetchContent**（它会每次配置都联网拉依赖，网络不通时 `cmake .
 （`<名称>-tun`）、TUN 接口名、桌面入口与图标名，全部由 `project()` 派生
 （`CLASHQT_TARGET` / `CLASHQT_APP_NAME` / `CLASHQT_TUN_HELPER` 等），源码里
 没有 `"clash-qt"` 字面量。显示名（`Clash Qt`）单独放在
-`CLASHQT_APP_DISPLAY_NAME`，桌面入口是 `resources/clash-qt.desktop.in`
+`CLASHQT_APP_DISPLAY_NAME`，桌面入口是 `resources/linux/clash-qt.desktop.in`
 模板，配置时生成。Debian 包名（`debian/control`）是发行版侧标识，改名时
 仍需单独调整。
 
