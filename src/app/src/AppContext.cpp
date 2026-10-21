@@ -150,7 +150,9 @@ void AppContext::shutdown()
     // 这段时间桌面仍指向一个已经没人监听的本机端口，任何联网操作都会失败。
     disableSysProxyOnExit();
 
-    if (m_hub) m_hub->stop();
+    // 退出路径用 shutdown()：只断开、不等在途连接。stop() 会为每条空闲的
+    // keep-alive 连接等满上限，表现为「点了退出要卡好几秒」。
+    if (m_hub) m_hub->shutdown();
 
     // 退出前务必收起 TUN：否则会留下一条指到 TUN 的默认路由（等于断网）
     stopTunInternal();

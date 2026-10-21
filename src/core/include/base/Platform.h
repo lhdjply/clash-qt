@@ -140,6 +140,19 @@ inline SocketHandle duplicateSocket(SocketHandle handle)
 #endif
 }
 
+// 让阻塞在这个 socket 上的读写立刻返回（返回 0 / 出错），但**不释放句柄**。
+// 停监听时用它打断在途连接：工作线程可能正卡在 waitForReadyRead 上，
+// 等到超时要几秒；而 close 会让 fd 号被其它线程立刻复用，跨线程 close
+// 会误伤新连接，shutdown 没有这个问题（真正的 close 仍由持有者自己做）。
+inline int shutdownSocket(SocketHandle handle)
+{
+#ifdef Q_OS_WIN
+    return ::shutdown(handle, SD_BOTH);
+#else
+    return ::shutdown(handle, SHUT_RDWR);
+#endif
+}
+
 // 等待 socket 可读/可写；返回 >0 表示就绪，0 表示超时，<0 表示出错
 inline int pollSocket(SocketHandle handle, bool forWrite, int timeoutMs)
 {

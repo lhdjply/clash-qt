@@ -27,12 +27,17 @@ Listener::Listener(QString type, QString name, std::shared_ptr<Tunnel> tunnel, Q
 
 Listener::~Listener()
 {
-    stop();
+    // 只做清理，不再等待：重复等待会把「停一次」变成「等两轮」
+    // （Hub 停监听后 shared_ptr 归零，析构里再等一次 3 秒，退出就多卡一倍）。
+    stopAccepting();
 }
 
 bool Listener::start(const QString &bindAddress, quint16 port)
 {
     if (m_server) return true;
+
+    // 同一个对象可能被 stop 之后重新 start（reload 场景），状态要复位
+    m_stopped.store(false, std::memory_order_release);
 
     m_server = new QTcpServer(this);
     QObject::connect(m_server, &QTcpServer::newConnection, this, &Listener::onNewConnection);
@@ -75,8 +80,11 @@ bool Listener::start(const QString &bindAddress, quint16 port)
     return true;
 }
 
-void Listener::stop()
+void Listener::stopAccepting()
 {
+    // 幂等：析构、Hub 停止、重复调用都只真正执行一次
+    if (m_stopped.exchange(true, std::memory_order_acq_rel)) return;
+
     m_accepting.store(false, std::memory_order_release);
 
     if (m_server) {
@@ -85,14 +93,34 @@ void Listener::stop()
         m_server = nullptr;
     }
 
-    // 等待在途连接结束（最多 3 秒），避免工作线程持有已析构的 Listener
+    // 打断在途连接：工作线程此刻多半阻塞在 waitForReadyRead 上（HTTP 空闲
+    // keep-alive 连接甚至不设超时），shutdown 让这些读立刻返回 0/出错，
+    // 线程随即收尾 —— 不必靠「睡满等待上限再放弃」。
+    // 持锁遍历，保证 shutdown 的句柄此刻一定还开着（工作线程摘除登记后才 close）。
+    QMutexLocker locker(&m_workers->mutex);
+    for (qintptr handle : m_workers->handles) {
+        if (handle == qintptr(platform::kInvalidSocket)) continue;
+        platform::shutdownSocket(platform::SocketHandle(handle));
+    }
+}
+
+int Listener::activeConnections() const
+{
+    return m_workers->active.load(std::memory_order_acquire);
+}
+
+void Listener::stop(int waitMs)
+{
+    stopAccepting();
+
     QElapsedTimer timer;
     timer.start();
-    while (m_activeWorkers.load(std::memory_order_acquire) > 0 && timer.elapsed() < 3000) {
-        QThread::msleep(20);
+    while (m_workers->active.load(std::memory_order_acquire) > 0
+           && waitMs > 0 && timer.elapsed() < waitMs) {
+        QThread::msleep(5);
     }
 
-    const int remaining = m_activeWorkers.load(std::memory_order_acquire);
+    const int remaining = m_workers->active.load(std::memory_order_acquire);
     if (remaining > 0) {
         emit logMessage(QStringLiteral("warning"),
                         QCoreApplication::translate("clashqt::core", "%1 still has %2 open connection(s)").arg(m_type).arg(remaining));
@@ -121,7 +149,7 @@ void Listener::onNewConnection()
         if (!socket) continue;
 
         const int workerLimit = effectiveWorkerLimit();
-        if (m_activeWorkers.load(std::memory_order_acquire) >= workerLimit) {
+        if (m_workers->active.load(std::memory_order_acquire) >= workerLimit) {
             emit logMessage(QStringLiteral("warning"),
                             QCoreApplication::translate("clashqt::core", "Concurrency limit %1 reached; rejecting new connections").arg(workerLimit));
             socket->abort();
@@ -161,17 +189,27 @@ void Listener::onNewConnection()
 
 void Listener::spawnWorker(qintptr descriptor, const QHostAddress &peerAddress, quint16 peerPort)
 {
-    m_activeWorkers.fetch_add(1, std::memory_order_acq_rel);
+    // 计数器与句柄登记表都用 shared_ptr 抓进线程：监听对象比线程先消失时，
+    // 线程手里这份仍然有效（进程退出时来不及等的工作线程正走这条路）。
+    auto workers = m_workers;
+    workers->active.fetch_add(1, std::memory_order_acq_rel);
 
     // 必须使用 QThread 而不是 std::thread：
     // QAbstractSocket 依赖 QSocketNotifier，而 QSocketNotifier 要求所在线程
     // 由 QThread 创建（QThread 会为该线程创建事件分发器）。在 std::thread
     // 中创建的 QTcpSocket 无法正常工作，连接会静默失败。
-    QThread *thread = QThread::create([this, descriptor, peerAddress, peerPort]() {
+    QThread *thread = QThread::create([this, workers, descriptor, peerAddress, peerPort]() {
         // 工作线程内重建套接字；lambda 结束时 socket 析构即关闭描述符
         QTcpSocket socket;
         if (socket.setSocketDescriptor(descriptor)) {
             socket.setSocketOption(QAbstractSocket::LowDelayOption, 1);
+
+            // 登记后才能被 stopAccepting() 打断；未登记前（极小窗口）
+            // 连接还没进入阻塞读，停监听照样能很快结束。
+            {
+                QMutexLocker locker(&workers->mutex);
+                workers->handles.insert(descriptor);
+            }
 
             Logger::instance().debug(
                 LogCategory::Listener,
@@ -180,6 +218,13 @@ void Listener::spawnWorker(qintptr descriptor, const QHostAddress &peerAddress, 
             if (m_accepting.load(std::memory_order_acquire)) {
                 handleConnection(&socket);
             }
+
+            // 先摘登记再关闭：反过来会让 stopAccepting() 对已释放的句柄号
+            // 做 shutdown，而这个号码可能已经被别的线程复用。
+            {
+                QMutexLocker locker(&workers->mutex);
+                workers->handles.remove(descriptor);
+            }
         } else {
             Logger::instance().warn(
                 LogCategory::Listener,
@@ -187,7 +232,7 @@ void Listener::spawnWorker(qintptr descriptor, const QHostAddress &peerAddress, 
         }
 
         socket.abort();
-        m_activeWorkers.fetch_sub(1, std::memory_order_acq_rel);
+        workers->active.fetch_sub(1, std::memory_order_acq_rel);
     });
 
     // 线程结束后自释放，避免每条连接泄漏一个 QThread 对象

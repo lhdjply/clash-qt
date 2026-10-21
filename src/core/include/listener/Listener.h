@@ -19,7 +19,9 @@
 #include "tunnel/Tunnel.h"
 
 #include <QHostAddress>
+#include <QMutex>
 #include <QObject>
+#include <QSet>
 #include <QString>
 
 #include <atomic>
@@ -40,8 +42,21 @@ public:
     // 启动监听；bindAddress 为空或 "*" 表示监听全部网卡
     bool start(const QString &bindAddress, quint16 port);
 
-    // 停止监听并等待在途连接结束
-    void stop();
+    static constexpr int kDefaultStopWaitMs = 3000;
+
+    // 停止监听并等待在途连接结束。
+    //
+    // waitMs 是等待上限，0 表示只断开、不等（进程退出用）。等待之前会先把
+    // 在途连接的客户端 socket 全部 shutdown，阻塞在 read 上的工作线程会立刻
+    // 返回 —— 否则那些 keep-alive 空闲连接要等到各自的读超时（HTTP 甚至不限时），
+    // 等待必然睡满上限：这就是「退出要卡好几秒」的原因。
+    void stop(int waitMs = kDefaultStopWaitMs);
+
+    // 只关监听并把在途连接打断，不等待。幂等，可重复调用。
+    void stopAccepting();
+
+    // 仍在运行的连接工作线程数（停止时用于有界等待）
+    int activeConnections() const;
 
     bool    isRunning() const;
     QString type() const { return m_type; }
@@ -80,6 +95,14 @@ private:
     // 启动工作线程处理一条连接
     void spawnWorker(qintptr descriptor, const QHostAddress &peerAddress, quint16 peerPort);
 
+    // 在途连接的登记表。用 shared_ptr 与工作线程共享：监听对象可能先被
+    // 释放（进程退出时），线程手里仍留着一份，不会踩到已释放的计数器。
+    struct WorkerRegistry {
+        QMutex           mutex;   // 保护 handles
+        QSet<qintptr>    handles; // 正在服务的客户端句柄（stopAccepting 对它们 shutdown）
+        std::atomic<int> active{0};
+    };
+
     std::shared_ptr<Tunnel> m_tunnel;
 
     QTcpServer *m_server = nullptr;
@@ -89,8 +112,11 @@ private:
     quint16     m_port = 0;
     int         m_idleTimeoutMs = 0;
 
-    std::atomic<int>  m_activeWorkers{0};
+    std::shared_ptr<WorkerRegistry> m_workers = std::make_shared<WorkerRegistry>();
+    // 是否继续接受新连接（工作线程据此判断是否还该处理握手）
     std::atomic<bool> m_accepting{false};
+    // 已停止（析构里再次 stop 时不再重复等待，避免「停一次等两轮」）
+    std::atomic<bool> m_stopped{false};
 };
 
 } // namespace core

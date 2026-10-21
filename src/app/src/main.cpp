@@ -33,11 +33,11 @@
 
 namespace {
 
-clashqt::AppContext *g_context = nullptr;
-
 void handleSignal(int)
 {
-    if (g_context) g_context->stopKernel();
+    // 只投递退出请求，真正的收尾统一在 aboutToQuit（AppContext::shutdown）里做。
+    // 不在这里先 stopKernel()：那会在信号上下文里同步等连接/TUN 收尾，
+    // 关机或 kill 时进程会迟迟不退；而 shutdown() 本来就会停内核。
     QTimer::singleShot(0, qApp, &QApplication::quit);
 }
 
@@ -113,7 +113,6 @@ int main(int argc, char *argv[])
 
     // ---- 应用上下文 -------------------------------------------------------
     auto *context = new clashqt::AppContext(&app);
-    g_context = context;
 
     QString initError;
     if (!context->initialize(&initError)) {

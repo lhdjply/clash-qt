@@ -299,8 +299,29 @@ bool Hub::startListeners(QString *error)
     return true;
 }
 
-void Hub::stopListeners()
+void Hub::stopListeners(bool retainForExit)
 {
+    // 第一遍：关监听 + 把在途连接的客户端 fd 全部 shutdown。
+    // 这一步是退出/重载能快的关键 —— 工作线程阻塞的那些读会立刻返回，
+    // 不需要等到各自的读超时（HTTP 空闲 keep-alive 根本不设超时）。
+    for (auto &listener : m_listeners) {
+        if (listener) listener->stopAccepting();
+    }
+
+    if (retainForExit) {
+        // 退出路径：不再等。仍卡在握手 / DNS / 拨号里的线程可能马上就要
+        // 访问这些监听对象，所以把它们搬进一张永不释放的表 —— 进程就在
+        // 几步之后结束，这份"泄漏"没有实际代价，却能避免退出瞬间的崩溃。
+        static std::vector<std::shared_ptr<Listener>> *retained =
+            new std::vector<std::shared_ptr<Listener>>();
+        for (auto &listener : m_listeners) {
+            if (listener) retained->push_back(std::move(listener));
+        }
+        m_listeners.clear();
+        return;
+    }
+
+    // 常规路径（重载 / 停止内核）：给工作线程一个上限，通常几十毫秒内就结束
     for (auto &listener : m_listeners) {
         if (listener) listener->stop();
     }
@@ -336,6 +357,23 @@ void Hub::stop()
 
     m_statsTimer->stop();
     stopListeners();
+
+    if (m_tunnel) {
+        m_tunnel->closeConnectionsByChain(QString());
+        if (m_tunnel->tracker()) m_tunnel->tracker()->closeAll();
+    }
+
+    m_running = false;
+    Logger::instance().info(LogCategory::Core, QCoreApplication::translate("clashqt::core", "Stopped"));
+}
+
+void Hub::shutdown()
+{
+    if (!m_running && m_listeners.empty()) return;
+
+    m_statsTimer->stop();
+    // 不等待：在途连接直接断开，工作线程自己收尾，进程随即退出
+    stopListeners(/*retainForExit=*/true);
 
     if (m_tunnel) {
         m_tunnel->closeConnectionsByChain(QString());

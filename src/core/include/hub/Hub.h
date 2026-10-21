@@ -67,6 +67,12 @@ public:
     // 启动（依赖已 applyConfig 的配置）。已启动时返回 true。
     bool start(QString *error = nullptr);
     void stop();
+
+    // 进程退出专用：关监听、立刻断开所有在途连接，不等待工作线程收尾。
+    // 与 stop() 的区别是「宁可少等也不卡住」：退出时用户已经点了退出，
+    // 没有理由为几条空闲的 keep-alive 连接再等好几秒。
+    void shutdown();
+
     bool isRunning() const { return m_running; }
 
     // ---- 查询 -------------------------------------------------------------
@@ -166,7 +172,10 @@ private slots:
     void onStatisticsTick();
 
 private:
-    void stopListeners();
+    // retainForExit 为 true 时：关监听并断开在途连接后不等待，也不释放监听
+    // 对象（仍在线程里的连接可能还持有它们的指针，进程马上结束，泄漏几个
+    // 对象换来「退出不卡、也不会踩到已释放内存」）。
+    void stopListeners(bool retainForExit = false);
     bool startListeners(QString *error);
 
     std::shared_ptr<Tunnel>                 m_tunnel;
