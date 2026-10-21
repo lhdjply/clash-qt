@@ -23,20 +23,25 @@ env:
 jobs:
   build-deb:
     name: Package (Linux deb)
-    runs-on: ubuntu-26.04
+    runs-on: ${{ matrix.runner }}
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         include:
-          # amd64 在 x86_64 runner 上是原生速度；其余三个架构走 QEMU 仿真
+          # runner 按架构分两类：amd64 用 x86_64 宿主，其余三个架构用 arm64 宿主，
+          # 目标架构与宿主不同时靠 QEMU 仿真执行容器。
           - platform: amd64
+            runner: ubuntu-26.04
             image: linuxdeepin/deepin:crimson
           - platform: arm64
+            runner: ubuntu-26.04-arm
             image: linuxdeepin/deepin:crimson-arm64
           - platform: loong64
+            runner: ubuntu-26.04-arm
             image: linuxdeepin/deepin:crimson-loong64
           - platform: riscv64
+            runner: ubuntu-26.04-arm
             image: linuxdeepin/deepin:crimson-riscv64
     steps:
       - name: Install QEMU
