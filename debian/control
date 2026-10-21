@@ -22,6 +22,7 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends},
  qt6-qpa-plugins,
+ qt6-translations-l10n,
 Recommends:
  pkexec | policykit-1,
 Description: rule-based proxy client with a built-in kernel

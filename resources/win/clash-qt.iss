@@ -114,7 +114,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; 暂存树是平的：主程序、Qt DLL、OpenSSL、wintun.dll 在根上，插件在
 ; platforms/、imageformats/、styles/ 这类子目录里——必须递归，否则装完起不来。
 Source: "{#MySourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
-; 图标单独装一份：exe 没有 PE 图标资源，快捷方式与卸载项都指向这个文件
+; 图标单独装一份：快捷方式与卸载项直接指向它（exe 的 PE 图标是同一份，但
+; 显式给路径不依赖 shell 去 exe 里取）
 Source: "{#MyIconFile}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

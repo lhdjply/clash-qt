@@ -2,6 +2,7 @@
 
 
 #include <QCoreApplication>
+#include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
 
@@ -9,6 +10,24 @@ namespace clashqt::i18n {
 namespace {
 
 QString g_current = QStringLiteral("en");
+
+// Qt 自带的中文目录：标准控件的右键菜单（QLineEdit / QWidgetTextControl）、
+// QMessageBox 标准按钮、QFileDialog 等都由它翻译。部署位置因平台而异：Linux
+// 在 Qt 安装的 translations/ 下，Windows 由 windeployqt 放到 exe 同级的
+// translations/ 下。
+void installQtTranslator(QCoreApplication *app, const QString &localeName)
+{
+    const QString fileName = QStringLiteral("qtbase_%1").arg(localeName);
+    for (const QString &dir : {QLibraryInfo::path(QLibraryInfo::TranslationsPath),
+                               QCoreApplication::applicationDirPath() + QStringLiteral("/translations")}) {
+        auto *translator = new QTranslator(app);
+        if (translator->load(fileName, dir)) {
+            app->installTranslator(translator);
+            return;
+        }
+        delete translator;
+    }
+}
 
 } // namespace
 
@@ -44,6 +63,9 @@ QString install(QCoreApplication *app, const QString &setting)
                                : QStringLiteral("clash-qt_") + g_current;
     auto *translator = new QTranslator(app);
     if (translator->load(QStringLiteral(":/i18n/%1.qm").arg(qmName))) {
+        // Qt 的目录先装，本程序的目录后装：同名条目以本程序为准。
+        // 只在中文分支装 —— 本程序的 .qm 缺失时不留下「界面英文、菜单中文」。
+        installQtTranslator(app, QStringLiteral("zh_CN"));
         app->installTranslator(translator);
         QLocale::setDefault(QLocale(QLocale::Chinese, QLocale::China));
     } else {

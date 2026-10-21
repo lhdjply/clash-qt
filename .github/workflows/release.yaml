@@ -281,9 +281,11 @@ jobs:
           # --compiler-runtime   带上 libstdc++ / libgcc / libwinpthread：
           #                      目标机没有 MSYS2，缺一个就是双击没反应
           # --no-opengl-sw       不发 ~20MB 的软件光栅化器，纯 Widgets 用不到
-          # --no-translations    Qt 自带 .qm 不需要；本程序的翻译已编进 exe 资源
+          # --translations zh_CN Qt 自带的中文目录：输入框右键菜单、标准按钮等由
+          #                      它翻译（本程序的文案仍编在 exe 资源里）。目标机没有
+          #                      Qt 安装，不带上的话这些菜单会退回英文。
           "$deploy" --release --compiler-runtime \
-                    --no-opengl-sw --no-translations \
+                    --no-opengl-sw --translations zh_CN \
                     --dir "$STAGE" "$STAGE/clash-qt.exe"
 
       - name: Complete the runtime (OpenSSL + transitive DLLs)
