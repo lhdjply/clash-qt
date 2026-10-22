@@ -1705,8 +1705,8 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="187"/>
-        <source>Fetches the latest version from GitHub Releases. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</source>
-        <translation>从 GitHub Releases 获取最新版本。有更新时会显示更新日志，可一键在浏览器中打开发布页，下载与安装由你自己决定。</translation>
+        <source>Reads the update manifest attached to the latest release, fetched through public GitHub mirrors. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</source>
+        <translation>读取最新版本附带的更新清单（经公共 GitHub 镜像获取）。有更新时显示更新日志，并可打开发布页在浏览器里查看；下载与安装由你自己完成。</translation>
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="239"/>
@@ -2003,45 +2003,29 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>%1 分</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="146"/>
-        <source>Atom feed</source>
-        <translation>Atom 订阅源</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="210"/>
-        <source>Skipped: overall time budget exhausted</source>
-        <translation>总耗时超限，未尝试</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="327"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="266"/>
         <source>Request timed out</source>
         <translation>请求超时</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="407"/>
-        <source>Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)</source>
-        <translation>配额已用尽（约 %1 分钟后重置，当前节点可能共享该出口 IP）</translation>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="268"/>
+        <source>The release has no update manifest</source>
+        <translation>这个版本没有附带更新清单</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="425"/>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="427"/>
-        <source>Not attempted</source>
-        <translation>未尝试</translation>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="328"/>
+        <source>No update manifest address available</source>
+        <translation>没有可用的更新清单地址</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="430"/>
-        <source>No update source available</source>
-        <translation>没有可用的更新源</translation>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="341"/>
+        <source>Could not parse the manifest: %1</source>
+        <translation>更新清单解析失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="438"/>
-        <source>Could not parse the response: %1</source>
-        <translation>返回内容无法解析：%1</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="521"/>
-        <source>Could not parse the content: %1</source>
-        <translation>内容无法解析：%1</translation>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="350"/>
+        <source>The manifest has no usable version field</source>
+        <translation>更新清单里没有可用的版本号</translation>
     </message>
     <message>
         <location filename="../src/app/src/config/AppConfig.cpp" line="208"/>

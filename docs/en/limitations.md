@@ -14,16 +14,21 @@
   `handleStream`, so `TunIpStack` reports them via `setTrafficSink()` into
   `Tunnel::addTraffic()`. Both paths feed the same pair of atomic counters, and the UI
   samples them once a second to compute speed.
-- **Update check**: the data source is the release list on `api.github.com`; on failure
-  (unauthenticated API quota is per egress IP, and shared proxy nodes often get a 403) it
-  falls back to `releases.atom`. Both paths skip releases whose tag isn't a version (e.g.
-  `continuous_build`) and skip prereleases. Requests leave through the local mixed port,
-  so it works with or without the system proxy; it only shows the changelog and a link to
-  the release page — downloading and installing is left to the user. A freshly pushed tag
-  shows up in the Atom feed immediately (title = tag name, body = tag message) while CI
-  is still building and no packages exist yet; such placeholder entries are confirmed
-  against the API once and dropped when no release exists, so nobody opens a changelog
-  that is just a version number.
+- **Update check**: the only source is `latest.json`, uploaded as an asset of every
+  release (`releases/latest/download/latest.json`). Being a plain release asset it is
+  served from the CDN, needs no token and costs no API quota — and since it lives on
+  `github.com`, third-party forwarding proxies can fetch it too. It is tried through
+  `gh-proxy.org`, `ghfast.top` and `ghproxy.net` in that order; if none of them serves
+  the file the check reports an error rather than falling back to `releases.atom` (which
+  depends on an `Accept` header that proxies don't reliably pass through, so an HTML page
+  would come back) or to `api.github.com` (unauthenticated quota is per egress IP, and
+  shared proxy nodes often get a 403). Requests alternate between a direct connection and
+  the local mixed port: mirrors are usually reachable directly, while restricted networks
+  often only let traffic out through a node, so both paths are tried and whichever answers
+  first wins. It only shows the changelog and a link to the release page — downloading and
+  installing is left to the user. The manifest cannot
+  produce a placeholder entry: it is a release asset, so it only exists once the release
+  does, and a tag pushed while CI is still building cannot trigger an update prompt.
 - **System proxy on exit**: quitting (closing the window, tray exit, SIGTERM) restores the
   system proxy to direct before stopping the kernel. The test is whether the desktop's
   manual http/https/socks proxies all point at the local inbound port — it only touches

@@ -1,17 +1,15 @@
 // ---------------------------------------------------------------------------
 //  检查更新
 //
-//  四部分：
+//  三部分：
 //    1. 版本号比较 —— 「有没有更新」完全由它决定，判错会天天提示同一个版本；
-//    2. GitHub API 的 JSON 解析与状态码处理；
-//    3. 来源顺序 —— Atom 订阅优先（不受未认证 API 配额限制），API 兜底；
-//    4. 失败处理 —— 偶发抖动重试一次；API 配额用尽后不再白跑。
-//  网络部分用本地 QTcpServer 冒充 GitHub，测试不联网、不依赖仓库是否发过版。
+//    2. 更新清单 —— 解析、缺文件、坏内容、页面地址只认本仓库；
+//    3. 取法 —— 镜像前缀拼接、按顺序换镜像、抖动重试与对冲。
+//  网络部分用本地 QTcpServer 冒充镜像，测试不联网、不依赖仓库是否发过版。
 // ---------------------------------------------------------------------------
 
 #include <QtTest>
 
-#include <QDateTime>
 #include <QElapsedTimer>
 #include <QHash>
 #include <QSignalSpy>
@@ -29,20 +27,19 @@ struct FakeServer {
     struct Response {
         QByteArray status = QByteArrayLiteral("200 OK");
         QByteArray body;
-        QByteArray headers; // 额外的响应头，形如 "X-Test: 1\r\n"
 
         Response() = default;
-        Response(QByteArray status_, QByteArray body_, QByteArray headers_ = QByteArray())
-            : status(std::move(status_)), body(std::move(body_)), headers(std::move(headers_))
+        Response(QByteArray status_, QByteArray body_)
+            : status(std::move(status_)), body(std::move(body_))
         {
         }
     };
 
-    QTcpServer                        server;
-    QHash<QString, Response>          routes;
-    QHash<QString, int>               drops;  // 该路径接下来 N 次直接断开连接
-    QHash<QString, int>               stalls; // 该路径接下来 N 次只接受连接、不应答
-    mutable QHash<QString, int>       hits;  // 各路径实际收到的请求数
+    QTcpServer              server;
+    QHash<QString, Response> routes;
+    QHash<QString, int>     drops;  // 该路径接下来 N 次直接断开连接
+    QHash<QString, int>     stalls; // 该路径接下来 N 次只接受连接、不应答
+    mutable QHash<QString, int> hits; // 各路径实际收到的请求数
 
     bool start()
     {
@@ -88,8 +85,7 @@ struct FakeServer {
                     }
 
                     QByteArray raw = "HTTP/1.1 " + response.status + "\r\n";
-                    raw += "Content-Type: application/octet-stream\r\n";
-                    raw += response.headers;
+                    raw += "Content-Type: application/json\r\n";
                     raw += "Content-Length: " + QByteArray::number(response.body.size()) + "\r\n";
                     raw += "Connection: close\r\n\r\n";
                     raw += response.body;
@@ -109,63 +105,12 @@ struct FakeServer {
     }
 };
 
-// 与真实响应同形：数组，且第一条可能是 CI 的持续构建（tag 不是版本号）
-const char kReleaseJson[] =
-    "[{\"tag_name\":\"continuous_build\",\"name\":\"持续构建\","
-    "\"body\":\"由 CI 自动生成\","
-    "\"html_url\":\"https://github.com/lhdjply/clash-qt/releases/tag/continuous_build\","
-    "\"published_at\":\"2026-10-19T06:00:00Z\"},"
-    "{\"tag_name\":\"v999.0.0\",\"name\":\"999.0.0\","
-    "\"body\":\"- 新增检查更新\","
-    "\"html_url\":\"https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0\","
-    "\"published_at\":\"2026-10-19T05:00:00Z\"}]";
-
-const char kReleasesAtom[] =
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    "<feed xmlns=\"http://www.w3.org/2005/Atom\">\n"
-    "  <title>Release notes from clash-qt</title>\n"
-    "  <entry>\n"
-    "    <id>tag:github.com,2008:Repository/1/continuous_build</id>\n"
-    "    <updated>2026-10-19T06:00:00Z</updated>\n"
-    "    <link rel=\"alternate\" type=\"text/html\""
-    " href=\"https://github.com/lhdjply/clash-qt/releases/tag/continuous_build\"/>\n"
-    "    <title>持续构建</title>\n"
-    "    <content type=\"html\">&lt;p&gt;由 CI 自动生成&lt;/p&gt;</content>\n"
-    "  </entry>\n"
-    "  <entry>\n"
-    "    <id>tag:github.com,2008:Repository/1/v999.0.0</id>\n"
-    "    <updated>2026-10-19T05:00:00Z</updated>\n"
-    "    <link rel=\"alternate\" type=\"text/html\""
-    " href=\"https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0\"/>\n"
-    // 正式 Release 的标题由 CI 的 --title 指定，不是 tag 名；标题等于 tag 名的
-    // 那种是「tag 推上去、Release 还没建」的占位条目（见下面 kPlaceholderAtom）
-    "    <title>clash-qt v999.0.0</title>\n"
-    "    <content type=\"html\">&lt;p&gt;修复了托盘图标&lt;/p&gt;</content>\n"
-    "  </entry>\n"
-    "</feed>\n";
-
-// tag 刚推上去、CI 还没建 Release 时 Atom 里的样子：标题是 tag 名，正文是
-// tag 说明（GitHub 直接拿它填），发布页上还没有任何安装包
-const char kPlaceholderAtom[] =
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    "<feed xmlns=\"http://www.w3.org/2005/Atom\">\n"
-    "  <entry>\n"
-    "    <id>tag:github.com,2008:Repository/1/v999.0.0</id>\n"
-    "    <updated>2026-10-22T02:35:00Z</updated>\n"
-    "    <link rel=\"alternate\" type=\"text/html\""
-    " href=\"https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0\"/>\n"
-    "    <title>v999.0.0</title>\n"
-    "    <content type=\"html\">&lt;p&gt;clash-qt v999.0.0&lt;/p&gt;</content>\n"
-    "  </entry>\n"
-    "</feed>\n";
-
-// 确认成功后 API 返回的单条 Release（比 Atom 多出资产列表）
-const char kReleaseObjectJson[] =
-    R"({"tag_name":"v999.0.0","name":"clash-qt v999.0.0",)"
-    R"("body":"## 更新内容\n\n- 侧栏改版",)"
-    R"("html_url":"https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0",)"
-    R"("published_at":"2026-10-22T02:30:00Z",)"
-    R"("assets":[{"name":"clash-qt_1.1.0_amd64.deb"}]})";
+// 清单里有版本、发布页、正文；不带 assets —— 它本身就是 Release 的资产
+const char kManifestJson[] =
+    R"({"version":"999.0.0","tag":"v999.0.0","name":"clash-qt v999.0.0",)"
+    R"("page":"https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0",)"
+    R"("notes":"## 更新内容\n\n- 侧栏改版",)"
+    R"("published_at":"2026-10-22T02:30:00Z"})";
 
 } // namespace
 
@@ -182,15 +127,14 @@ private slots:
 
     void updateAvailableCarriesReleaseInfo();
     void sameVersionReportsUpToDate();
-    void noReleasesCountsAsUpToDate();
+    void manifestMissingIsReported();
     void serverErrorIsReported();
-    void atomIsPreferredOverApi();
-    void apiIsUsedWhenAtomFails();
+    void brokenManifestIsNotReportedAsUpToDate();
     void transientFailureIsRetried();
     void stalledRequestIsHedged();
-    void rateLimitedApiIsSkipped();
-    void tagPlaceholderIsNotReported();
-    void placeholderConfirmedByApiIsReported();
+    void manifestGoesThroughMirrorPrefix();
+    void mirrorsAreTriedInOrder();
+    void manifestRejectsForeignPageUrl();
 };
 
 // ---------------------------------------------------------------------------
@@ -225,7 +169,7 @@ void TestUpdateChecker::missingSegmentsAreZero()
 
 void TestUpdateChecker::prereleaseSuffixIsIgnored()
 {
-    // latest 端点本身不含预发布版；即便 tag 带了后缀，也只比数字部分，
+    // 清单里的版本本来就该是正式版；即便带了后缀，也只比数字部分，
     // 不会因为后缀把同一个版本判成「有更新」
     QCOMPARE(UpdateChecker::compareVersions(QStringLiteral("0.1.0-rc1"),
                                             QStringLiteral("0.1.0")),
@@ -236,18 +180,21 @@ void TestUpdateChecker::prereleaseSuffixIsIgnored()
 }
 
 // ---------------------------------------------------------------------------
-//  GitHub 响应
+//  清单解析
 // ---------------------------------------------------------------------------
 void TestUpdateChecker::updateAvailableCarriesReleaseInfo()
 {
     FakeServer server;
-    server.routes.insert(QStringLiteral("/latest"),
-                         {QByteArrayLiteral("200 OK"), QByteArray(kReleaseJson)});
+    server.routes.insert(QStringLiteral("/latest.json"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kManifestJson)});
     QVERIFY(server.start());
 
-    UpdateChecker checker(server.url(QStringLiteral("/latest")), QUrl());
-    ReleaseInfo  received;
-    int          count = 0;
+    UpdateChecker checker;
+    checker.setMirrorPrefixes({}); // 直接打本地服务
+    checker.setManifestUrl(server.url(QStringLiteral("/latest.json")));
+
+    ReleaseInfo received;
+    int         count = 0;
     QObject::connect(&checker, &UpdateChecker::updateAvailable,
                      [&](const ReleaseInfo &info) {
                          received = info;
@@ -257,131 +204,122 @@ void TestUpdateChecker::updateAvailableCarriesReleaseInfo()
     QVERIFY(checker.check(0));
     QTRY_COMPARE_WITH_TIMEOUT(count, 1, 5000);
 
-    QCOMPARE(received.tagName, QStringLiteral("v999.0.0"));
     QCOMPARE(received.version, QStringLiteral("999.0.0"));
-    QCOMPARE(received.notes, QStringLiteral("- 新增检查更新"));
+    QCOMPARE(received.tagName, QStringLiteral("v999.0.0"));
+    QCOMPARE(received.title, QStringLiteral("clash-qt v999.0.0"));
     QVERIFY(!received.notesIsHtml);
+    QVERIFY(received.notes.contains(QStringLiteral("侧栏改版")));
     QCOMPARE(received.pageUrl.toString(),
              QStringLiteral("https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0"));
-    QCOMPARE(received.publishedAt, QStringLiteral("2026-10-19T05:00:00Z"));
+    QCOMPARE(received.publishedAt, QStringLiteral("2026-10-22T02:30:00Z"));
+    QVERIFY(received.hasAssets);
 }
 
 void TestUpdateChecker::sameVersionReportsUpToDate()
 {
     FakeServer server;
     // 旧版本：不该提示更新
-    server.routes.insert(QStringLiteral("/latest"),
+    server.routes.insert(QStringLiteral("/latest.json"),
                          {QByteArrayLiteral("200 OK"),
-                          QByteArrayLiteral(R"({"tag_name":"v0.0.1","body":"old"})")});
+                          QByteArrayLiteral(R"({"version":"0.0.1","notes":"old"})")});
     QVERIFY(server.start());
 
-    UpdateChecker checker(server.url(QStringLiteral("/latest")), QUrl());
-    QSignalSpy    spy(&checker, &UpdateChecker::upToDate);
+    UpdateChecker checker;
+    checker.setMirrorPrefixes({});
+    checker.setManifestUrl(server.url(QStringLiteral("/latest.json")));
+
+    QSignalSpy spy(&checker, &UpdateChecker::upToDate);
     QVERIFY(checker.check(0));
     QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 5000);
     QCOMPARE(spy.first().at(0).toString(), QLatin1String(CLASHQT_VERSION));
 }
 
-void TestUpdateChecker::noReleasesCountsAsUpToDate()
+// 老版本 Release 里没有这个文件（或 latest 还没有正式版）：报错，不能当成
+// 「已是最新」—— 那会让用户以为检查过了，其实什么都没读到
+void TestUpdateChecker::manifestMissingIsReported()
 {
     FakeServer server; // 未配置任何路径 → 404
     QVERIFY(server.start());
 
-    UpdateChecker checker(server.url(QStringLiteral("/latest")), QUrl());
-    QSignalSpy    spy(&checker, &UpdateChecker::upToDate);
+    UpdateChecker checker;
+    checker.setMirrorPrefixes({});
+    checker.setManifestUrl(server.url(QStringLiteral("/latest.json")));
+
+    QSignalSpy upToDate(&checker, &UpdateChecker::upToDate);
+    QSignalSpy failed(&checker, &UpdateChecker::failed);
+
     QVERIFY(checker.check(0));
-    QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(failed.count(), 1, 5000);
+
+    QCOMPARE(upToDate.count(), 0);
+    QVERIFY2(failed.first().at(0).toString().contains(QStringLiteral("manifest")),
+             qPrintable(failed.first().at(0).toString()));
+    // 4xx 是确定性失败，单条地址不该反复重发
+    QCOMPARE(server.hits.value(QStringLiteral("/latest.json")), 1);
 }
 
 void TestUpdateChecker::serverErrorIsReported()
 {
     FakeServer server;
-    server.routes.insert(QStringLiteral("/latest"),
+    server.routes.insert(QStringLiteral("/latest.json"),
                          {QByteArrayLiteral("500 Internal Server Error"), QByteArray()});
     QVERIFY(server.start());
 
-    UpdateChecker checker(server.url(QStringLiteral("/latest")), QUrl());
-    QSignalSpy    spy(&checker, &UpdateChecker::failed);
+    UpdateChecker checker;
+    checker.setMirrorPrefixes({});
+    checker.setManifestUrl(server.url(QStringLiteral("/latest.json")));
+
+    QSignalSpy spy(&checker, &UpdateChecker::failed);
     QVERIFY(checker.check(0));
-    QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 8000);
     QVERIFY2(spy.first().at(0).toString().contains(QStringLiteral("500")),
              qPrintable(spy.first().at(0).toString()));
 }
 
-void TestUpdateChecker::atomIsPreferredOverApi()
+// 转发服务出错时回一页 HTML：不能因为「解析不出东西」就当「已是最新」
+void TestUpdateChecker::brokenManifestIsNotReportedAsUpToDate()
 {
     FakeServer server;
-    // 两条来源都可用时应当走 Atom：API 的 60 次/小时配额按出口 IP 计，
-    // 走公共节点几乎必然已被别人用光（实测每次都 403）。
-    server.routes.insert(QStringLiteral("/releases.atom"),
-                         {QByteArrayLiteral("200 OK"), QByteArray(kReleasesAtom)});
-    server.routes.insert(QStringLiteral("/latest"),
+    server.routes.insert(QStringLiteral("/latest.json"),
                          {QByteArrayLiteral("200 OK"),
-                          QByteArrayLiteral(R"([{"tag_name":"v1000.0.0","body":"api"}])")});
+                          QByteArrayLiteral("<html><body>Bad gateway</body></html>")});
     QVERIFY(server.start());
 
-    UpdateChecker checker(server.url(QStringLiteral("/latest")),
-                          server.url(QStringLiteral("/releases.atom")));
-    ReleaseInfo  received;
-    int          count = 0;
-    QObject::connect(&checker, &UpdateChecker::updateAvailable,
-                     [&](const ReleaseInfo &info) {
-                         received = info;
-                         ++count;
-                     });
+    UpdateChecker checker;
+    checker.setMirrorPrefixes({});
+    checker.setManifestUrl(server.url(QStringLiteral("/latest.json")));
+
+    QSignalSpy updated(&checker, &UpdateChecker::updateAvailable);
+    QSignalSpy upToDate(&checker, &UpdateChecker::upToDate);
+    QSignalSpy failed(&checker, &UpdateChecker::failed);
 
     QVERIFY(checker.check(0));
-    QTRY_COMPARE_WITH_TIMEOUT(count, 1, 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(updated.count() + upToDate.count() + failed.count(), 1, 8000);
 
-    QCOMPARE(received.version, QStringLiteral("999.0.0"));
-    QVERIFY(received.notesIsHtml);
-    QCOMPARE(received.notes, QStringLiteral("<p>修复了托盘图标</p>"));
-    // 关键：API 一次都没被打扰 —— 那正是会撞上配额的那条路径
-    QCOMPARE(server.hits.value(QStringLiteral("/latest")), 0);
+    QCOMPARE(upToDate.count(), 0);
+    QCOMPARE(failed.count(), 1);
+    QVERIFY2(failed.first().at(0).toString().contains(QStringLiteral("manifest")),
+             qPrintable(failed.first().at(0).toString()));
 }
 
-void TestUpdateChecker::apiIsUsedWhenAtomFails()
-{
-    FakeServer server;
-    server.routes.insert(QStringLiteral("/releases.atom"),
-                         {QByteArrayLiteral("500 Internal Server Error"), QByteArray()});
-    server.routes.insert(QStringLiteral("/latest"),
-                         {QByteArrayLiteral("200 OK"), QByteArray(kReleaseJson)});
-    QVERIFY(server.start());
-
-    UpdateChecker checker(server.url(QStringLiteral("/latest")),
-                          server.url(QStringLiteral("/releases.atom")));
-    ReleaseInfo  received;
-    int          count = 0;
-    QObject::connect(&checker, &UpdateChecker::updateAvailable,
-                     [&](const ReleaseInfo &info) {
-                         received = info;
-                         ++count;
-                     });
-
-    QVERIFY(checker.check(0));
-    QTRY_COMPARE_WITH_TIMEOUT(count, 1, 8000);
-
-    // 兜底过来的结果是 Markdown，对话框要按 notesIsHtml 选解析器
-    QCOMPARE(received.version, QStringLiteral("999.0.0"));
-    QVERIFY(!received.notesIsHtml);
-    QCOMPARE(received.notes, QStringLiteral("- 新增检查更新"));
-    QCOMPARE(server.hits.value(QStringLiteral("/latest")), 1);
-}
-
+// ---------------------------------------------------------------------------
+//  取法：镜像、重试、对冲
+// ---------------------------------------------------------------------------
+// 第一次还没应答就断开 —— 实测 TUN 下 TLS 停滞、Connection closed 都是这种形态，
+// 紧接着重试通常就成功，不该让整次检查失败
 void TestUpdateChecker::transientFailureIsRetried()
 {
     FakeServer server;
-    // 第一次还没应答就断开 —— 实测 TUN 下 TLS 停滞、Connection closed 都是这种形态，
-    // 紧接着重试通常就成功，不该让整次检查失败
-    server.drops.insert(QStringLiteral("/releases.atom"), 1);
-    server.routes.insert(QStringLiteral("/releases.atom"),
-                         {QByteArrayLiteral("200 OK"), QByteArray(kReleasesAtom)});
+    server.drops.insert(QStringLiteral("/latest.json"), 1);
+    server.routes.insert(QStringLiteral("/latest.json"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kManifestJson)});
     QVERIFY(server.start());
 
-    UpdateChecker checker(server.url(QStringLiteral("/latest")),
-                          server.url(QStringLiteral("/releases.atom")));
-    QSignalSpy failedSpy(&checker, &UpdateChecker::failed);
+    UpdateChecker checker;
+    checker.setMirrorPrefixes({});
+    checker.setManifestUrl(server.url(QStringLiteral("/latest.json")));
+
+    QSignalSpy  failedSpy(&checker, &UpdateChecker::failed);
     ReleaseInfo received;
     int         count = 0;
     QObject::connect(&checker, &UpdateChecker::updateAvailable,
@@ -395,21 +333,24 @@ void TestUpdateChecker::transientFailureIsRetried()
 
     QCOMPARE(failedSpy.count(), 0);
     QCOMPARE(received.version, QStringLiteral("999.0.0"));
-    QCOMPARE(server.hits.value(QStringLiteral("/releases.atom")), 2);
+    QCOMPARE(server.hits.value(QStringLiteral("/latest.json")), 2);
 }
 
+// 第一条连接挂住不应答（实测丢包时 TCP 重传会卡 2~5 秒）：应当靠并行的第二条
+// 拿到结果，而不是干等超时
 void TestUpdateChecker::stalledRequestIsHedged()
 {
     FakeServer server;
-    // 第一条连接挂住不应答（实测丢包时 TCP 重传会卡 2~5 秒）
-    server.stalls.insert(QStringLiteral("/releases.atom"), 1);
-    server.routes.insert(QStringLiteral("/releases.atom"),
-                         {QByteArrayLiteral("200 OK"), QByteArray(kReleasesAtom)});
+    server.stalls.insert(QStringLiteral("/latest.json"), 1);
+    server.routes.insert(QStringLiteral("/latest.json"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kManifestJson)});
     QVERIFY(server.start());
 
-    UpdateChecker  checker(server.url(QStringLiteral("/latest")),
-                           server.url(QStringLiteral("/releases.atom")));
-    QElapsedTimer  clock;
+    UpdateChecker checker;
+    checker.setMirrorPrefixes({});
+    checker.setManifestUrl(server.url(QStringLiteral("/latest.json")));
+
+    QElapsedTimer clock;
     clock.start();
     ReleaseInfo received;
     int         count = 0;
@@ -422,84 +363,27 @@ void TestUpdateChecker::stalledRequestIsHedged()
     QVERIFY(checker.check(0));
     QTRY_COMPARE_WITH_TIMEOUT(count, 1, 6000);
 
-    // 关键：结果来自并行的第二条连接，而不是等第一条超时（8 秒）
     QCOMPARE(received.version, QStringLiteral("999.0.0"));
-    QCOMPARE(server.hits.value(QStringLiteral("/releases.atom")), 2);
+    QCOMPARE(server.hits.value(QStringLiteral("/latest.json")), 2);
     QVERIFY2(clock.elapsed() < 4000,
              qPrintable(QStringLiteral("耗时 %1ms，对冲没有生效").arg(clock.elapsed())));
 }
 
-void TestUpdateChecker::rateLimitedApiIsSkipped()
+// 镜像是「前缀 + 完整的 github.com 地址」：请求路径里能看到原始 URL
+void TestUpdateChecker::manifestGoesThroughMirrorPrefix()
 {
-    FakeServer server;
-    // Atom 也挂了，才会轮到 API；API 的配额已经用尽
-    server.routes.insert(QStringLiteral("/releases.atom"),
-                         {QByteArrayLiteral("500 Internal Server Error"), QByteArray()});
-    const QByteArray reset =
-        QByteArray::number(QDateTime::currentSecsSinceEpoch() + 600);
-    FakeServer::Response forbidden;
-    forbidden.status  = QByteArrayLiteral("403 Forbidden");
-    forbidden.body    = QByteArrayLiteral(R"({"message":"API rate limit exceeded"})");
-    forbidden.headers = "x-ratelimit-limit: 60\r\n"
-                        "x-ratelimit-remaining: 0\r\n"
-                        "x-ratelimit-reset: " + reset + "\r\n";
-    server.routes.insert(QStringLiteral("/latest"), forbidden);
-    QVERIFY(server.start());
+    FakeServer mirror;
+    const QUrl base(
+        QStringLiteral("https://github.com/lhdjply/clash-qt/releases/latest/download/latest.json"));
+    const QString proxiedPath = QLatin1Char('/') + base.toString();
+    mirror.routes.insert(proxiedPath,
+                         {QByteArrayLiteral("200 OK"), QByteArray(kManifestJson)});
+    QVERIFY(mirror.start());
 
-    UpdateChecker checker(server.url(QStringLiteral("/latest")),
-                          server.url(QStringLiteral("/releases.atom")));
+    UpdateChecker checker;
+    checker.setManifestUrl(base);
+    checker.setMirrorPrefixes({mirror.url(QString()).toString()});
 
-    QSignalSpy first(&checker, &UpdateChecker::failed);
-    QVERIFY(checker.check(0));
-    QTRY_COMPARE_WITH_TIMEOUT(first.count(), 1, 8000);
-    QVERIFY2(first.first().at(0).toString().contains(QStringLiteral("403")),
-             qPrintable(first.first().at(0).toString()));
-    QCOMPARE(server.hits.value(QStringLiteral("/latest")), 1);
-
-    // 配额窗口内再查一次：不该再发一次注定 403 的请求
-    QSignalSpy second(&checker, &UpdateChecker::failed);
-    QVERIFY(checker.check(0));
-    QTRY_COMPARE_WITH_TIMEOUT(second.count(), 1, 8000);
-    QVERIFY2(second.first().at(0).toString().contains(QStringLiteral("Rate limit exhausted")),
-             qPrintable(second.first().at(0).toString()));
-    QCOMPARE(server.hits.value(QStringLiteral("/latest")), 1);
-}
-
-// tag 推上去、CI 还没跑完：Atom 里已经有条目了，但它只是 tag 的占位
-void TestUpdateChecker::tagPlaceholderIsNotReported()
-{
-    FakeServer server;
-    server.routes.insert(QStringLiteral("/releases.atom"),
-                         {QByteArrayLiteral("200 OK"), QByteArray(kPlaceholderAtom)});
-    // /latest/tags/v999.0.0 未配置 → 404，正是「tag 在、Release 还没建」
-    QVERIFY(server.start());
-
-    UpdateChecker checker(server.url(QStringLiteral("/latest")),
-                          server.url(QStringLiteral("/releases.atom")));
-    QSignalSpy updated(&checker, &UpdateChecker::updateAvailable);
-    QSignalSpy upToDate(&checker, &UpdateChecker::upToDate);
-
-    QVERIFY(checker.check(0));
-    QTRY_COMPARE_WITH_TIMEOUT(updated.count() + upToDate.count(), 1, 8000);
-
-    QCOMPARE(updated.count(), 0);
-    QCOMPARE(upToDate.count(), 1);
-    // 确实回 API 问过一次「这个 tag 有 Release 吗」
-    QCOMPARE(server.hits.value(QStringLiteral("/latest/tags/v999.0.0")), 1);
-}
-
-// 占位形态，但 Release 其实已经建好：正文与资产以 API 为准，照常提示
-void TestUpdateChecker::placeholderConfirmedByApiIsReported()
-{
-    FakeServer server;
-    server.routes.insert(QStringLiteral("/releases.atom"),
-                         {QByteArrayLiteral("200 OK"), QByteArray(kPlaceholderAtom)});
-    server.routes.insert(QStringLiteral("/latest/tags/v999.0.0"),
-                         {QByteArrayLiteral("200 OK"), QByteArray(kReleaseObjectJson)});
-    QVERIFY(server.start());
-
-    UpdateChecker checker(server.url(QStringLiteral("/latest")),
-                          server.url(QStringLiteral("/releases.atom")));
     ReleaseInfo received;
     int         count = 0;
     QObject::connect(&checker, &UpdateChecker::updateAvailable,
@@ -511,11 +395,79 @@ void TestUpdateChecker::placeholderConfirmedByApiIsReported()
     QVERIFY(checker.check(0));
     QTRY_COMPARE_WITH_TIMEOUT(count, 1, 8000);
 
-    // Atom 那份正文还是 tag 说明，确认后应当换成 API 的 Markdown 与资产状态
     QCOMPARE(received.version, QStringLiteral("999.0.0"));
-    QVERIFY(!received.notesIsHtml);
-    QVERIFY2(received.notes.contains(QStringLiteral("侧栏改版")), qPrintable(received.notes));
-    QVERIFY(received.hasAssets);
+    QCOMPARE(mirror.hits.value(proxiedPath), 1);
+}
+
+// 第一个镜像 5xx、第二个可用：应当换到第二个，而不是把整次检查判失败
+void TestUpdateChecker::mirrorsAreTriedInOrder()
+{
+    const QUrl base(
+        QStringLiteral("https://github.com/lhdjply/clash-qt/releases/latest/download/latest.json"));
+    const QString proxiedPath = QLatin1Char('/') + base.toString();
+
+    FakeServer first;
+    first.routes.insert(proxiedPath,
+                        {QByteArrayLiteral("502 Bad Gateway"), QByteArray()});
+    QVERIFY(first.start());
+
+    FakeServer second;
+    second.routes.insert(proxiedPath,
+                         {QByteArrayLiteral("200 OK"), QByteArray(kManifestJson)});
+    QVERIFY(second.start());
+
+    UpdateChecker checker;
+    checker.setManifestUrl(base);
+    checker.setMirrorPrefixes({first.url(QString()).toString(), second.url(QString()).toString()});
+
+    QSignalSpy  failed(&checker, &UpdateChecker::failed);
+    ReleaseInfo received;
+    int         count = 0;
+    QObject::connect(&checker, &UpdateChecker::updateAvailable,
+                     [&](const ReleaseInfo &info) {
+                         received = info;
+                         ++count;
+                     });
+
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(count, 1, 8000);
+
+    QCOMPARE(failed.count(), 0);
+    QCOMPARE(received.version, QStringLiteral("999.0.0"));
+    QVERIFY(first.hits.value(proxiedPath) >= 1);
+    QVERIFY(second.hits.value(proxiedPath) >= 1);
+}
+
+// 清单可能经过第三方转发：页面地址只认本仓库的发布页
+void TestUpdateChecker::manifestRejectsForeignPageUrl()
+{
+    FakeServer server;
+    server.routes.insert(
+        QStringLiteral("/latest.json"),
+        {QByteArrayLiteral("200 OK"),
+         QByteArrayLiteral(R"({"version":"999.0.0","tag":"v999.0.0",)"
+                           R"("page":"https://example.invalid/clash-qt/download",)"
+                           R"("notes":"- 侧栏改版"})")});
+    QVERIFY(server.start());
+
+    UpdateChecker checker;
+    checker.setMirrorPrefixes({});
+    checker.setManifestUrl(server.url(QStringLiteral("/latest.json")));
+
+    ReleaseInfo received;
+    int         count = 0;
+    QObject::connect(&checker, &UpdateChecker::updateAvailable,
+                     [&](const ReleaseInfo &info) {
+                         received = info;
+                         ++count;
+                     });
+
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(count, 1, 8000);
+
+    // 换成按 tag 拼出的发布页，而不是照单全收
+    QCOMPARE(received.pageUrl.toString(),
+             QStringLiteral("https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0"));
 }
 
 QTEST_GUILESS_MAIN(TestUpdateChecker)

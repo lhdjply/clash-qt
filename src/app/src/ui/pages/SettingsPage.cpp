@@ -184,7 +184,7 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     aboutLayout->addLayout(updateRow);
 
     aboutLayout->addWidget(ui::makeHintLabel(
-        tr("Fetches the latest version from GitHub Releases. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you."),
+        tr("Reads the update manifest attached to the latest release, fetched through public GitHub mirrors. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you."),
         aboutCard));
     root->addWidget(aboutCard);
 
@@ -451,8 +451,8 @@ void SettingsPage::onCheckUpdate()
 {
     if (!m_updater || !m_checkUpdate->isEnabled()) return;
 
-    // 检查走本机混合端口：GitHub 直连在多数网络下不可达，而内核常驻运行，
-    // 混合端口既能代理 HTTP 也能 CONNECT，正好复用用户的节点。
+    // 检查走本机混合端口：镜像虽然是普通 HTTP 站点，但用户在受限网络里往往只有
+    // 经节点才出得去，复用混合端口两边都能覆盖。
     const int port = m_context->isKernelRunning() ? m_context->controledConfig()->mixedPort() : 0;
     setUpdateCheckBusy(true);
     if (!m_updater->check(port)) {

@@ -1,7 +1,6 @@
 #include "updater/UpdateChecker.h"
 #include <QCoreApplication>
 
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
@@ -9,38 +8,33 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QRegularExpression>
-#include <QTimeZone>
 #include <QTimer>
-#include <QXmlStreamReader>
 
 namespace clashqt {
 namespace {
 
-// 固定仓库。两条来源都取「列表」而不是 /latest：仓库里还有一个由 CI 维护的
-// continuous_build 发布，它的 tag 不是版本号；/latest 会把它当最新版，导致永远
-// 「查不到版本」。列表里我们自己挑第一条「tag 是版本号、且不是预发布」的发布。
-constexpr char kReleasesApiUrl[] =
-    "https://api.github.com/repos/lhdjply/clash-qt/releases?per_page=20";
-constexpr char kReleasesAtomUrl[] =
-    "https://github.com/lhdjply/clash-qt/releases.atom";
+// 固定仓库。清单是 Release 的一个资产：CDN 直出、不占配额，而且只有 Release
+// 建好之后才存在，不会撞上「tag 已推、CI 还在编译」的占位条目。
+constexpr char kManifestUrl[] =
+    "https://github.com/lhdjply/clash-qt/releases/latest/download/latest.json";
 
 // 单次尝试的硬上限。正常响应 300~500ms，6 秒足以覆盖一次重传造成的 2~3 秒
-// 停顿；再长也只是让用户多等 —— 已经有三条并行连接，不必再给单条更多耐心。
+// 停顿；再长也只是让用户多等 —— 已经有多条并行连接，不必再给单条更多耐心。
 constexpr int kTimeoutMs = 6000;
 
 // 对冲延迟：首条请求超过这个时间还没有任何结果，就并行再发一条。
 // 取值介于「正常完成」与「明显卡住」之间 —— 正常情况不会多花一个请求。
 constexpr int kHedgeDelayMs = 700;
 
-// 一次检查的总预算：对冲、重试与切源都受它约束，避免「超时 × 尝试 × 来源」
+// 一次检查的总预算。三个镜像逐个失败时最多跑到这里，避免「超时 × 尝试次数」
 // 叠加成用户无法接受的长尾。
-constexpr int kTotalBudgetMs = 9000;
+constexpr int kTotalBudgetMs = 12000;
 
 // 剩余预算低于此值就不再发起新的尝试（连 TCP 都不够握完）
 constexpr int kMinBudgetMs = 2000;
 
-// 每个来源最多发出的请求数：正常 1 条；卡住时每 700ms 补一条对冲，最多 3 条。
-constexpr int kMaxAttempts = 3;
+// 只有一条地址时（镜像列表被清空）沿用原来的规矩：原始一条，卡住时再补两条对冲
+constexpr int kSingleUrlAttempts = 3;
 
 // "v0.2.0-rc1" / "0.2.0+build" → "0.2.0"：只留数字与点
 QString normalizeVersion(QString version)
@@ -67,42 +61,32 @@ QVector<int> versionParts(const QString &version)
     return parts;
 }
 
-// 这条 Atom 条目是不是「tag 已推、Release 还没建」的占位条目。
-//
-// 正式发布的标题与正文都来自 Release；占位条目的标题直接就是 tag 名，正文是
-// tag 说明 —— 本项目的 CI 打的是 "clash-qt v1.1.0" 这种一行，用户自己打的也
-// 多半只有一句。两种形态在正常发布里都不出现，所以可以拿来当判据。
-bool looksLikePlaceholder(const ReleaseInfo &info)
-{
-    const QString title = info.title.trimmed();
-    if (!title.isEmpty() && title.compare(info.tagName, Qt::CaseInsensitive) == 0) return true;
-
-    QString plain = info.notes;
-    // Atom 的正文是 HTML；这里只做形态判断，去掉标签与空白即可
-    if (plain.contains(QLatin1Char('<'))) {
-        plain.remove(QRegularExpression(QStringLiteral("<[^>]*>")));
-    }
-    plain = plain.simplified();
-    // 正文为空是另一回事（对话框里有兜底），不当占位处理
-    if (plain.isEmpty()) return false;
-
-    if (plain.compare(info.tagName, Qt::CaseInsensitive) == 0) return true;
-    // 「项目名 + 版本号」两段式：不写死项目名，第二段等于 tag 就算
-    const QStringList words = plain.split(QLatin1Char(' '), Qt::SkipEmptyParts);
-    return words.size() == 2 && words.at(1).compare(info.tagName, Qt::CaseInsensitive) == 0;
-}
-
 } // namespace
 
 UpdateChecker::UpdateChecker(QObject *parent)
-    : UpdateChecker(QUrl(QString::fromLatin1(kReleasesApiUrl)),
-                    QUrl(QString::fromLatin1(kReleasesAtomUrl)), parent)
+    : QObject(parent)
+    , m_manifestUrl(QUrl(QString::fromLatin1(kManifestUrl)))
+    , m_mirrors(builtinMirrors())
 {
 }
 
-UpdateChecker::UpdateChecker(const QUrl &endpoint, const QUrl &atomEndpoint, QObject *parent)
-    : QObject(parent), m_endpoint(endpoint), m_atomEndpoint(atomEndpoint)
+QStringList UpdateChecker::builtinMirrors()
 {
+    // 三个公共的 GitHub 转发服务。它们把 `<前缀>/https://github.com/...` 原样
+    // 转发到 GitHub，因此清单这种「github.com 上的文件」能直接穿过去 ——
+    // 这台机器实测直连超时、三个转发都在 1 秒内返回 200。
+    return {QStringLiteral("https://gh-proxy.org"), QStringLiteral("https://ghfast.top"),
+            QStringLiteral("https://ghproxy.net")};
+}
+
+void UpdateChecker::setMirrorPrefixes(const QStringList &prefixes)
+{
+    m_mirrors = prefixes;
+}
+
+void UpdateChecker::setManifestUrl(const QUrl &url)
+{
+    m_manifestUrl = url;
 }
 
 UpdateChecker::~UpdateChecker()
@@ -126,123 +110,113 @@ int UpdateChecker::compareVersions(const QString &a, const QString &b)
     return 0;
 }
 
-QVector<UpdateChecker::Source> UpdateChecker::sourceOrder() const
+QVector<QUrl> UpdateChecker::candidates() const
 {
-    QVector<Source> order;
-    // Atom 在前：不受未认证 API 的 60 次/小时配额限制（该配额按出口 IP 计，
-    // 走公共节点几乎必然已被别人用光，实测每次都 403）。
-    if (!m_atomEndpoint.isEmpty()) order.append(Source::Atom);
-    if (!m_endpoint.isEmpty()) order.append(Source::Api);
-    return order;
+    QVector<QUrl> urls;
+    if (m_manifestUrl.isEmpty()) return urls;
+
+    // 转发服务的用法是「前缀 + 完整的 github.com 地址」
+    for (const QString &prefix : m_mirrors) {
+        QString trimmed = prefix.trimmed();
+        if (trimmed.isEmpty()) continue;
+        while (trimmed.endsWith(QLatin1Char('/'))) trimmed.chop(1);
+        urls.append(QUrl(trimmed + QLatin1Char('/') + m_manifestUrl.toString()));
+    }
+    // 没有镜像时直接访问（测试与自建镜像场景）
+    if (urls.isEmpty()) urls.append(m_manifestUrl);
+    return urls;
 }
 
-QUrl UpdateChecker::sourceUrl(Source source) const
+int UpdateChecker::attemptLimit() const
 {
-    return source == Source::Api ? m_endpoint : m_atomEndpoint;
+    // 开了代理时每个镜像有两条路（直连 / 经代理），各给一次机会
+    const int perUrl = m_useProxy ? 2 : 1;
+    return qMax(int(m_urls.size()) * perUrl, kSingleUrlAttempts);
 }
 
-QString UpdateChecker::sourceLabel(Source source)
+void UpdateChecker::noteError(const QString &reason)
 {
-    return source == Source::Api ? QStringLiteral("API") : QCoreApplication::translate("clashqt::app", "Atom feed");
+    if (reason.isEmpty() || m_errors.contains(reason)) return;
+    m_errors.append(reason);
 }
 
 bool UpdateChecker::check(int proxyPort)
 {
     if (m_running) return false;
 
-    if (!m_manager) m_manager = new QNetworkAccessManager(this);
-
     if (!m_hedgeTimer) {
         m_hedgeTimer = new QTimer(this);
         m_hedgeTimer->setSingleShot(true);
-        // 每过一拍仍有请求没回来，就再并行补一条（上限见 kMaxAttempts）。
+        // 每过一拍仍有请求没回来，就再并行补一条（上限见 attemptLimit）。
         // 实测链路是「单条连接偶尔卡 2~5 秒」，多条独立连接同时卡的概率低得多，
         // 因此补齐比死等一条更划算。正常情况首条在这一拍内就完成，不会补发。
         QObject::connect(m_hedgeTimer, &QTimer::timeout, this, [this]() {
             if (!m_running) return;
-            if (m_attempts >= kMaxAttempts) return;
+            if (m_attempts >= attemptLimit()) return;
             if (remainingBudgetMs() < kMinBudgetMs) return;
 
             sendAttempt();
-            if (m_attempts < kMaxAttempts) m_hedgeTimer->start(kHedgeDelayMs);
+            if (m_attempts < attemptLimit()) m_hedgeTimer->start(kHedgeDelayMs);
         });
     }
 
+    if (!m_directManager) {
+        m_directManager = new QNetworkAccessManager(this);
+        m_directManager->setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
+    }
+    if (!m_proxyManager) m_proxyManager = new QNetworkAccessManager(this);
+
     // 每次检查都重设代理：内核可能在两次检查之间被启停，端口也可能被改过
+    m_useProxy = proxyPort > 0;
     if (proxyPort > 0) {
-        m_manager->setProxy(QNetworkProxy(QNetworkProxy::HttpProxy,
-                                          QStringLiteral("127.0.0.1"), quint16(proxyPort)));
+        m_proxyManager->setProxy(QNetworkProxy(QNetworkProxy::HttpProxy,
+                                               QStringLiteral("127.0.0.1"), quint16(proxyPort)));
     } else {
-        m_manager->setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
+        m_proxyManager->setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
     }
 
-    m_apiError.clear();
-    m_atomError.clear();
-    m_stage   = 0;
-    m_running = true;
+    m_errors.clear();
+    m_attempts = 0;
+    m_running  = true;
     m_clock.start();
     cancelInflight(); // 防御性清理：正常情况下这里不该有残留
 
-    if (!startSource(0)) {
-        // 一个来源都发不出去（配额窗口 + 预算归零）：仍然异步回报，保持
-        // 「check() 返回后结果通过信号到达」的一致行为
+    m_urls = candidates();
+    if (m_urls.isEmpty()) {
+        // 连清单地址都没有：仍然异步回报，保持「check() 返回后结果通过信号到达」
+        // 的一致行为
         m_running = false;
         const QString reason = failureMessage();
         QTimer::singleShot(0, this, [this, reason]() { emit failed(reason); });
         return true;
     }
+
+    sendAttempt();
+    if (m_attempts < attemptLimit()) m_hedgeTimer->start(kHedgeDelayMs);
     return true;
-}
-
-bool UpdateChecker::startSource(int stage)
-{
-    const QVector<Source> order = sourceOrder();
-
-    for (int i = stage; i < order.size(); ++i) {
-        const Source source = order.at(i);
-
-        // 配额窗口内不必再白跑一次注定 403 的请求
-        if (source == Source::Api && apiRateLimited()) {
-            m_apiError = rateLimitReason();
-            continue;
-        }
-        if (remainingBudgetMs() < kMinBudgetMs) {
-            const QString skipped = QCoreApplication::translate("clashqt::app", "Skipped: overall time budget exhausted");
-            if (source == Source::Api) m_apiError = skipped;
-            else m_atomError = skipped;
-            continue;
-        }
-
-        m_stage     = i;
-        m_source    = source;
-        m_attempts  = 0;
-
-        sendAttempt();
-        if (m_hedgeTimer) m_hedgeTimer->start(kHedgeDelayMs);
-        return true;
-    }
-    return false;
 }
 
 void UpdateChecker::sendAttempt()
 {
-    if (!m_manager || m_attempts >= kMaxAttempts) return;
+    if (!m_directManager || m_urls.isEmpty() || m_attempts >= attemptLimit()) return;
+
+    // 两路交替：直连、经本机代理、直连……统一走代理时，一旦节点对镜像不通
+    // 就会白等到超时，而镜像本身往往直连就通。
+    const int  slot     = m_attempts;
+    const bool viaProxy = m_useProxy && (slot % 2 == 1);
+    // 每个镜像先直连、再经代理，然后才轮到下一个镜像
+    const int  index = (m_useProxy ? slot / 2 : slot) % m_urls.size();
+    const QUrl url   = m_urls.at(index);
     ++m_attempts;
 
-    QNetworkRequest request(sourceUrl(m_source));
+    QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
                       QStringLiteral("clash-qt/%1").arg(QLatin1String(CLASHQT_VERSION)));
-    if (m_source == Source::Api) {
-        request.setRawHeader("Accept", "application/vnd.github+json");
-        request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
-    } else {
-        // 只收 Atom：GitHub 会按 Accept 在 HTML 与订阅之间切换
-        request.setRawHeader("Accept", "application/atom+xml");
-    }
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
 
-    QNetworkReply *reply = m_manager->get(request);
+    QNetworkAccessManager *manager = viaProxy ? m_proxyManager : m_directManager;
+    QNetworkReply *reply = manager->get(request);
     m_inflight.append(reply);
 
     // 预算见底时用剩余时间当超时，避免最后一次尝试把总耗时拖出预算
@@ -265,15 +239,6 @@ void UpdateChecker::cancelInflight()
     m_inflight.clear();
     if (m_hedgeTimer) m_hedgeTimer->stop();
 
-    // 占位条目的确认请求不在状态机里，单独收拾
-    if (m_verifyReply) {
-        QNetworkReply *reply = m_verifyReply;
-        m_verifyReply = nullptr;
-        reply->disconnect(this);
-        reply->abort();
-        reply->deleteLater();
-    }
-
     for (QNetworkReply *reply : replies) {
         if (!reply) continue;
         reply->disconnect(this); // 断开 finished，避免继续驱动状态机
@@ -287,23 +252,13 @@ void UpdateChecker::finish(QNetworkReply *reply)
     if (!m_running) return;
 
     // 顺序很重要：Qt 把 4xx/5xx 也当成 error（ContentNotFound / InternalServerError），
-    // 先看 HTTP 状态码，否则「仓库还没发过 Release」会被误报成失败。
+    // 先看 HTTP 状态码，否则会拿 errorString 当成失败原因。
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
     const bool timedOut = reply->error() == QNetworkReply::OperationCanceledError
                           || reply->error() == QNetworkReply::TimeoutError;
     const bool httpOk = status == 200;
     const bool netOk  = reply->error() == QNetworkReply::NoError;
-
-    const Source source = m_source;
-
-    // 仓库还没发过 Release / 没有订阅：对用户来说就是「没有更新」
-    if (status == 404) {
-        cancelInflight();
-        m_running = false;
-        emit upToDate(QLatin1String(CLASHQT_VERSION));
-        return;
-    }
 
     if (httpOk && netOk) {
         // 只有真正要解析时才读正文：错误/关闭的 reply 上 readAll 会打印
@@ -313,24 +268,24 @@ void UpdateChecker::finish(QNetworkReply *reply)
         // 结果已到手，对冲的那条不再需要
         cancelInflight();
 
-        const bool done = (source == Source::Api) ? parseApi(payload) : parseAtom(payload);
-        if (done) return;
+        if (parseManifest(payload)) return;
 
-        // 正文坏了（被截断、被劫持）：允许再试一次
+        // 正文坏了（被截断、被劫持成 HTML 错误页）：换下一个镜像再试
         advanceAfterFailure(true);
         return;
     }
 
-    if (source == Source::Api) noteRateLimit(reply);
+    const QString reason =
+        timedOut ? QCoreApplication::translate("clashqt::app", "Request timed out")
+        : status == 404
+            ? QCoreApplication::translate("clashqt::app",
+                                          "The release has no update manifest")
+        : status >= 400
+            ? QStringLiteral("HTTP %1").arg(status)
+            : reply->errorString();
+    noteError(reason);
 
-    const QString reason = timedOut
-                               ? QCoreApplication::translate("clashqt::app", "Request timed out")
-                               : (status >= 400 ? QStringLiteral("HTTP %1").arg(status)
-                                                : reply->errorString());
-    if (source == Source::Api) m_apiError = reason;
-    else m_atomError = reason;
-
-    // 对冲请求还在飞：等它的结果，不要因为一条失败就判整个来源失败
+    // 对冲请求还在飞：等它的结果，不要因为一条失败就判整次检查失败
     if (!m_inflight.isEmpty()) return;
 
     advanceAfterFailure(isTransient(reply, timedOut));
@@ -338,14 +293,14 @@ void UpdateChecker::finish(QNetworkReply *reply)
 
 void UpdateChecker::advanceAfterFailure(bool retryable)
 {
-    // 抖动且还有余量：再发一条（4xx 这类确定性失败重发只会得到同样的结果）
-    if (retryable && m_attempts < kMaxAttempts && remainingBudgetMs() >= kMinBudgetMs) {
+    // 还有候选地址（镜像）就换一条路再试：一个镜像失败不代表下一个也失败，
+    // 所以这里不区分抖动与确定性失败；只有一条地址时才按老规矩 —— 抖动才重试，
+    // 4xx 这类重发只会得到同样的结果。
+    if (m_attempts < attemptLimit() && remainingBudgetMs() >= kMinBudgetMs
+        && (retryable || m_urls.size() > 1)) {
         sendAttempt();
         return;
     }
-
-    // 还有下一个来源就继续（Atom 失败 → API）；都试完了才报错
-    if (startSource(m_stage + 1)) return;
 
     m_running = false;
     emit failed(failureMessage());
@@ -354,7 +309,7 @@ void UpdateChecker::advanceAfterFailure(bool retryable)
 bool UpdateChecker::isTransient(QNetworkReply *reply, bool timedOut) const
 {
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if (status >= 400 && status < 500) return false; // 确定性失败：限流、找不到、被拒
+    if (status >= 400 && status < 500) return false; // 确定性失败：找不到、被拒
     if (status >= 500) return true;                  // 网关/服务端抖动
 
     if (timedOut) return true;
@@ -374,40 +329,6 @@ bool UpdateChecker::isTransient(QNetworkReply *reply, bool timedOut) const
     }
 }
 
-void UpdateChecker::noteRateLimit(QNetworkReply *reply)
-{
-    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 403) return;
-    if (reply->rawHeader("x-ratelimit-remaining").trimmed() != QByteArrayLiteral("0")) return;
-
-    const qint64 reset = reply->rawHeader("x-ratelimit-reset").trimmed().toLongLong();
-    const QDateTime now = QDateTime::currentDateTimeUtc();
-
-    // reset 是 UTC 的秒级时间戳；用 QTimeZone::UTC 而不是已弃用的 Qt::TimeSpec 重载
-    QDateTime until =
-        reset > 0 ? QDateTime::fromSecsSinceEpoch(reset, QTimeZone::UTC) : QDateTime();
-    // 时钟偏差或上游给的时间已过期：保守地只跳过 1 分钟
-    if (!until.isValid() || until <= now) until = now.addSecs(60);
-    // 配额窗口是 1 小时，明显超出这个范围的重置时间不可信
-    const QDateTime cap = now.addSecs(3600);
-    if (until > cap) until = cap;
-
-    m_apiBlockedUntil = until;
-}
-
-bool UpdateChecker::apiRateLimited() const
-{
-    return m_apiBlockedUntil.isValid() && QDateTime::currentDateTimeUtc() < m_apiBlockedUntil;
-}
-
-QString UpdateChecker::rateLimitReason() const
-{
-    const qint64 seconds =
-        qMax<qint64>(1, QDateTime::currentDateTimeUtc().secsTo(m_apiBlockedUntil));
-    // 配额按出口 IP 计：换节点后出口 IP 变了，额度可能又有了，所以别说得太绝对
-    return QCoreApplication::translate("clashqt::app", "Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)")
-        .arg((seconds + 59) / 60);
-}
-
 int UpdateChecker::remainingBudgetMs() const
 {
     if (!m_clock.isValid()) return kTotalBudgetMs;
@@ -416,222 +337,60 @@ int UpdateChecker::remainingBudgetMs() const
 
 QString UpdateChecker::failureMessage() const
 {
-    const bool hasAtom = !m_atomEndpoint.isEmpty();
-    const bool hasApi  = !m_endpoint.isEmpty();
-
-    if (hasAtom && hasApi) {
-        return QStringLiteral("%1：%2；%3：%4")
-            .arg(sourceLabel(Source::Atom),
-                 m_atomError.isEmpty() ? QCoreApplication::translate("clashqt::app", "Not attempted") : m_atomError,
-                 sourceLabel(Source::Api),
-                 m_apiError.isEmpty() ? QCoreApplication::translate("clashqt::app", "Not attempted") : m_apiError);
+    if (m_errors.isEmpty()) {
+        return QCoreApplication::translate("clashqt::app",
+                                           "No update manifest address available");
     }
-    if (hasAtom) return m_atomError;
-    return m_apiError.isEmpty() ? QCoreApplication::translate("clashqt::app", "No update source available") : m_apiError;
+    // 三个镜像的失败原因可能不同，一并列出，方便判断是网络不通还是文件没发
+    return m_errors.join(QStringLiteral("；"));
 }
 
-bool UpdateChecker::parseApi(const QByteArray &payload)
+bool UpdateChecker::parseManifest(const QByteArray &payload)
 {
     QJsonParseError parseError{};
     const QJsonDocument document = QJsonDocument::fromJson(payload, &parseError);
-    if (!document.isArray() && !document.isObject()) {
-        m_apiError = QCoreApplication::translate("clashqt::app", "Could not parse the response: %1").arg(parseError.errorString());
+    if (!document.isObject()) {
+        // 转发服务出错时常常回一页 HTML，这里必须当作失败，否则会被当成「没有更新」
+        noteError(QCoreApplication::translate("clashqt::app",
+                                              "Could not parse the manifest: %1")
+                      .arg(parseError.errorString()));
         return false;
     }
 
-    // /releases 返回数组；单条对象（/latest）也兼容，便于换端点
-    QList<QJsonObject> releases;
-    if (document.isArray()) {
-        for (const QJsonValue &value : document.array()) {
-            if (value.isObject()) releases.append(value.toObject());
-        }
+    const QJsonObject object = document.object();
+    const QString version = normalizeVersion(object.value(QStringLiteral("version")).toString());
+    if (version.isEmpty()) {
+        noteError(QCoreApplication::translate(
+            "clashqt::app", "The manifest has no usable version field"));
+        return false;
+    }
+
+    ReleaseInfo info;
+    info.version     = version;
+    info.tagName     = object.value(QStringLiteral("tag")).toString();
+    if (info.tagName.isEmpty()) info.tagName = QStringLiteral("v%1").arg(version);
+    info.title       = object.value(QStringLiteral("name")).toString();
+    info.notes       = object.value(QStringLiteral("notes")).toString();
+    info.notesIsHtml = false;
+    info.publishedAt = object.value(QStringLiteral("published_at")).toString();
+    // 清单本身就是 Release 的资产，说明这一版已经有东西可下
+    info.hasAssets = true;
+
+    // 清单经过第三方转发，而这里没有签名可验：页面地址只认本仓库的发布页，
+    // 免得被篡改的清单把用户带到任意网站。不认就回到按 tag 拼出来的地址。
+    const QUrl page(object.value(QStringLiteral("page")).toString());
+    const bool trustedPage = page.isValid() && page.scheme() == QLatin1String("https")
+                             && page.host() == QLatin1String("github.com")
+                             && page.path().startsWith(QLatin1String("/lhdjply/clash-qt/releases/"));
+    if (trustedPage) {
+        info.pageUrl = page;
     } else {
-        releases.append(document.object());
+        info.pageUrl = QUrl(QStringLiteral("https://github.com/lhdjply/clash-qt/releases/tag/%1")
+                                .arg(info.tagName));
     }
 
-    for (const QJsonObject &object : releases) {
-        if (object.value(QStringLiteral("draft")).toBool()) continue;
-        if (object.value(QStringLiteral("prerelease")).toBool()) continue;
-
-        const QString tag = object.value(QStringLiteral("tag_name")).toString();
-        const QString version = normalizeVersion(tag);
-        if (version.isEmpty()) continue; // continuous_build 之类：不是版本发布
-
-        ReleaseInfo info;
-        info.tagName     = tag;
-        info.version     = version;
-        info.title       = object.value(QStringLiteral("name")).toString();
-        info.notes       = object.value(QStringLiteral("body")).toString();
-        info.notesIsHtml = false;
-        info.pageUrl     = QUrl(object.value(QStringLiteral("html_url")).toString());
-        info.publishedAt = object.value(QStringLiteral("published_at")).toString();
-        info.hasAssets   = !object.value(QStringLiteral("assets")).toArray().isEmpty();
-        report(info);
-        return true;
-    }
-
-    // 一条版本发布都没有（只有持续构建）
-    m_running = false;
-    emit upToDate(QLatin1String(CLASHQT_VERSION));
+    report(info);
     return true;
-}
-
-bool UpdateChecker::parseAtom(const QByteArray &payload)
-{
-    struct Entry {
-        QString title;
-        QString updated;
-        QString link;
-        QString content;
-    };
-
-    QXmlStreamReader xml(payload);
-    QList<Entry>     entries;
-    Entry            current;
-    bool             inEntry = false;
-
-    while (!xml.atEnd() && !xml.hasError()) {
-        xml.readNext();
-        if (xml.isStartElement()) {
-            const QString name = xml.name().toString();
-            if (name == QLatin1String("entry")) {
-                current = Entry{};
-                inEntry = true;
-            } else if (inEntry) {
-                if (name == QLatin1String("title")) {
-                    current.title = xml.readElementText();
-                } else if (name == QLatin1String("updated")) {
-                    current.updated = xml.readElementText();
-                } else if (name == QLatin1String("link")
-                           && xml.attributes().value(QLatin1String("rel"))
-                                  == QLatin1String("alternate")) {
-                    current.link = xml.attributes().value(QLatin1String("href")).toString();
-                } else if (name == QLatin1String("content")) {
-                    // type="html" 的正文是转义后的 HTML，readElementText 读出即还原
-                    current.content = xml.readElementText();
-                }
-            }
-        } else if (xml.isEndElement() && xml.name().toString() == QLatin1String("entry")) {
-            if (inEntry) entries.append(current);
-            inEntry = false;
-        }
-    }
-
-    if (xml.hasError()) {
-        m_atomError = QCoreApplication::translate("clashqt::app", "Could not parse the content: %1").arg(xml.errorString());
-        return false;
-    }
-
-    // 与 API 路径同一套规则：tag 取自链接末尾（.../releases/tag/v0.2.0），
-    // 不是版本号的（continuous_build）与预发布（v0.2.0-rc1）都跳过。
-    for (const Entry &entry : entries) {
-        const QString tag = entry.link.section(QLatin1Char('/'), -1).trimmed();
-        if (tag.isEmpty() || tag.contains(QLatin1Char('-'))) continue;
-
-        const QString version = normalizeVersion(tag);
-        if (version.isEmpty()) continue;
-
-        ReleaseInfo info;
-        info.tagName     = tag;
-        info.version     = version;
-        info.title       = entry.title;
-        info.notes       = entry.content;
-        info.notesIsHtml = true;
-        info.pageUrl     = QUrl(entry.link);
-        info.publishedAt = entry.updated;
-        // tag 推上去就会出现在 Atom 里，这时 Release 可能还没建：先确认再提示
-        if (looksLikePlaceholder(info)) verifyPlaceholder(info);
-        else report(info);
-        return true;
-    }
-
-    // 只有持续构建之类的非版本发布
-    m_running = false;
-    emit upToDate(QLatin1String(CLASHQT_VERSION));
-    return true;
-}
-
-QUrl UpdateChecker::releaseTagsUrl(const QString &tag) const
-{
-    QUrl url = m_endpoint;
-    url.setQuery(QString()); // 去掉 per_page / 任何筛选条件
-    QString path = url.path();
-    if (!path.endsWith(QLatin1Char('/'))) path += QLatin1Char('/');
-    url.setPath(path + QStringLiteral("tags/") + tag);
-    return url;
-}
-
-void UpdateChecker::verifyPlaceholder(const ReleaseInfo &info)
-{
-    // 没有 API、配额用尽或时间不够：这一次就当没有更新。占位条目上除了一行
-    // tag 说明什么都没有，提示出去只会让人以为发布已经完成、然后找不到安装包。
-    if (!m_manager || m_endpoint.isEmpty() || apiRateLimited()
-        || remainingBudgetMs() < kMinBudgetMs) {
-        m_running = false;
-        emit upToDate(QLatin1String(CLASHQT_VERSION));
-        return;
-    }
-
-    QNetworkRequest request(releaseTagsUrl(info.tagName));
-    request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("clash-qt/%1").arg(QLatin1String(CLASHQT_VERSION)));
-    request.setRawHeader("Accept", "application/vnd.github+json");
-    request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
-    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                         QNetworkRequest::NoLessSafeRedirectPolicy);
-
-    QNetworkReply *reply = m_manager->get(request);
-    m_verifyReply = reply;
-
-    const int timeout = qBound(1000, remainingBudgetMs(), kTimeoutMs);
-    QTimer::singleShot(timeout, this, [this, reply]() {
-        if (m_verifyReply == reply) reply->abort();
-    });
-
-    QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, info]() {
-        if (m_verifyReply != reply) { // 已被 cancelInflight 放弃
-            reply->deleteLater();
-            return;
-        }
-        m_verifyReply = nullptr;
-        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 403) {
-            noteRateLimit(reply);
-        }
-        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        const QByteArray payload = reply->readAll();
-        reply->deleteLater();
-
-        // 404：tag 在、Release 还没建 —— 正是 CI 编译的那几分钟。其余失败
-        // （限流、超时、5xx）也一样：两个占位信号都命中了，不冒这个险。
-        if (status != 200) {
-            m_running = false;
-            emit upToDate(QLatin1String(CLASHQT_VERSION));
-            return;
-        }
-
-        // 确认到正式 Release：以 API 的数据为准，它比 Atom 多出资产列表，
-        // 正文也是原始 Markdown（Atom 那份是渲染后的 HTML）
-        const QJsonObject object = QJsonDocument::fromJson(payload).object();
-        ReleaseInfo merged = info;
-
-        const QString title = object.value(QStringLiteral("name")).toString();
-        if (!title.trimmed().isEmpty()) merged.title = title;
-
-        const QString body = object.value(QStringLiteral("body")).toString();
-        if (!body.trimmed().isEmpty()) {
-            merged.notes       = body;
-            merged.notesIsHtml = false;
-        }
-        merged.hasAssets = !object.value(QStringLiteral("assets")).toArray().isEmpty();
-
-        const QUrl page(object.value(QStringLiteral("html_url")).toString());
-        if (!page.isEmpty()) merged.pageUrl = page;
-
-        const QString published = object.value(QStringLiteral("published_at")).toString();
-        if (!published.isEmpty()) merged.publishedAt = published;
-
-        report(merged);
-    });
 }
 
 void UpdateChecker::report(const ReleaseInfo &release)

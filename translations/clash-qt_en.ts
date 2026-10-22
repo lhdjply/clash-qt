@@ -1705,8 +1705,8 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="187"/>
-        <source>Fetches the latest version from GitHub Releases. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</source>
-        <translation>Fetches the latest version from GitHub Releases. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</translation>
+        <source>Reads the update manifest attached to the latest release, fetched through public GitHub mirrors. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</source>
+        <translation>Reads the update manifest attached to the latest release, fetched through public GitHub mirrors. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</translation>
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="239"/>
@@ -2003,45 +2003,29 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>%1 min</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="146"/>
-        <source>Atom feed</source>
-        <translation>Atom feed</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="210"/>
-        <source>Skipped: overall time budget exhausted</source>
-        <translation>Skipped: overall time budget exhausted</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="327"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="266"/>
         <source>Request timed out</source>
         <translation>Request timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="407"/>
-        <source>Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)</source>
-        <translation>Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)</translation>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="268"/>
+        <source>The release has no update manifest</source>
+        <translation>The release has no update manifest</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="425"/>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="427"/>
-        <source>Not attempted</source>
-        <translation>Not attempted</translation>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="328"/>
+        <source>No update manifest address available</source>
+        <translation>No update manifest address available</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="430"/>
-        <source>No update source available</source>
-        <translation>No update source available</translation>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="341"/>
+        <source>Could not parse the manifest: %1</source>
+        <translation>Could not parse the manifest: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="438"/>
-        <source>Could not parse the response: %1</source>
-        <translation>Could not parse the response: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="521"/>
-        <source>Could not parse the content: %1</source>
-        <translation>Could not parse the content: %1</translation>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="350"/>
+        <source>The manifest has no usable version field</source>
+        <translation>The manifest has no usable version field</translation>
     </message>
     <message>
         <location filename="../src/app/src/config/AppConfig.cpp" line="208"/>
