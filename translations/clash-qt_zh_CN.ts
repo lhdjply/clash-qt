@@ -1187,171 +1187,176 @@ Try &quot;Update selected&quot; again later.</source>
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="90"/>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="326"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="336"/>
         <source>Nodes</source>
         <translation>节点</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="109"/>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="143"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="110"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="149"/>
         <source>Testing</source>
         <translation>测试中</translation>
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="111"/>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="144"/>
+        <source>Test</source>
+        <translation>测试</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="112"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="151"/>
         <source>Timeout</source>
         <translation>超时</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="285"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="291"/>
         <source>Proxies</source>
         <translation>代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="286"/>
-        <source>Pick a node from the proxy group. The badge on the right is the protocol type; nodes of the same color belong to the same transport family. In global mode, the GLOBAL group decides the exit for all traffic.</source>
-        <translation>选择代理组中的节点。右侧徽章是协议类型，颜色相同的节点属于同一传输族；GLOBAL 组在全局模式下决定所有流量的出口。</translation>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="292"/>
+        <source>Pick a node from the proxy group: click a card to switch to it. The text on the right is the last measured latency; click it to test that node again, or click Test on a node that has not been measured yet. In global mode, the GLOBAL group decides the exit for all traffic.</source>
+        <translation>从代理组里选一个节点：点卡片即切换。右侧的文字是上次测得的延迟，点它会重新测速；还没测过的节点显示「测试」，点它测一次。全局模式下，GLOBAL 组决定所有流量的出口。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="292"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="298"/>
         <source>Proxy group</source>
         <translation>代理组</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="301"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="311"/>
         <source>Sort</source>
         <translation>排序</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="303"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="313"/>
         <source>Default order</source>
         <translation>默认顺序</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="304"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="314"/>
         <source>Name</source>
         <translation>名称</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="305"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="315"/>
         <source>Type</source>
         <translation>类型</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="306"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="316"/>
         <source>Latency</source>
         <translation>延迟</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="308"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="318"/>
         <source>Sort nodes by name, protocol type or latest measured latency.
 Latency sorts ascending; untested and timed-out nodes go last. Sorting never changes the selected node.</source>
         <translation>按名称、协议类型或最近一次测速延迟排列节点。
 延迟按升序，未测与超时排在最后；切换排序不会改变当前选中的节点。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="315"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="325"/>
         <source>Test this group</source>
         <translation>测试本组</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="316"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="326"/>
         <source>Test all groups</source>
         <translation>测试全部组</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="409"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="438"/>
         <source>The active profile has no proxy groups</source>
         <translation>当前订阅没有任何代理组</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="442"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="472"/>
         <source>Type %1 · %2 members</source>
         <translation>类型 %1 · 共 %2 个成员</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="447"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="477"/>
         <source>Current node: %1</source>
         <translation>当前节点：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="475"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="505"/>
         <source>Proxy group · %1</source>
         <translation>代理组 · %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="476"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="506"/>
         <source>Protocol · %1</source>
         <translation>协议 · %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="477"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="507"/>
         <source>Unknown</source>
         <translation>未知</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="479"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="509"/>
         <source>This protocol is not supported yet; connections will fail explicitly</source>
         <translation>当前实现尚不支持该协议，选中后连接会明确失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="485"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="515"/>
         <source>Last latency test timed out</source>
         <translation>最近一次测速超时</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="490"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="520"/>
         <source>Last latency %1 ms</source>
         <translation>上次延迟 %1 ms</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="491"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="521"/>
         <source>Last test timed out</source>
         <translation>上次测试超时</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="496"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="526"/>
         <source>Currently pointing at %1</source>
         <translation>当前指向 %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="498"/>
-        <source>Click the bolt icon in a row to test that node</source>
-        <translation>点击行内闪电图标可单独测速</translation>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="528"/>
+        <source>Click the text on the right of a card to test that node</source>
+        <translation>点卡片右侧的文字可测速</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="697"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="745"/>
         <source>Node no longer exists</source>
         <translation>节点已不存在</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="728"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="776"/>
         <source>Latency test finished: %1/%2 nodes available</source>
         <translation>测速完成：%1/%2 个节点可用</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="732"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="780"/>
         <source>%1 latency test failed: %2</source>
         <translation>%1 测速失败：%2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="748"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="796"/>
         <source>These nodes are being tested, or none can be tested</source>
         <translation>这些节点正在测速，或没有可测的节点</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="761"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="809"/>
         <source>Testing %1 nodes (%2 at a time, results fill in as they finish)</source>
         <translation>开始测试 %1 个节点（同时 %2 个，结果逐个回填）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="789"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="839"/>
         <source>Failed to switch node: %1</source>
         <translation>切换节点失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="797"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="847"/>
         <source>%1 switched to %2</source>
         <translation>%1 已切换到 %2</translation>
     </message>
@@ -1500,17 +1505,17 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>尚未载入规则</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="131"/>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="132"/>
         <source>%1 hits in this session</source>
         <translation>本次运行命中 %1 次</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="132"/>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="133"/>
         <source>Disabled until restart</source>
         <translation>已停用，重启后恢复</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="89"/>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="90"/>
         <source>Failed to update rule state</source>
         <translation>规则状态更新失败</translation>
     </message>

@@ -3,10 +3,9 @@
 // ---------------------------------------------------------------------------
 //  代理页
 //
-//  对应参照实现的 src/renderer/src/pages/proxies.tsx。
-//  左侧选择代理组，右侧列出组成员；支持切换选中节点、单节点测速与整组测速。
-//  单节点测速是行内的小闪电按钮（鼠标悬停时高亮），测速在独立线程里跑，
-//  期间该行显示「测试中」，不阻塞界面。
+//  选择代理组后，组成员按卡片排成网格：点卡片切换节点，卡片右侧是最近一次
+//  测速的延迟，鼠标悬停时露出测速闪电。测速在独立线程里跑，期间卡片显示
+//  「测试中」，不阻塞界面。
 // ---------------------------------------------------------------------------
 
 #include <QQueue>
@@ -17,6 +16,7 @@
 class QComboBox;
 class QLabel;
 class QListWidget;
+class QListWidgetItem;
 class QPushButton;
 
 namespace clashqt {
@@ -40,11 +40,15 @@ protected:
 private slots:
     void onGroupChanged(int index);
     void onSortChanged(int index);
-    void onItemActivated();
     void onTestCurrent();
     void onTestAll();
 
 private:
+    // 点卡片切换节点（测速热区的点击在 eventFilter 里就被拦下了）
+    void activateItem(QListWidgetItem *item);
+    // 按视口宽度重算网格：一排放几张卡片
+    void updateGridSize();
+
     // 列表排序方式。默认顺序即订阅里成员的原始排列，不做任何重排。
     enum class SortMode { Default, Name, Type, Delay };
 

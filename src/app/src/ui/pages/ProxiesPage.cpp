@@ -103,70 +103,84 @@ QFont scaledFont(const QFont &base, qreal delta, bool bold = false)
     return font;
 }
 
-// 右侧延迟文字。测速进行中优先显示「测试中」，与委托、命中测试共用同一套规则。
+// 右侧延迟文字。测速进行中优先显示「测试中」；没测过的显示「测试」，
+// 那个位置本身就是重测按钮，与委托、命中测试共用同一套规则。
 QString delayTextFor(bool testing, const QVariant &delayValue)
 {
     if (testing) return QCoreApplication::translate("clashqt::ProxiesPage", "Testing");
-    if (!delayValue.isValid()) return QString();
+    if (!delayValue.isValid()) return QCoreApplication::translate("clashqt::ProxiesPage", "Test");
     return delayValue.toInt() < 0 ? QCoreApplication::translate("clashqt::ProxiesPage", "Timeout")
                                   : QStringLiteral("%1 ms").arg(delayValue.toInt());
 }
 
-// 一行里各元素的矩形。绘制与点击命中**共用这一份排版**，
+// 网格里一格的排版。绘制与点击命中共用这一份矩形，
 // 否则「看到的位置」和「点到的位置」迟早会错开。
-struct RowGeometry {
+struct CellGeometry {
+    QRect card;
     QRect name;
-    QRect test;  // 行内测速按钮的热区
-    QRect badge;
-    QRect delay;
+    QRect badge; // 协议类型胶囊
+    QRect delay; // 延迟；没测过时这里显示「测试」
 };
 
-constexpr int kTestButtonSize = 20;  // 热区边长（图标 14）
 // 同时进行的测速数：每个测速占一个线程 + 一条到节点的连接。开太大在弱网下
 // 会互相抢带宽、延迟全偏高；5 个在「68 个节点」这种规模下大约十几秒跑完。
 constexpr int kMaxConcurrentTests = 5;
-constexpr int kRowPaddingX    = 10; // 与样式表 QListWidget::item 的 padding 对齐
 
-RowGeometry layoutRow(const QRect &itemRect, const QFont &baseFont, const QString &badgeText,
-                      const QString &delayText, bool current)
+constexpr int kCellInsetX   = 3; // 卡片与格子边缘之间的留白
+constexpr int kCellInsetY   = 4;
+constexpr int kCardPaddingX = 9;
+constexpr int kDelayGap     = 4;
+constexpr int kBadgeHeight  = 16;
+constexpr int kBadgeGap     = 4;
+
+constexpr int kCellHeight   = 52;  // 一行卡片占的高度（含上下留白）
+constexpr int kMinCellWidth = 196; // 每格最小宽度，决定一排放几张卡片
+
+// 协议胶囊的字体：比名称小两号，深色底上也不至于糊成一团
+QFont badgeFont(const QFont &base) { return scaledFont(base, 2.5, true); }
+
+// 延迟槽的宽度：取三种最长文案，英文的 Timeout 比中文「超时」宽不少，
+// 写死数值在英文界面会把字截断
+int delaySlotWidth(const QFont &baseFont)
 {
-    RowGeometry g;
-    const QRect row   = itemRect.adjusted(kRowPaddingX, 1, -12, -1);
-    const int   midY  = row.center().y();
-    int         right = row.right();
+    const QFontMetrics metrics(scaledFont(baseFont, 1.0));
+    return qMax(metrics.horizontalAdvance(QStringLiteral("8888 ms")),
+                qMax(metrics.horizontalAdvance(
+                         QCoreApplication::translate("clashqt::ProxiesPage", "Testing")),
+                     metrics.horizontalAdvance(
+                         QCoreApplication::translate("clashqt::ProxiesPage", "Timeout"))));
+}
 
-    // 延迟占一个**固定宽度**的槽位：若按实际文字宽度右对齐，带延迟的行会把
-    // 徽章和测速按钮整体左推，几十行看下来图标是锯齿状。槽宽取三种最长文案。
-    const QFont delayFont = scaledFont(baseFont, 1.0);
-    const QFontMetrics delayMetrics(delayFont);
-    const int slotWidth = qMax(delayMetrics.horizontalAdvance(QStringLiteral("8888 ms")),
-                               qMax(delayMetrics.horizontalAdvance(QCoreApplication::translate("clashqt::ProxiesPage", "Testing")),
-                                    delayMetrics.horizontalAdvance(QCoreApplication::translate("clashqt::ProxiesPage", "Timeout"))));
-    g.delay = QRect(right - slotWidth, row.top(), slotWidth, row.height());
-    right -= slotWidth + 10;
+CellGeometry layoutCell(const QRect &cellRect, const QFont &baseFont, const QString &badgeText)
+{
+    CellGeometry g;
+    g.card = cellRect.adjusted(kCellInsetX, kCellInsetY, -kCellInsetX, -kCellInsetY);
 
-    const QFont badgeFont = scaledFont(baseFont, 1.5, true);
-    const int   badgeW    = QFontMetrics(badgeFont).horizontalAdvance(badgeText) + 16;
-    const int   badgeH    = 18;
-    g.badge = QRect(right - badgeW, midY - badgeH / 2, badgeW, badgeH);
-    right -= badgeW + 12;
+    const int midY  = g.card.center().y();
+    int       right = g.card.right() - kCardPaddingX;
 
-    g.test  = QRect(right - kTestButtonSize, midY - kTestButtonSize / 2, kTestButtonSize,
-                    kTestButtonSize);
-    right  -= kTestButtonSize + 4;
+    const int slot  = delaySlotWidth(baseFont);
+    g.delay = QRect(right - slot, g.card.top(), slot, g.card.height());
+    right -= slot + kDelayGap;
 
-    const int left = row.left() + (current ? 14 : 0);
-    g.name = QRect(left, row.top(), qMax(20, right - left), row.height());
+    if (!badgeText.isEmpty()) {
+        const int width = QFontMetrics(badgeFont(baseFont)).horizontalAdvance(badgeText) + 10;
+        g.badge = QRect(right - width, midY - kBadgeHeight / 2, width, kBadgeHeight);
+        right -= width + kBadgeGap;
+    }
+
+    const int left = g.card.left() + kCardPaddingX;
+    g.name = QRect(left, g.card.top(), qMax(20, right - left), g.card.height());
     return g;
 }
 
 // ---------------------------------------------------------------------------
-//  行绘制：当前标记 + 名称 + 协议徽章 + 延迟
+//  卡片绘制：名称 + 延迟，选中的卡片用强调色描边与浅底标出
 //
-//  背景仍交给样式表（选中 / 悬停 / 斑马纹），这里只清掉文字后自己排内容，
-//  这样列表的交互与主题（浅色 / 深色）都不需要另外维护一套样式。
+//  网格里不使用样式表的 item 背景（见列表的局部样式表），整张卡片由这里
+//  画出来，浅色与深色两套主题才能保持同一个观感。
 // ---------------------------------------------------------------------------
-class ProxyRowDelegate : public QStyledItemDelegate
+class ProxyCardDelegate : public QStyledItemDelegate
 {
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
@@ -174,16 +188,6 @@ public:
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
                const QModelIndex &index) const override
     {
-        // 背景 / 选中 / 悬停 / 斑马纹交给样式表，但**不能**调
-        // QStyledItemDelegate::paint —— 它内部会再次 initStyleOption，
-        // 把已经清空的文字重新填回模型里的节点名，结果每行文字画两遍（残影）。
-        QStyleOptionViewItem opt = option;
-        initStyleOption(&opt, index);
-        opt.text.clear();
-        opt.icon = QIcon();
-        QStyle *style = opt.widget ? opt.widget->style() : QApplication::style();
-        style->drawControl(QStyle::CE_ItemViewItem, &opt, painter, opt.widget);
-
         const QString  name        = index.data(kRoleName).toString();
         const QString  badge       = index.data(kRoleProtocol).toString();
         const bool     current     = index.data(kRoleCurrent).toBool();
@@ -195,13 +199,18 @@ public:
         if (!badgeColor.isValid()) badgeColor = ui::mutedColor();
 
         const ui::Theme &theme   = ui::theme();
-        const bool       hovered = option.state & QStyle::State_MouseOver;
+        const bool       hovered = (option.state & QStyle::State_MouseOver) != 0;
 
         const QString delayText = delayTextFor(testing, delayValue);
-        QColor        delayColor = theme.textMuted;
+        const bool    untested  = !testing && !delayValue.isValid();
+
+        QColor delayColor = theme.textMuted;
         if (testing) {
             delayColor = theme.accent;
-        } else if (!delayText.isEmpty()) {
+        } else if (untested) {
+            // 没测过的就是一颗按钮，指着这张卡时才点亮
+            delayColor = hovered ? theme.accent : theme.textMuted;
+        } else {
             const int delay = delayValue.toInt();
             delayColor = theme.danger;
             if (delay >= 0) {
@@ -211,64 +220,61 @@ public:
             }
         }
 
-        const RowGeometry g = layoutRow(option.rect, option.font, badge, delayText, current);
+        const CellGeometry g = layoutCell(option.rect, option.font, badge);
 
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing, true);
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->setClipRect(option.rect);
 
-        // ---- 右端：延迟 / 测试中 ----
+        // ---- 卡片底：当前节点用强调色描边 + 浅底，悬停时换一边框色 ----
+        const QColor border = current ? theme.accent
+                                      : (hovered ? theme.cardBorder : theme.separator);
+        painter->setPen(QPen(border, current ? 1.6 : 1.0));
+        painter->setBrush(current ? theme.accentSoft : (hovered ? theme.hover : theme.card));
+        painter->drawRoundedRect(QRectF(g.card).adjusted(0.5, 0.5, -0.5, -0.5), 7, 7);
+
+        // ---- 右端：延迟 / 超时 / 测试中；没测过则是「测试」按钮 ----
         if (!delayText.isEmpty()) {
             painter->setFont(scaledFont(option.font, 1.0));
             painter->setPen(delayColor);
             painter->drawText(g.delay, Qt::AlignRight | Qt::AlignVCenter, delayText);
         }
 
-        // ---- 右端：协议徽章（圆角胶囊）----
-        const QColor badgeText = theme.dark ? badgeColor : badgeColor.darker(118);
-        QColor       badgeBg   = badgeColor;
-        badgeBg.setAlpha(theme.dark ? 56 : 40); // 半透明底：两套主题都不刺眼
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(badgeBg);
-        painter->drawRoundedRect(g.badge, 9, 9);
-        painter->setFont(scaledFont(option.font, 1.5, true));
-        painter->setPen(badgeText);
-        painter->drawText(g.badge, Qt::AlignCenter, badge);
-
-        // ---- 行内测速按钮：平时淡色，悬停到该行时点亮 ----
-        const QPixmap bolt = ui::icons::pixmap(
-            QStringLiteral("bolt"), hovered ? theme.accent : theme.textMuted, 14);
-        if (!bolt.isNull()) {
-            painter->drawPixmap(
-                g.test.center() - QPoint(bolt.width() / 2, bolt.height() / 2), bolt);
-        }
-
-        // ---- 左端：当前节点圆点 + 名称 ----
-        if (current) {
+        // ---- 协议胶囊：颜色区分传输族，和列表模式下是同一套映射 ----
+        if (!g.badge.isNull()) {
+            QColor background = badgeColor;
+            background.setAlpha(theme.dark ? 56 : 40);
             painter->setPen(Qt::NoPen);
-            painter->setBrush(theme.accent);
-            painter->drawEllipse(QPointF(g.name.left() - 10, g.name.center().y() + 0.5), 3.2,
-                                 3.2);
+            painter->setBrush(background);
+            painter->drawRoundedRect(g.badge, kBadgeHeight / 2.0, kBadgeHeight / 2.0);
+
+            painter->setFont(badgeFont(option.font));
+            painter->setPen(theme.dark ? badgeColor : badgeColor.darker(118));
+            painter->drawText(g.badge, Qt::AlignCenter, badge);
         }
 
+        // ---- 名称：当前节点加粗，长名字从中间省略 ----
         QFont nameFont = option.font;
         if (current) nameFont.setBold(true);
         painter->setFont(nameFont);
         painter->setPen(unsupported ? theme.textMuted : theme.text);
 
-        // 名称过长时从中间省略：节点名常常是「地区 + 后缀」，两端都有信息
+        // 节点名普遍是「地区 + 线路」的长名字，从右侧省略能保住地区前缀
         const QString elided =
-            QFontMetrics(nameFont).elidedText(name, Qt::ElideMiddle, g.name.width());
+            QFontMetrics(nameFont).elidedText(name, Qt::ElideRight, g.name.width());
         painter->drawText(g.name, Qt::AlignLeft | Qt::AlignVCenter, elided);
 
         painter->restore();
     }
 
-    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override
+    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &) const override
     {
-        QSize size = QStyledItemDelegate::sizeHint(option, index);
-        size.setHeight(qMax(size.height(), 30)); // 给徽章留出上下呼吸
-        return size;
+        // 必须与 gridSize 一致，否则整格按这个尺寸排、卡片只画一小块
+        if (const auto *view = qobject_cast<const QListView *>(option.widget)) {
+            if (view->gridSize().width() > 0) return view->gridSize();
+        }
+        return QSize(kMinCellWidth, kCellHeight);
     }
 };
 
@@ -283,7 +289,7 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
 
     root->addWidget(ui::makePageHeader(
         tr("Proxies"),
-        tr("Pick a node from the proxy group. The badge on the right is the protocol type; nodes of the same color belong to the same transport family. In global mode, the GLOBAL group decides the exit for all traffic."), QStringLiteral("proxy")));
+        tr("Pick a node from the proxy group: click a card to switch to it. The text on the right is the last measured latency; click it to test that node again, or click Test on a node that has not been measured yet. In global mode, the GLOBAL group decides the exit for all traffic."), QStringLiteral("proxy")));
 
     // ---- 顶部操作条 -------------------------------------------------------
     auto *toolbar = new QHBoxLayout();
@@ -291,10 +297,14 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
 
     toolbar->addWidget(new QLabel(tr("Proxy group"), this));
     m_groupCombo = new QComboBox(this);
-    m_groupCombo->setMinimumWidth(240);
+    m_groupCombo->setMinimumWidth(200);
     toolbar->addWidget(m_groupCombo);
 
     m_summaryLabel = ui::makeHintLabel(QString(), this);
+    // 这一行只是辅助说明：不换行，也不许它把工具条（进而整页）撑宽，
+    // 英文长句放不下时宁可裁掉，节点数在下拉框右边还有工具提示
+    m_summaryLabel->setWordWrap(false);
+    m_summaryLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     toolbar->addWidget(m_summaryLabel, 1);
 
     // ---- 排序：只影响显示顺序，不改变订阅里成员的原始排列 -----------------
@@ -327,22 +337,41 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
     auto *cardLayout = qobject_cast<QVBoxLayout *>(card->layout());
 
     m_memberList = new QListWidget(card);
-    m_memberList->setAlternatingRowColors(true);
-    // 协议徽章与延迟由委托绘制（见文件顶部 ProxyRowDelegate）
-    m_memberList->setItemDelegate(new ProxyRowDelegate(m_memberList));
+    // 节点按卡片排成网格：列数随窗口宽度变化，格子大小由 updateGridSize 统一
+    m_memberList->setViewMode(QListView::IconMode);
+    m_memberList->setResizeMode(QListView::Adjust);
+    m_memberList->setMovement(QListView::Static);
+    m_memberList->setFlow(QListView::LeftToRight);
+    m_memberList->setWrapping(true);
+    m_memberList->setSpacing(0);
+    m_memberList->setUniformItemSizes(false); // 列宽随窗口变，不能缓存第一次的尺寸
+    m_memberList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_memberList->setAlternatingRowColors(false);
+    m_memberList->setItemDelegate(new ProxyCardDelegate(m_memberList));
     m_memberList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    // 行内测速按钮是绘制出来的，需要 hover 状态才能点亮；点击则走 eventFilter
+    m_memberList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // 卡片底色与选中描边都由委托绘制，这里把样式表给的 item 背景压掉
+    m_memberList->setStyleSheet(QStringLiteral(
+        "QListWidget { background: transparent; border: 0px; outline: 0px; }"
+        "QListWidget::item { padding: 0px; border: 0px; }"
+        "QListWidget::item:hover { background: transparent; }"
+        "QListWidget::item:selected { background: transparent; }"));
+    // 卡片里的测速按钮是绘制出来的，需要 hover 状态才能点亮；点击则走 eventFilter
     m_memberList->viewport()->setMouseTracking(true);
     m_memberList->viewport()->installEventFilter(this);
     cardLayout->addWidget(m_memberList);
     root->addWidget(card, 1);
+    updateGridSize();
 
     QObject::connect(m_groupCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &ProxiesPage::onGroupChanged);
     QObject::connect(m_sortCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &ProxiesPage::onSortChanged);
+    // 网格里点一下卡片就切过去，双击同样有效（有人习惯双击）
+    QObject::connect(m_memberList, &QListWidget::itemClicked, this,
+                     [this](QListWidgetItem *item) { activateItem(item); });
     QObject::connect(m_memberList, &QListWidget::itemDoubleClicked, this,
-                     &ProxiesPage::onItemActivated);
+                     [this](QListWidgetItem *item) { activateItem(item); });
     QObject::connect(m_testButton, &QPushButton::clicked, this, &ProxiesPage::onTestCurrent);
     QObject::connect(m_testAllButton, &QPushButton::clicked, this, &ProxiesPage::onTestAll);
 
@@ -421,6 +450,7 @@ void ProxiesPage::onGroupChanged(int index)
     // 否则几十个节点的列表每次都被甩回顶部
     const int scrollValue = m_memberList->verticalScrollBar()->value();
 
+    updateGridSize();
     m_memberList->clear();
     m_memberNames.clear();
 
@@ -495,7 +525,7 @@ void ProxiesPage::onGroupChanged(int index)
             const QString inner = member.value(QStringLiteral("now")).toString();
             if (!inner.isEmpty()) tip << tr("Currently pointing at %1").arg(inner);
         }
-        tip << tr("Click the bolt icon in a row to test that node");
+        tip << tr("Click the text on the right of a card to test that node");
 
         item->setToolTip(tip.join(QLatin1Char('\n')));
     }
@@ -632,6 +662,10 @@ bool ProxiesPage::eventFilter(QObject *watched, QEvent *event)
     case QEvent::Leave:
         m_memberList->viewport()->unsetCursor();
         break;
+    case QEvent::Resize:
+        // 窗口宽度变了就重新算一排放几张卡片
+        updateGridSize();
+        break;
     default:
         break;
     }
@@ -646,14 +680,28 @@ QString ProxiesPage::testButtonAt(const QPoint &pos) const
     const QString name = item->data(kRoleName).toString();
     if (name.isEmpty()) return QString();
 
-    const QString  badge = item->data(kRoleProtocol).toString();
-    const RowGeometry g =
-        layoutRow(m_memberList->visualItemRect(item), m_memberList->font(), badge,
-                  delayTextFor(item->data(kRoleTesting).toBool(), item->data(kRoleDelay)),
-                  item->data(kRoleCurrent).toBool());
+    const CellGeometry g =
+        layoutCell(m_memberList->visualItemRect(item), m_memberList->font(),
+                   item->data(kRoleProtocol).toString());
 
-    // 热区比图标略大，20px 的图标直接点太考验准头
-    return g.test.adjusted(-4, -4, 4, 4).contains(pos) ? name : QString();
+    // 热区比文字略大，只点那几个字太考验准头
+    return g.delay.adjusted(-6, -6, 6, 6).contains(pos) ? name : QString();
+}
+
+void ProxiesPage::updateGridSize()
+{
+    const int viewportWidth = m_memberList->viewport()->width();
+    if (viewportWidth <= 0) return;
+
+    // 列数由可用宽度决定，余量用整除摊掉，右侧才不会留一条空白。
+    // 右端要扣掉滚动条的宽度：它盖在视口里，按整幅宽度算会多排一列，
+    // 结果最后一列永远放不下，整行白白少一张卡片
+    const int usable    = qMax(kMinCellWidth, viewportWidth - 14);
+    const int cols      = qMax(1, usable / kMinCellWidth);
+    const int cellWidth = usable / cols;
+
+    if (m_memberList->gridSize().width() == cellWidth) return;
+    m_memberList->setGridSize(QSize(cellWidth, kCellHeight));
 }
 
 void ProxiesPage::testSingleNode(const QString &name)
@@ -775,13 +823,15 @@ void ProxiesPage::setRowDelay(const QString &name, int delayMs)
     }
 }
 
-void ProxiesPage::onItemActivated()
+void ProxiesPage::activateItem(QListWidgetItem *item)
 {
-    QListWidgetItem *item = m_memberList->currentItem();
     if (!item || m_currentGroup.isEmpty()) return;
 
     const QString memberName = item->data(kRoleName).toString();
     if (memberName.isEmpty()) return;
+
+    // 点的就是当前节点：不用再走一遍切换，省得刷两条提示
+    if (item->data(kRoleCurrent).toBool()) return;
 
     QString error;
     if (!m_context->hub()->selectProxy(m_currentGroup, memberName, &error)) {
