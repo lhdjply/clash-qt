@@ -1,3 +1,12 @@
+clash-qt (1.2.0) unstable; urgency=medium
+
+  * 连接、规则、代理三页改为卡片列表，各自显示每条内容的关键信息。
+  * 规则页可以单独停用某条规则，仅对本次运行有效，重启后恢复。
+  * 界面新增日本語、한국어、Deutsch、Français、Español、Русский 与繁體中文。
+  * 修复规则命中次数一直显示 0、连接地址带 IPv4 映射前缀的问题。
+
+ -- Clash Qt Maintainers <lhdjply@users.noreply.github.com>  Thu, 22 Oct 2026 15:31:56 +0800
+
 clash-qt (1.1.1) unstable; urgency=medium
 
   * 新增启动时自动检查更新，可在设置页关闭；只在真有新版本时提示，托盘
