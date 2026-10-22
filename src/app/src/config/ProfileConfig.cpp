@@ -45,11 +45,25 @@ ProfileItem ProfileItem::fromJson(const QJsonObject &object)
 
     const QJsonObject extra = object.value(QStringLiteral("extra")).toObject();
     if (!extra.isEmpty()) {
+        // 标量在 YAML 里一律写成带引号的字符串，直接 toDouble() 会得到 0，
+        // 于是重启后流量与到期全是空。另外流量总量常见上百 GB，超过 int
+        // 范围，必须按 long long 解析
+        const auto number = [&extra](const QString &key) -> qint64 {
+            const QJsonValue value = extra.value(key);
+            if (value.isDouble()) return qint64(value.toDouble());
+            if (value.isString()) {
+                bool         ok     = false;
+                const qint64 parsed = value.toString().trimmed().toLongLong(&ok);
+                if (ok) return parsed;
+            }
+            return 0;
+        };
+
         SubscriptionUserInfo info;
-        info.upload   = qint64(extra.value(QStringLiteral("upload")).toDouble());
-        info.download = qint64(extra.value(QStringLiteral("download")).toDouble());
-        info.total    = qint64(extra.value(QStringLiteral("total")).toDouble());
-        info.expire   = qint64(extra.value(QStringLiteral("expire")).toDouble());
+        info.upload   = number(QStringLiteral("upload"));
+        info.download = number(QStringLiteral("download"));
+        info.total    = number(QStringLiteral("total"));
+        info.expire   = number(QStringLiteral("expire"));
         item.extra    = info;
     }
     return item;
