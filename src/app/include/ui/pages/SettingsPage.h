@@ -44,6 +44,7 @@ private slots:
     void onOpenDataDir();
     // 检查更新：按钮进入「检查中」状态，结果通过 UpdateChecker 的信号回来
     void onCheckUpdate();
+    void onAutoCheckUpdateToggled(bool enabled);
 
 private:
     AppContext   *m_context = nullptr;
@@ -62,6 +63,7 @@ private:
     QComboBox    *m_languageCombo = nullptr;
     QLabel       *m_dataDirLabel = nullptr;
     QPushButton  *m_checkUpdate = nullptr;
+    QCheckBox    *m_autoCheckUpdate = nullptr;
     UpdateChecker *m_updater = nullptr;
 
     void setUpdateCheckBusy(bool busy);

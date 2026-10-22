@@ -9,6 +9,7 @@
 #include "ui/Icons.h"
 #include "ui/TileButton.h"
 #include "ui/UiFactory.h"
+#include "ui/UpdateDialog.h"
 #include "ui/pages/ConnectionsPage.h"
 #include "ui/pages/LogsPage.h"
 #include "ui/pages/OverridePage.h"
@@ -17,6 +18,7 @@
 #include "ui/pages/RulesPage.h"
 #include "ui/pages/SettingsPage.h"
 #include "ui/pages/TrafficPage.h"
+#include "updater/UpdateChecker.h"
 #include "utils/AppLogger.h"
 #include "utils/Calc.h"
 
@@ -1056,6 +1058,46 @@ void MainWindow::paintEvent(QPaintEvent *event)
     start.setAlpha(0);
     glow.setColorAt(1.0, start);
     painter.fillRect(area, glow);
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+
+    // 首次显示后安排一次检查：先让窗口画出来，也别和内核启动抢带宽。
+    // 静默启动时窗口根本没显示，这里自然就跳过了。
+    if (m_updateCheckScheduled) return;
+    m_updateCheckScheduled = true;
+    if (m_context->appConfig()->autoCheckUpdate()) {
+        QTimer::singleShot(3000, this, &MainWindow::checkUpdatesOnStartup);
+    }
+}
+
+void MainWindow::checkUpdatesOnStartup()
+{
+    // 托盘里的静默启动没有窗口可弹，查了也没处显示；等窗口真的出来再说
+    if (!isVisible()) return;
+
+    // 同一进程只查一次：关到托盘再从托盘打开窗口会重新建一个 MainWindow，
+    // 没升级的话每次都会再弹一遍
+    static bool checked = false;
+    if (checked) return;
+    checked = true;
+
+    auto *checker = new UpdateChecker(this);
+    QObject::connect(checker, &UpdateChecker::updateAvailable, this,
+                     [this, checker](const ReleaseInfo &release) {
+                         checker->deleteLater();
+                         if (!isVisible()) return;
+                         UpdateDialog dialog(release, this);
+                         dialog.exec();
+                     });
+    // 已是最新、或者取不到清单：都只是后台的一次尝试，不打扰
+    QObject::connect(checker, &UpdateChecker::upToDate, checker, &QObject::deleteLater);
+    QObject::connect(checker, &UpdateChecker::failed, checker, &QObject::deleteLater);
+
+    const int port = m_context->isKernelRunning() ? m_context->controledConfig()->mixedPort() : 0;
+    if (!checker->check(port)) checker->deleteLater();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

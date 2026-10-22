@@ -25,8 +25,11 @@
   shared proxy nodes often get a 403). Requests alternate between a direct connection and
   the local mixed port: mirrors are usually reachable directly, while restricted networks
   often only let traffic out through a node, so both paths are tried and whichever answers
-  first wins. It only shows the changelog and a link to the release page — downloading and
-  installing is left to the user. The manifest cannot
+  first wins. The app also runs one check shortly after startup (turn it off with
+  "Check for updates when the app starts" in settings); that check stays quiet on
+  failure and only prompts when a newer version really exists, while a manual check
+  explains what went wrong. It only shows the changelog and a link to the release page —
+  downloading and installing is left to the user. The manifest cannot
   produce a placeholder entry: it is a release asset, so it only exists once the release
   does, and a tag pushed while CI is still building cannot trigger an update prompt.
 - **System proxy on exit**: quitting (closing the window, tray exit, SIGTERM) restores the

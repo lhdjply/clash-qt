@@ -170,18 +170,28 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
     auto *aboutCard = ui::makeCard(tr("About"), this, QStringLiteral("info"));
     auto *aboutLayout = qobject_cast<QVBoxLayout *>(aboutCard->layout());
 
+    // 设置项在上、版本与操作在下：先给「要不要自动查」，再看「查一次」，
+    // 版本号垫底当页脚信息，不压在设置项前面。
+    // 启动时自动查一次：默认开着，查失败不提示，只有真发现新版本才弹窗
+    m_autoCheckUpdate = new QCheckBox(tr("Check for updates when the app starts"), aboutCard);
+    aboutLayout->addWidget(m_autoCheckUpdate);
+
+    // 版本是静态信息、按钮是操作，放在同一行；版本用次要色，
+    // 免得和按钮抢注意力
+    auto *versionRow = new QHBoxLayout();
+    versionRow->setContentsMargins(0, 0, 0, 0);
+    versionRow->setSpacing(10);
+
     auto *versionLabel =
         new QLabel(tr("Version v%1").arg(QLatin1String(CLASHQT_VERSION)), aboutCard);
-    aboutLayout->addWidget(versionLabel);
+    versionLabel->setObjectName(QStringLiteral("hintLabel"));
+    versionRow->addWidget(versionLabel);
+    versionRow->addStretch(1);
 
     m_checkUpdate = new QPushButton(tr("Check for updates"), aboutCard);
     ui::decorate(m_checkUpdate, QStringLiteral("refresh"));
-    auto *updateRow = new QHBoxLayout();
-    updateRow->setContentsMargins(0, 0, 0, 0);
-    updateRow->setSpacing(8);
-    updateRow->addWidget(m_checkUpdate);
-    updateRow->addStretch(1);
-    aboutLayout->addLayout(updateRow);
+    versionRow->addWidget(m_checkUpdate);
+    aboutLayout->addLayout(versionRow);
 
     aboutLayout->addWidget(ui::makeHintLabel(
         tr("Reads the update manifest attached to the latest release, fetched through public GitHub mirrors. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you."),
@@ -221,6 +231,8 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
                      &SettingsPage::onThemeChanged);
     QObject::connect(m_languageCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                      &SettingsPage::onLanguageChanged);
+    QObject::connect(m_autoCheckUpdate, &QCheckBox::toggled, this,
+                     &SettingsPage::onAutoCheckUpdateToggled);
     QObject::connect(openDir, &QPushButton::clicked, this, &SettingsPage::onOpenDataDir);
 
     // ---- 检查更新 ---------------------------------------------------------
@@ -285,6 +297,7 @@ void SettingsPage::loadFromConfig()
     m_languageCombo->setCurrentIndex(languageIndex >= 0 ? languageIndex : 0);
 
     m_dataDirLabel->setText(tr("Data folder: %1").arg(paths::dataDir()));
+    m_autoCheckUpdate->setChecked(app->autoCheckUpdate());
 
     m_loading = false;
 }
@@ -465,6 +478,12 @@ void SettingsPage::setUpdateCheckBusy(bool busy)
     if (!m_checkUpdate) return;
     m_checkUpdate->setEnabled(!busy);
     m_checkUpdate->setText(busy ? tr("Checking…") : tr("Check for updates"));
+}
+
+void SettingsPage::onAutoCheckUpdateToggled(bool enabled)
+{
+    if (m_loading) return;
+    m_context->appConfig()->patch(QJsonObject{{QStringLiteral("autoCheckUpdate"), enabled}});
 }
 
 } // namespace clashqt

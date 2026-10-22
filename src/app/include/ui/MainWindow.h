@@ -40,6 +40,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     // 自绘窗口背景：对角渐变 + 左上角光晕。侧栏与卡片是半透明面板，
     // 叠在这层背景上形成「磨砂玻璃透底」的观感（见 UiFactory.h 说明）。
     void paintEvent(QPaintEvent *event) override;
@@ -95,6 +96,8 @@ private:
     void updateTray();
     // 按 AppContext 的真实状态同步「快捷设置」与托盘里的 TUN 开关
     void syncTunUi();
+    // 启动时自动检查一次更新（设置里可关）：只在真有新版本时提示
+    void checkUpdatesOnStartup();
     // 托盘 tooltip 里的接管状态（系统代理 / TUN / 两者）
     QString trayStateText() const;
     // 依据配置应用主题
@@ -140,6 +143,8 @@ private:
     // 托盘图标最近一次设置的状态；用于判断是否需要补发延迟重设
     int  m_trayIconState   = -1;   // AppIconState 的整数值
     bool m_trayIconApplied = false;
+    // 首次显示后是否已安排过启动更新检查
+    bool m_updateCheckScheduled = false;
 };
 
 } // namespace clashqt

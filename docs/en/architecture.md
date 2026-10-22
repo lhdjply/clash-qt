@@ -68,8 +68,9 @@ listeners explicitly (see `AppContext::shutdown`).
   Settings pages
 - System integration: Linux system proxy (gsettings and KDE kioslaverc), XDG autostart,
   system tray
-- Update check: one click on the settings page queries GitHub Releases, shows the
-  changelog and links to the download page (notification only, no auto download/install)
+- Update check: one check on startup (can be turned off in settings) plus a manual
+  button; shows the changelog and links to the download page (notification only,
+  no auto download/install)
 - Logging: separate app and kernel channels on disk, daily rotation, retention-based
   cleanup
 
