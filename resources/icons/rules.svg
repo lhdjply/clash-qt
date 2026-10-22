@@ -1,8 +1,9 @@
 <!-- 规则：漏斗（筛选）
+     斗颈两侧平行、底边平齐：斜切的斗颈在小尺寸下会糊成一根斜杠
      24x24 线性图标：描边色写 currentColor，由运行时按主题替换
      （见 src/app/src/ui/Icons.cpp） -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
      stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
      stroke-linejoin="round">
-  <path d="M4 5h16l-6.2 7.4V19l-3.6-2.1v-4.5L4 5z"/>
+  <path d="M3.9 5.1h16.2l-5.4 7.2v6.3h-5.4v-6.3z"/>
 </svg>

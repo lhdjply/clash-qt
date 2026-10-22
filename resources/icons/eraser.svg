@@ -1,10 +1,13 @@
-<!-- 擦除：橡皮
+<!-- 擦除：橡皮（斜放，中间一道线分开胶芯与套筒）
+     用 rotate 组摆放：圆角与分割线的几何关系不会随手写坐标走形
      24x24 线性图标：描边色写 currentColor，由运行时按主题替换
      （见 src/app/src/ui/Icons.cpp） -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
      stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
      stroke-linejoin="round">
-  <path d="M8.5 20h11"/>
-  <path d="M4.6 15.6 12.2 8l4.2 4.2-5.4 5.4a2 2 0 0 1-2.8 0l-3.6-3.6a1.5 1.5 0 0 1 0-2.1z"/>
-  <path d="M12.2 8l2.6-2.6a2 2 0 0 1 2.8 0l2 2a2 2 0 0 1 0 2.8L16.4 12.2"/>
+  <g transform="rotate(-45 11.8 12.2)">
+    <rect x="4.4" y="8.9" width="14.2" height="7.4" rx="1.5"/>
+    <path d="M11 8.9v7.4"/>
+  </g>
+  <path d="M4.6 20.5h14.8"/>
 </svg>
