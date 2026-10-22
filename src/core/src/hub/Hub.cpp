@@ -800,7 +800,7 @@ QJsonObject Hub::rulesStatus() const
 
         QJsonObject extra;
         extra.insert(QStringLiteral("disabled"), rule->disabled());
-        extra.insert(QStringLiteral("hitCount"), 0);
+        extra.insert(QStringLiteral("hitCount"), double(rule->hitCount()));
         extra.insert(QStringLiteral("hitAt"), QString());
         extra.insert(QStringLiteral("missCount"), 0);
         extra.insert(QStringLiteral("missAt"), QString());

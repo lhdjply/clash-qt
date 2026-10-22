@@ -32,6 +32,7 @@
 #include <QStringList>
 
 #include <memory>
+#include <atomic>
 #include <vector>
 
 namespace core {
@@ -118,6 +119,10 @@ public:
     bool disabled() const { return m_disabled; }
     void setDisabled(bool disabled) { m_disabled = disabled; }
 
+    // 本次运行的命中次数，规则页展示用。转发线程在写，界面线程在读
+    quint64 hitCount() const { return m_hitCount.load(std::memory_order_relaxed); }
+    void    noteHit() const { m_hitCount.fetch_add(1, std::memory_order_relaxed); }
+
     // 是否需要先做 DNS 解析才能判定；返回 true 的规则在 host 为域名时
     // 需要 Tunnel 先解析出 dstIp 再重试匹配（对应参照实现的 shouldResolveIP）
     virtual bool requiresResolution() const { return false; }
@@ -143,6 +148,8 @@ protected:
     QString     m_target;
     QStringList m_params;
     bool        m_disabled = false;
+
+    mutable std::atomic<quint64> m_hitCount{0};
 };
 
 using RulePtr = std::shared_ptr<Rule>;

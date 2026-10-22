@@ -384,67 +384,67 @@
 <context>
     <name>clashqt::ConnectionsPage</name>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="38"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="63"/>
         <source>Connections</source>
         <translation>Connections</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="39"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="64"/>
         <source>Active connections, one card each. Double-click a card, or use the × on its right, to close that connection.</source>
         <translation>Active connections, one card each. Double-click a card, or use the × on its right, to close that connection.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="48"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="73"/>
         <source>Auto refresh (1 s)</source>
         <translation>Auto refresh (1 s)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="52"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="77"/>
         <source>Close selected</source>
         <translation>Close selected</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="53"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="78"/>
         <source>Close all</source>
         <translation>Close all</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="79"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="104"/>
         <source>No active connections</source>
         <translation>No active connections</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="120"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="145"/>
         <source>just now</source>
         <translation>just now</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="121"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="146"/>
         <source>%1 min ago</source>
         <translation>%1 min ago</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="122"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="147"/>
         <source>%1 h ago</source>
         <translation>%1 h ago</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="123"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="148"/>
         <source>%1 d ago</source>
         <translation>%1 d ago</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="152"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="157"/>
         <source>%1 active connection(s) · Total up %2 · Total down %3</source>
         <translation>%1 active connection(s) · Total up %2 · Total down %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="233"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="239"/>
         <source>Select a connection first</source>
         <translation>Select a connection first</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="247"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="253"/>
         <source>Closed %1 connection(s)</source>
         <translation>Closed %1 connection(s)</translation>
     </message>
@@ -1475,49 +1475,42 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
     </message>
 </context>
 <context>
+    <name>clashqt::RuleRowDelegate</name>
+    <message>
+        <location filename="../src/app/src/ui/RuleList.cpp" line="156"/>
+        <source>%1 hits</source>
+        <translation>%1 hits</translation>
+    </message>
+</context>
+<context>
     <name>clashqt::RulesPage</name>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="24"/>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="43"/>
         <source>Rules</source>
         <translation>Rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="25"/>
-        <source>Active rules in match order. Double-click the &quot;Enabled&quot; column to disable a rule temporarily; this only affects the running session and is reset on restart.</source>
-        <translation>Active rules in match order. Double-click the &quot;Enabled&quot; column to disable a rule temporarily; this only affects the running session and is reset on restart.</translation>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="44"/>
+        <source>Rules in match order, one card each. Turn the switch on the right off to disable a rule for this session; it is restored on restart.</source>
+        <translation>Rules in match order, one card each. Turn the switch on the right off to disable a rule for this session; it is restored on restart.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="32"/>
-        <source>Type</source>
-        <translation>Type</translation>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="64"/>
+        <source>No rules loaded</source>
+        <translation>No rules loaded</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="33"/>
-        <source>Value</source>
-        <translation>Value</translation>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="131"/>
+        <source>%1 hits in this session</source>
+        <translation>%1 hits in this session</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="33"/>
-        <source>Outbound</source>
-        <translation>Outbound</translation>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="132"/>
+        <source>Disabled until restart</source>
+        <translation>Disabled until restart</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="34"/>
-        <source>Enabled</source>
-        <translation>Enabled</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="74"/>
-        <source>No</source>
-        <translation>No</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="75"/>
-        <source>Yes</source>
-        <translation>Yes</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="101"/>
+        <location filename="../src/app/src/ui/pages/RulesPage.cpp" line="89"/>
         <source>Failed to update rule state</source>
         <translation>Failed to update rule state</translation>
     </message>
@@ -4011,67 +4004,67 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>Connection %1: short upstream write, %2 / %3 bytes</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="221"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="224"/>
         <source>Config not loaded yet</source>
         <translation>Config not loaded yet</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="229"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="232"/>
         <source>GLOBAL mode is on, but the config has no GLOBAL group</source>
         <translation>GLOBAL mode is on, but the config has no GLOBAL group</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="263"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="266"/>
         <source>No MATCH fallback rule in the rule list; treating as DIRECT</source>
         <translation>No MATCH fallback rule in the rule list; treating as DIRECT</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="274"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="277"/>
         <source>Rule %1 points at a policy that does not exist: %2</source>
         <translation>Rule %1 points at a policy that does not exist: %2</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="308"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="311"/>
         <source>Closed an inbound connection with no target address</source>
         <translation>Closed an inbound connection with no target address</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="329"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="332"/>
         <source>Could not determine an outbound policy (%1 -&gt; %2); connection closed</source>
         <translation>Could not determine an outbound policy (%1 -&gt; %2); connection closed</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="330"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="333"/>
         <source>Unknown reason</source>
         <translation>Unknown reason</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="348"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="351"/>
         <source>The DIRECT outbound needs DNS resolution, but no resolver is available</source>
         <translation>The DIRECT outbound needs DNS resolution, but no resolver is available</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="357"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="360"/>
         <source>DNS resolution failed; connection closed: %1</source>
         <translation>DNS resolution failed; connection closed: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="378"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="381"/>
         <source>Rule %1 dropped the connection: %2</source>
         <translation>Rule %1 dropped the connection: %2</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="391"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="394"/>
         <source>Outbound %1 failed to connect to %2:%3: %4</source>
         <translation>Outbound %1 failed to connect to %2:%3: %4</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="401"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="404"/>
         <source>UDP relay is not implemented yet; connection closed</source>
         <translation>UDP relay is not implemented yet; connection closed</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="427"/>
+        <location filename="../src/core/src/tunnel/Tunnel.cpp" line="430"/>
         <source>%1 -&gt; %2:%3 via %4 (rule %5)</source>
         <translation>%1 -&gt; %2:%3 via %4 (rule %5)</translation>
     </message>

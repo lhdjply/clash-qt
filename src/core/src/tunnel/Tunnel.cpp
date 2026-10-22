@@ -190,7 +190,10 @@ RulePtr Tunnel::matchRule(const TunnelSnapshot &snapshot, const Metadata &metada
         if (rule->requiresResolution() && metadata.dstIp.isEmpty() && metadata.hasHost()) {
             continue;
         }
-        if (rule->matches(metadata, snapshot.geo.get())) return rule;
+        if (rule->matches(metadata, snapshot.geo.get())) {
+            rule->noteHit();
+            return rule;
+        }
     }
     return nullptr;
 }
