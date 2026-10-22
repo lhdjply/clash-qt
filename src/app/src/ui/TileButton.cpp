@@ -58,6 +58,13 @@ void TileButton::setAccentFill(bool on)
     update();
 }
 
+void TileButton::setTint(Tint tint)
+{
+    if (m_tint == tint) return;
+    m_tint = tint;
+    update();
+}
+
 void TileButton::setHint(const QString &hint)
 {
     if (m_hint == hint) return;
@@ -142,6 +149,12 @@ void TileButton::paintEvent(QPaintEvent *event)
     QColor foreground = m_accentFill ? theme.onAccent : theme.text;
     if (!isEnabled()) foreground = theme.textDisabled;
 
+    // 只有图标着色，文字仍用正文色：一块瓦片里两处彩色会显得花；
+    // 选中态是整块强调色底，图标跟着变白
+    const QColor tint = ui::tintColor(m_tint);
+    QColor iconColor  = (m_accentFill || !tint.isValid()) ? foreground : tint;
+    if (!isEnabled()) iconColor = theme.textDisabled;
+
     // 图标 + 文字作为一个整体垂直居中
     const int blockTop = contentTop();
 
@@ -153,7 +166,7 @@ void TileButton::paintEvent(QPaintEvent *event)
         paintSwitch(painter, blockTop);
     }
 
-    painter.drawPixmap(QPoint(kPadding, blockTop), icons::pixmap(m_iconName, foreground, kIconSize));
+    painter.drawPixmap(QPoint(kPadding, blockTop), icons::pixmap(m_iconName, iconColor, kIconSize));
 
     QFont label = font();
     label.setPixelSize(13);
@@ -185,12 +198,14 @@ void TileButton::paintSwitch(QPainter &painter, int top)
 {
     const Theme &theme = ui::theme();
     const QRectF track(width() - kPadding - kSwitchWidth, top, kSwitchWidth, kSwitchHeight);
+    const QColor tint = ui::tintColor(m_tint);
 
     painter.setPen(Qt::NoPen);
     if (!isEnabled()) {
         painter.setBrush(theme.separator);
     } else if (isChecked()) {
-        painter.setBrush(m_accentFill ? theme.onAccent : theme.accent);
+        // 打开态用瓦片自己的色：TUN 绿、系统代理蓝，开关本身就能说明开的是哪个
+        painter.setBrush(m_accentFill ? theme.onAccent : (tint.isValid() ? tint : theme.accent));
     } else {
         painter.setBrush(theme.scrollHandle);
     }
@@ -218,10 +233,23 @@ void TileButton::paintBadge(QPainter &painter, int top)
     const QRectF pill(width() - kPadding - pillWidth, top + 1, pillWidth, 17);
 
     painter.setPen(Qt::NoPen);
-    painter.setBrush(m_accentFill ? QColor(255, 255, 255, 46) : theme.accentSoft);
+    const QColor tint = ui::tintColor(m_tint);
+    QColor pillBackground = theme.accentSoft;
+    QColor pillForeground = theme.accent;
+    if (m_accentFill) {
+        pillBackground = QColor(255, 255, 255, 46);
+        pillForeground = theme.onAccent;
+    } else if (tint.isValid()) {
+        // 徽标跟随图标色。深色下不叠同色淡底：亮色字压在同色底上会互相抵消，
+        // 改用中性淡底，字才立得起来
+        pillBackground = theme.dark ? QColor(255, 255, 255, 26) : tint;
+        if (!theme.dark) pillBackground.setAlpha(32);
+        pillForeground = tint;
+    }
+    painter.setBrush(pillBackground);
     painter.drawRoundedRect(pill, 8.5, 8.5);
 
-    painter.setPen(m_accentFill ? theme.onAccent : theme.accent);
+    painter.setPen(pillForeground);
     painter.drawText(pill, Qt::AlignCenter, text);
 }
 

@@ -57,6 +57,13 @@ Theme makeLightTheme()
     t.dangerHover  = QColor(0xE8, 0x46, 0x3C);
     t.onAccent     = QColor(0xFF, 0xFF, 0xFF);
 
+    // 瓦片识别色：同一色相在白卡片上压深一档，16px 描边才不显得发灰
+    t.tintBlue     = QColor(0x3B, 0x6E, 0xF5);
+    t.tintPurple   = QColor(0x7A, 0x5C, 0xF0);
+    t.tintTeal     = QColor(0x0C, 0x8E, 0x9B);
+    t.tintAmber    = QColor(0xC0, 0x76, 0x18);
+    t.tintGreen    = QColor(0x11, 0x8F, 0x5B);
+
     t.hover        = QColor(0x1F, 0x2A, 0x3C, 22);
     t.field        = QColor(0xFF, 0xFF, 0xFF, 175);
     t.scrollHandle = QColor(0x1F, 0x2A, 0x3C, 58);
@@ -95,6 +102,13 @@ Theme makeDarkTheme()
     t.danger       = QColor(0xF0, 0x6B, 0x62);
     t.dangerHover  = QColor(0xF5, 0x84, 0x7B);
     t.onAccent     = QColor(0xFF, 0xFF, 0xFF);
+
+    // 深色下整体提亮：半透明卡片底下是暗色，压深一档的色相会糊掉
+    t.tintBlue     = QColor(0x7D, 0xA2, 0xFF);
+    t.tintPurple   = QColor(0xA7, 0x8B, 0xFA);
+    t.tintTeal     = QColor(0x45, 0xC6, 0xCF);
+    t.tintAmber    = QColor(0xE0, 0xA4, 0x4E);
+    t.tintGreen    = QColor(0x4F, 0xD3, 0x9B);
 
     t.hover        = QColor(0xFF, 0xFF, 0xFF, 20);
     t.field        = QColor(0xFF, 0xFF, 0xFF, 14);
@@ -501,6 +515,19 @@ const Theme &theme() { return g_theme; }
 QColor       accent() { return g_theme.accent; }
 QColor       textColor() { return g_theme.text; }
 QColor       mutedColor() { return g_theme.textMuted; }
+
+QColor tintColor(Tint tint)
+{
+    switch (tint) {
+    case Tint::Blue:   return g_theme.tintBlue;
+    case Tint::Purple: return g_theme.tintPurple;
+    case Tint::Teal:   return g_theme.tintTeal;
+    case Tint::Amber:  return g_theme.tintAmber;
+    case Tint::Green:  return g_theme.tintGreen;
+    case Tint::None:   break;
+    }
+    return QColor();
+}
 
 QGroupBox *makeCard(const QString &title, QWidget *parent, const QString &iconName)
 {

@@ -268,6 +268,7 @@ QWidget *MainWindow::buildToggleTiles()
     layout->setSpacing(8);
 
     m_sysProxyTile = new ui::TileButton(QStringLiteral("system"), tr("System proxy"), host);
+    m_sysProxyTile->setTint(ui::Tint::Blue);
     // 比导航瓦片略高：图标与开关占一行，名称再占一行，78 刚好留出上下留白
     m_sysProxyTile->setFixedHeight(78);
     m_sysProxyTile->setCheckable(true);
@@ -283,6 +284,7 @@ QWidget *MainWindow::buildToggleTiles()
     // TUN 模式：接管全部流量（不只是走系统代理的应用），首次启用会弹一次授权框。
     // 它与系统代理是两套独立机制，可以同时开启。
     m_tunTile = new ui::TileButton(QStringLiteral("shield"), tr("TUN mode"), host);
+    m_tunTile->setTint(ui::Tint::Green);
     m_tunTile->setFixedHeight(78);
     m_tunTile->setCheckable(true);
     m_tunTile->setSwitchVisible(true);
@@ -403,19 +405,27 @@ QWidget *MainWindow::buildNavGrid()
         const char *icon;
         const char *label;
         bool        badge;
+        ui::Tint    tint;
     } entries[] = {
-        {PageProxies, "proxy", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Proxies"), true},
-        {PageRules, "rules", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Rules"), true},
-        {PageOverrides, "code", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Overrides"), true},
-        {PageLogs, "logs", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Logs"), false},
+        {PageProxies, "proxy", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Proxies"), true,
+         ui::Tint::Blue},
+        {PageRules, "rules", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Rules"), true,
+         ui::Tint::Purple},
+        {PageOverrides, "code", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Overrides"), true,
+         ui::Tint::Teal},
+        {PageLogs, "logs", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Logs"), false,
+         ui::Tint::Amber},
         {PageConnections, "connections", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Connections"),
-         true},
-        {PageSettings, "settings", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Settings"), false},
+         true, ui::Tint::Green},
+        // 设置不需要识别色：它是配置入口，不和「有数据在动」的几页抢注意力
+        {PageSettings, "settings", QT_TRANSLATE_NOOP("clashqt::MainWindow", "Settings"), false,
+         ui::Tint::None},
     };
 
     for (int i = 0; i < int(std::size(entries)); ++i) {
         const auto &entry = entries[i];
         auto *tile = new ui::TileButton(QString::fromLatin1(entry.icon), tr(entry.label), host);
+        tile->setTint(entry.tint);
         tile->setMinimumHeight(56);
         tile->setMaximumHeight(72);
         if (entry.badge) {
@@ -465,7 +475,7 @@ QWidget *MainWindow::buildTrafficCard()
     m_trafficIcon = new QLabel(left);
     m_trafficIcon->setFixedSize(16, 16);
     m_trafficIcon->setPixmap(
-        ui::icons::pixmap(QStringLiteral("traffic"), ui::theme().text, 16));
+        ui::icons::pixmap(QStringLiteral("traffic"), ui::tintColor(ui::Tint::Teal), 16));
     leftLayout->addWidget(m_trafficIcon);
     leftLayout->addStretch(1);
 
@@ -535,7 +545,8 @@ void MainWindow::updateTrafficCardState()
     // 卡片本身不是导航瓦片，选中态靠动态属性交给样式表，
     // 属性变更后必须重新 polish 才会重绘
     const bool active = (m_currentPage == PageTraffic);
-    const QColor foreground = active ? ui::theme().onAccent : ui::theme().text;
+    // 选中时整卡是强调色底，图标得用反色；平时跟随「流量」的识别色
+    const QColor foreground = active ? ui::theme().onAccent : ui::tintColor(ui::Tint::Teal);
 
     for (QWidget *widget : {static_cast<QWidget *>(m_trafficCard),
                             static_cast<QWidget *>(m_trafficTitle),

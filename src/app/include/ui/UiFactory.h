@@ -32,6 +32,11 @@ class QWidget;
 namespace clashqt {
 namespace ui {
 
+// 侧栏瓦片的识别色。界面整体是蓝白调，只有强调色会让所有入口一个样；
+// 每个入口给一个固定色相，扫一眼就能凭颜色定位，也不至于花哨。
+// None 表示不着色（用正文色），留给不需要强调的入口。
+enum class Tint { None, Blue, Purple, Teal, Amber, Green };
+
 // 一套主题的全部颜色。浅色 / 深色各一份，其余代码只引用本结构，
 // 不再散落颜色字面量。
 struct Theme {
@@ -57,6 +62,13 @@ struct Theme {
     QColor dangerHover;
     QColor onAccent;   // 强调底色上的文字 / 图标色
 
+    // 瓦片识别色（见 Tint）。深浅两套各自调过明度，保证在各自底色上清楚
+    QColor tintBlue;
+    QColor tintPurple;
+    QColor tintTeal;
+    QColor tintAmber;
+    QColor tintGreen;
+
     QColor hover;      // 通用悬停底色
     QColor field;      // 按钮与输入类底色
     QColor scrollHandle;
@@ -78,6 +90,8 @@ const Theme &theme();
 QColor       accent();
 QColor       textColor();
 QColor       mutedColor();
+// 瓦片识别色；Tint::None 返回无效色，调用方据此回落到正文色
+QColor       tintColor(Tint tint);
 
 // 统一风格的卡片容器。title 为空时不生成表头（用于纯表格卡片）。
 //

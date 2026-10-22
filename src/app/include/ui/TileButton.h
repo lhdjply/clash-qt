@@ -16,6 +16,8 @@
 #include <QSize>
 #include <QString>
 
+#include "ui/UiFactory.h"
+
 class QEnterEvent;
 class QPainter;
 
@@ -34,6 +36,9 @@ public:
     void setSwitchVisible(bool visible);
     // 强调色实心底（导航选中态）；开启时图标与文字取反色
     void setAccentFill(bool on);
+    // 图标与徽标的识别色。存的是色相槽位而非颜色值，换深浅主题时重绘即可
+    // 取到新色，不必回来重设
+    void setTint(Tint tint);
     // 副标题：显示在文字右侧的次要信息（如「启用中…」），为空时不占位
     void setHint(const QString &hint);
 
@@ -60,6 +65,7 @@ private:
     bool    m_switch      = false;
     bool    m_accentFill  = false;
     bool    m_hover       = false;
+    Tint    m_tint        = Tint::None;
 };
 
 } // namespace ui
