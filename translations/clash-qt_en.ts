@@ -1187,7 +1187,7 @@ Try &quot;Update selected&quot; again later.</translation>
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="90"/>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="336"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="334"/>
         <source>Nodes</source>
         <translation>Nodes</translation>
     </message>
@@ -1224,139 +1224,139 @@ Try &quot;Update selected&quot; again later.</translation>
         <translation>Proxy group</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="311"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="309"/>
         <source>Sort</source>
         <translation>Sort</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="313"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="311"/>
         <source>Default order</source>
         <translation>Default order</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="314"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="312"/>
         <source>Name</source>
         <translation>Name</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="315"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="313"/>
         <source>Type</source>
         <translation>Type</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="316"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="314"/>
         <source>Latency</source>
         <translation>Latency</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="318"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="316"/>
         <source>Sort nodes by name, protocol type or latest measured latency.
 Latency sorts ascending; untested and timed-out nodes go last. Sorting never changes the selected node.</source>
         <translation>Sort nodes by name, protocol type or latest measured latency.
 Latency sorts ascending; untested and timed-out nodes go last. Sorting never changes the selected node.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="325"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="323"/>
         <source>Test this group</source>
         <translation>Test this group</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="326"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="324"/>
         <source>Test all groups</source>
         <translation>Test all groups</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="438"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="436"/>
         <source>The active profile has no proxy groups</source>
         <translation>The active profile has no proxy groups</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="472"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="469"/>
         <source>Type %1 · %2 members</source>
         <translation>Type %1 · %2 members</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="477"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="472"/>
         <source>Current node: %1</source>
         <translation>Current node: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="505"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="501"/>
         <source>Proxy group · %1</source>
         <translation>Proxy group · %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="506"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="502"/>
         <source>Protocol · %1</source>
         <translation>Protocol · %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="507"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="503"/>
         <source>Unknown</source>
         <translation>Unknown</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="509"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="505"/>
         <source>This protocol is not supported yet; connections will fail explicitly</source>
         <translation>This protocol is not supported yet; connections will fail explicitly</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="515"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="511"/>
         <source>Last latency test timed out</source>
         <translation>Last latency test timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="520"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="516"/>
         <source>Last latency %1 ms</source>
         <translation>Last latency %1 ms</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="521"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="517"/>
         <source>Last test timed out</source>
         <translation>Last test timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="526"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="522"/>
         <source>Currently pointing at %1</source>
         <translation>Currently pointing at %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="528"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="524"/>
         <source>Click the text on the right of a card to test that node</source>
         <translation>Click the text on the right of a card to test that node</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="745"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="741"/>
         <source>Node no longer exists</source>
         <translation>Node no longer exists</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="776"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="772"/>
         <source>Latency test finished: %1/%2 nodes available</source>
         <translation>Latency test finished: %1/%2 nodes available</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="780"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="776"/>
         <source>%1 latency test failed: %2</source>
         <translation>%1 latency test failed: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="796"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="792"/>
         <source>These nodes are being tested, or none can be tested</source>
         <translation>These nodes are being tested, or none can be tested</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="809"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="805"/>
         <source>Testing %1 nodes (%2 at a time, results fill in as they finish)</source>
         <translation>Testing %1 nodes (%2 at a time, results fill in as they finish)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="839"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="835"/>
         <source>Failed to switch node: %1</source>
         <translation>Failed to switch node: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="847"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="843"/>
         <source>%1 switched to %2</source>
         <translation>%1 switched to %2</translation>
     </message>
@@ -1523,234 +1523,234 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
 <context>
     <name>clashqt::SettingsPage</name>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="41"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="42"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="42"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="43"/>
         <source>Logs, DNS overrides, ports and system integration. Changes are saved and applied immediately.</source>
         <translation>Logs, DNS overrides, ports and system integration. Changes are saved and applied immediately.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="45"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="46"/>
         <source>Appearance</source>
         <translation>Appearance</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="49"/>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="62"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="50"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="63"/>
         <source>Follow system</source>
         <translation>Follow system</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="50"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="51"/>
         <source>Light</source>
         <translation>Light</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="51"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="52"/>
         <source>Dark</source>
         <translation>Dark</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="57"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="58"/>
         <source>Theme</source>
         <translation>Theme</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="67"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="68"/>
         <source>Language</source>
         <translation>Language</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="68"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="69"/>
         <source>Interface text is loaded at startup; restart the app after switching.</source>
         <translation>Interface text is loaded at startup; restart the app after switching.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="73"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="74"/>
         <source>Logs</source>
         <translation>Logs</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="80"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="81"/>
         <source>Log level</source>
         <translation>Log level</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="85"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="86"/>
         <source> days</source>
         <translation> days</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="88"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="89"/>
         <source>Log retention (days)</source>
         <translation>Log retention (days)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="89"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="90"/>
         <source>Log files older than the retention period are removed at startup.</source>
         <translation>Log files older than the retention period are removed at startup.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="92"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="93"/>
         <source>Open data folder</source>
         <translation>Open data folder</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="101"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="102"/>
         <source>Config overrides</source>
         <translation>Config overrides</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="104"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="105"/>
         <source>Manage DNS settings in this app</source>
         <translation>Manage DNS settings in this app</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="107"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="108"/>
         <source>When on, the DNS section configured here is used; when off, the profile&apos;s own DNS settings apply.</source>
         <translation>When on, the DNS section configured here is used; when off, the profile&apos;s own DNS settings apply.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="110"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="111"/>
         <source>Manage domain sniffing in this app</source>
         <translation>Manage domain sniffing in this app</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="116"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="117"/>
         <source>Inbound ports</source>
         <translation>Inbound ports</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="130"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="131"/>
         <source>Mixed port (HTTP + SOCKS5)</source>
         <translation>Mixed port (HTTP + SOCKS5)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="132"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="133"/>
         <source>SOCKS5 port</source>
         <translation>SOCKS5 port</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="133"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="134"/>
         <source>Set it equal to the mixed port to reuse the mixed port.</source>
         <translation>Set it equal to the mixed port to reuse the mixed port.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="135"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="136"/>
         <source>HTTP port</source>
         <translation>HTTP port</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="140"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="141"/>
         <source>System integration</source>
         <translation>System integration</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="143"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="144"/>
         <source>Start at login</source>
         <translation>Start at login</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="145"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="146"/>
         <source>Implemented via an XDG autostart entry (~/.config/autostart/clash-qt.desktop).</source>
         <translation>Implemented via an XDG autostart entry (~/.config/autostart/clash-qt.desktop).</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="148"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="149"/>
         <source>System proxy</source>
         <translation>System proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="151"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="152"/>
         <source>Points the system HTTP/HTTPS/SOCKS proxy at this app&apos;s mixed port. Current backend: %1</source>
         <translation>Points the system HTTP/HTTPS/SOCKS proxy at this app&apos;s mixed port. Current backend: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="155"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="156"/>
         <source>TUN mode</source>
         <translation>TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="158"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="159"/>
         <source>Creates a virtual network interface to capture all traffic, including apps that ignore the system proxy (games, CLI tools, some Electron apps). The first enable asks for your password once; it only takes effect together with &quot;Route domain traffic&quot;.</source>
         <translation>Creates a virtual network interface to capture all traffic, including apps that ignore the system proxy (games, CLI tools, some Electron apps). The first enable asks for your password once; it only takes effect together with &quot;Route domain traffic&quot;.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="161"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="162"/>
         <source>Route domain traffic (fake-IP)</source>
         <translation>Route domain traffic (fake-IP)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="164"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="165"/>
         <source>Routes the fake-IP range to the TUN interface (removed together with the interface). The default route is untouched, so connectivity is unaffected; with this off, TUN receives no traffic.</source>
         <translation>Routes the fake-IP range to the TUN interface (removed together with the interface). The default route is untouched, so connectivity is unaffected; with this off, TUN receives no traffic.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="170"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="171"/>
         <source>About</source>
         <translation>About</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="186"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="187"/>
         <source>Version v%1</source>
         <translation>Version v%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="191"/>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="480"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="192"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="481"/>
         <source>Check for updates</source>
         <translation>Check for updates</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="176"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="177"/>
         <source>Check for updates when the app starts</source>
         <translation>Check for updates when the app starts</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="197"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="198"/>
         <source>Reads the update manifest attached to the latest release, fetched through public GitHub mirrors. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</source>
         <translation>Reads the update manifest attached to the latest release, fetched through public GitHub mirrors. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="251"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="252"/>
         <source>Already up to date (v%1)</source>
         <translation>Already up to date (v%1)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="259"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="260"/>
         <source> (the kernel is not running; start the proxy and try again)</source>
         <translation> (the kernel is not running; start the proxy and try again)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="261"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="262"/>
         <source>Update check failed: %1%2</source>
         <translation>Update check failed: %1%2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="299"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="300"/>
         <source>Data folder: %1</source>
         <translation>Data folder: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="358"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="359"/>
         <source>Reload failed after port change: %1</source>
         <translation>Reload failed after port change: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="371"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="372"/>
         <source>Failed to change startup setting: %1</source>
         <translation>Failed to change startup setting: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="455"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="456"/>
         <source>Language saved; restart the app to apply.</source>
         <translation>Language saved; restart the app to apply.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="480"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="481"/>
         <source>Checking…</source>
         <translation>Checking…</translation>
     </message>

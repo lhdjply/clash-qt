@@ -510,6 +510,13 @@ if(TARGET Qt6::lrelease)
         TS_FILES
             translations/clash-qt_en.ts      # 英文是源语言，这份是同文对照表（校对/导出用）
             translations/clash-qt_zh_CN.ts
+            translations/clash-qt_zh_TW.ts
+            translations/clash-qt_ja_JP.ts
+            translations/clash-qt_ko_KR.ts
+            translations/clash-qt_de_DE.ts
+            translations/clash-qt_fr_FR.ts
+            translations/clash-qt_es_ES.ts
+            translations/clash-qt_ru_RU.ts
         RESOURCE_PREFIX "/i18n"
         LUPDATE_OPTIONS -no-obsolete
         LRELEASE_OPTIONS -removeidentical

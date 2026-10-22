@@ -134,7 +134,7 @@ constexpr int kBadgeHeight  = 16;
 constexpr int kBadgeGap     = 4;
 
 constexpr int kCellHeight   = 52;  // 一行卡片占的高度（含上下留白）
-constexpr int kMinCellWidth = 196; // 每格最小宽度，决定一排放几张卡片
+constexpr int kMinCellWidth = 210; // 每格最小宽度，决定一排放几张卡片
 
 // 协议胶囊的字体：比名称小两号，深色底上也不至于糊成一团
 QFont badgeFont(const QFont &base) { return scaledFont(base, 2.5, true); }
@@ -297,15 +297,13 @@ ProxiesPage::ProxiesPage(AppContext *context, QWidget *parent)
 
     toolbar->addWidget(new QLabel(tr("Proxy group"), this));
     m_groupCombo = new QComboBox(this);
-    m_groupCombo->setMinimumWidth(200);
+    m_groupCombo->setMinimumWidth(150);
     toolbar->addWidget(m_groupCombo);
 
-    m_summaryLabel = ui::makeHintLabel(QString(), this);
-    // 这一行只是辅助说明：不换行，也不许它把工具条（进而整页）撑宽，
-    // 英文长句放不下时宁可裁掉，节点数在下拉框右边还有工具提示
-    m_summaryLabel->setWordWrap(false);
-    m_summaryLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-    toolbar->addWidget(m_summaryLabel, 1);
+    // 组的类型、成员数与当前节点放进下拉框的悬停提示：这几项在多语言下
+    // 很容易把工具条撑得比窗口还宽（德语、俄语尤其明显），而右侧的测速
+    // 按钮又不能压缩，所以这里不再单占一个标签
+    toolbar->addStretch(1);
 
     // ---- 排序：只影响显示顺序，不改变订阅里成员的原始排列 -----------------
     toolbar->addWidget(new QLabel(tr("Sort"), this));
@@ -435,7 +433,7 @@ void ProxiesPage::rebuildGroups()
 
     if (groups.isEmpty()) {
         m_memberList->clear();
-        m_summaryLabel->setText(tr("The active profile has no proxy groups"));
+        m_groupCombo->setToolTip(tr("The active profile has no proxy groups"));
         return;
     }
 
@@ -466,15 +464,13 @@ void ProxiesPage::onGroupChanged(int index)
     const QString now   = group.value(QStringLiteral("now")).toString();
     const QString type  = group.value(QStringLiteral("type")).toString();
 
-    // 当前节点在列表里用圆点 + 加粗标出，这里不再重复写名字：
-    // 节点名普遍很长，塞进工具条会挤成两三行，把按钮推得上下不对齐。
-    m_summaryLabel->setText(
-        tr("Type %1 · %2 members")
-            .arg(type.isEmpty() ? QStringLiteral("-") : type)
-            .arg(group.value(QStringLiteral("all")).toArray().size()));
-    m_summaryLabel->setToolTip(now.isEmpty()
-                                   ? QString()
-                                   : tr("Current node: %1").arg(now));
+    // 当前节点在列表里用圆点 + 加粗标出，工具条只放下拉框本身：
+    // 组合信息进悬停提示，避免长语言把工具条撑宽
+    QString summary = tr("Type %1 · %2 members")
+                          .arg(type.isEmpty() ? QStringLiteral("-") : type)
+                          .arg(group.value(QStringLiteral("all")).toArray().size());
+    if (!now.isEmpty()) summary = tr("Current node: %1").arg(now) + QLatin1Char('\n') + summary;
+    m_groupCombo->setToolTip(summary);
 
     const QJsonArray members = group.value(QStringLiteral("all")).toArray();
     for (const QJsonValue &value : members) {

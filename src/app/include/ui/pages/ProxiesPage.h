@@ -14,7 +14,6 @@
 #include <QWidget>
 
 class QComboBox;
-class QLabel;
 class QListWidget;
 class QListWidgetItem;
 class QPushButton;
@@ -81,7 +80,6 @@ private:
     QComboBox   *m_groupCombo = nullptr;
     QComboBox   *m_sortCombo = nullptr;
     QListWidget *m_memberList = nullptr;
-    QLabel      *m_summaryLabel = nullptr;
     QPushButton *m_testButton = nullptr;
     QPushButton *m_testAllButton = nullptr;
 

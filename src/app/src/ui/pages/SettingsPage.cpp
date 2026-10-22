@@ -3,6 +3,7 @@
 #include "AppContext.h"
 #include "config/AppConfig.h"
 #include "config/ControledKernelConfig.h"
+#include "i18n/I18n.h"
 #include "sys/AutoRun.h"
 #include "sys/SysProxy.h"
 #include "ui/UiFactory.h"
@@ -57,11 +58,11 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
         ui::makeFormRow(tr("Theme"), m_themeCombo, QString(), appearanceCard));
 
     m_languageCombo = new QComboBox(appearanceCard);
-    // 语言名用各自的语言写（简体中文 / English），不随界面语言变化：
+    // 语言名用各自的语言写（简体中文 / 日本語 / Deutsch），不随界面语言变化：
     // 英文界面下把「简体中文」翻成 Simplified Chinese 反而让中文用户难找。
     m_languageCombo->addItem(tr("Follow system"), QStringLiteral("system"));
-    m_languageCombo->addItem(QStringLiteral("简体中文"), QStringLiteral("zh-CN"));
-    m_languageCombo->addItem(QStringLiteral("English"), QStringLiteral("en-US"));
+    for (const i18n::LanguageInfo &language : i18n::languages())
+        m_languageCombo->addItem(language.nativeName, language.setting);
     ui::ignoreWheel(m_languageCombo);
     appearanceLayout->addWidget(ui::makeFormRow(
         tr("Language"), m_languageCombo,

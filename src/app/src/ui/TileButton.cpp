@@ -5,6 +5,7 @@
 
 #include <QEnterEvent>
 #include <QFontMetrics>
+#include <QFontMetricsF>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
@@ -190,7 +191,15 @@ void TileButton::paintEvent(QPaintEvent *event)
     }
 
     painter.setPen(foreground);
-    const QString label0 = painter.fontMetrics().elidedText(text(), Qt::ElideRight, int(textRect.width()));
+    // 瓦片宽度固定，德语 Überschreibungen、俄语 Системный прокси 这类长词
+    // 先缩字号（13 → 9）再省略，尽量少出现省略号
+    const qreal labelWidth = textRect.width();
+    while (label.pixelSize() > 9
+           && QFontMetricsF(label).horizontalAdvance(text()) > labelWidth) {
+        label.setPixelSize(label.pixelSize() - 1);
+    }
+    painter.setFont(label);
+    const QString label0 = painter.fontMetrics().elidedText(text(), Qt::ElideRight, int(labelWidth));
     painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, label0);
 }
 
