@@ -1,3 +1,13 @@
+clash-qt (1.1.1) unstable; urgency=medium
+
+  * 新增启动时自动检查更新，可在设置页关闭；只在真有新版本时提示，托盘
+    静默启动不查。
+  * 检查更新改为读取随发布提供的版本清单，直连与代理两条路同时试，修复经常
+    提示「请求超时」。
+  * 修复版本刚推送、安装包仍在编译时误报「发现新版本」。
+
+ -- Clash Qt Maintainers <lhdjply@users.noreply.github.com>  Thu, 22 Oct 2026 11:22:13 +0800
+
 clash-qt (1.1.0) unstable; urgency=medium
 
   * 侧栏重新排布：六格导航、系统代理与 TUN 各占一格带开关，右上角显示代理组数、
