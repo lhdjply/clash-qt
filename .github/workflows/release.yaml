@@ -22,7 +22,7 @@ env:
 
 jobs:
   build-deb:
-    name: Package (Linux deb)
+    name: Package (Linux ${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     continue-on-error: true
     strategy:
@@ -68,20 +68,24 @@ jobs:
             Jobs=\$(nproc) &&
             echo \"CPUs in container: \$Jobs\" &&
             apt update &&
-            apt install -y build-essential devscripts dh-make equivs &&
+            apt install -y build-essential devscripts dh-make equivs patchelf qt6-qpa-plugins &&
             mk-build-deps -i -t 'apt-get -y' './debian/control' &&
             DEB_BUILD_OPTIONS=\"parallel=\$Jobs\" debuild -us -uc -b &&
-            cp ../*.deb ./
+            cp ../*.deb ./ &&
+            { bash scripts/package-linux-tarball.sh --arch ${{ matrix.platform }} --from-deb \$(ls clash-qt_*.deb | head -1) || echo \"::warning::packaging the Linux tarball failed; the deb package is still published\"; }
             "
 
-      # 关于上面那个 -b：
-      #   debian/source/format 是 3.0 (native)，不带 -b 也能构建；这里加 -b
-      #   只是跳过源码包，CI 只需要安装包。
+      # 同一容器里顺手出便携包（tar.gz），二进制取自刚打好的 deb。
       #
-      # 关于 parallel=N：
-      #   dh_auto_build 只认 DEB_BUILD_OPTIONS 里的 parallel；debuild 不带 -j
-      #   时是单线程。绝不能写成不带数字的 --parallel —— Make 生成器下 CMake
-      #   会翻译成 `make -j`（无限并发），容器直接卡死。
+      # -b：debian/source/format 是 3.0 (native)，加 -b 只是跳过源码包。
+      # parallel=N：debuild 不带 -j 是单线程；不能写成不带数字的 --parallel，
+      #   Make 生成器会翻成 `make -j`（无限并发），容器直接卡死。
+      # 两个额外依赖：patchelf 改 RUNPATH；qt6-qpa-plugins 提供 libqxcb.so，
+      #   它不一定随 qt6-base-dev 进来。
+      #
+      # 便携包那步自带自检，不过就以非零退出；但用 `|| echo ::warning::` 兜一层，
+      # 免得它挂掉把后面「上传 deb 产物」也跳过。缺便携包要不要拦发布，交给
+      # create-release 按 tag / 持续构建分别判断。
 
       - name: Collect deb packages
         run: |
@@ -95,6 +99,9 @@ jobs:
           mkdir -p deb_package
           cp ./*.deb deb_package
           ls -l deb_package
+          # 便携包那步失败时 dist/ 里可能什么都没有：这里只做展示，不能因此
+          # 让后面的 deb 上传被跳过
+          ls -lh dist/*.tar.gz 2>/dev/null || echo "::warning::no Linux tarball was produced"
 
       - name: Upload deb artifacts
         uses: actions/upload-artifact@v7
@@ -102,6 +109,15 @@ jobs:
           name: ${{ env.APP_NAME }}_linux_deb_${{ matrix.platform }}
           path: deb_package/*.deb
           if-no-files-found: error
+
+      - name: Upload Linux tarball
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.APP_NAME }}_linux_tarball_${{ matrix.platform }}
+          path: dist/*.tar.gz
+          # 便携包失败时上面已降级成 warning，缺文件由 create-release 按 tag
+          # 决定要不要拦发布，这里不必再报一次错
+          if-no-files-found: warn
 
   build-windows:
     name: Package (Windows ${{ matrix.arch }})
@@ -647,9 +663,9 @@ jobs:
         run: |
           cd artifacts
           > hashes.sha256
-          # deb、Windows 便携包与安装包一起进校验清单，格式保持一致（`哈希 *文件名`），
-          # Linux 侧可直接 sha256sum -c 校验
-          for file in $(find . -type f \( -name "*.deb" -o -name "*.zip" -o -name "*-setup.exe" \)); do
+          # deb、Linux / Windows 便携包与安装包一起进清单，格式统一为
+          # 「哈希 *文件名」，Linux 侧可直接 sha256sum -c 校验
+          for file in $(find . -type f \( -name "*.deb" -o -name "*.tar.gz" -o -name "*.zip" -o -name "*-setup.exe" \)); do
             filename=$(basename "$file")
             sha256sum "$file" | awk -v fname="$filename" '{print $1 " *" fname}' >> hashes.sha256
           done
@@ -736,6 +752,7 @@ jobs:
         run: |
           NOTES_FILE="$RUNNER_TEMP/release-notes.md"
           deb_files=$(find artifacts -name "*.deb" -print0 | xargs -0 echo)
+          tar_files=$(find artifacts -name "*.tar.gz" -print0 | xargs -0 echo)
           win_files=$(find artifacts -name "*.zip" -print0 | xargs -0 echo)
           setup_files=$(find artifacts -name "*-setup.exe" -print0 | xargs -0 echo)
           hash_files=$(find artifacts -name "*.sha256" -print0 | xargs -0 echo)
@@ -748,6 +765,27 @@ jobs:
           if [ -z "$deb_files" ]; then
             echo "::error::No deb artifacts were produced; aborting the release."
             exit 1
+          fi
+
+          # Linux 便携包缺失时的策略：
+          #   一个都没有 —— 正式版失败（不装 deb 的用户只有这一种形态）；
+          #                 持续构建只 warning，deb 还在，不必堵死整条 Release；
+          #   少某个架构 —— warning 并点名：四个架构都在 QEMU 里跑，一个抖动
+          #                 不该拦住另外三个。
+          if [ -z "$tar_files" ]; then
+            if [ "${{ github.ref_type }}" == "tag" ]; then
+              echo "::error::No Linux tarball was produced for a tagged release; check the 'Package (Linux ...)' jobs."
+              exit 1
+            else
+              echo "::warning::No Linux tarball was produced; publishing deb packages only."
+            fi
+          else
+            for deb in $deb_files; do
+              arch=$(basename "$deb" .deb | cut -d_ -f3)
+              if ! find artifacts -name "*-linux-${arch}.tar.gz" | grep -q .; then
+                echo "::warning::The Linux tarball for $arch is missing; only its deb is published."
+              fi
+            done
           fi
 
           # Windows 产物缺失时的策略，按缺到什么程度分三档：
@@ -792,6 +830,7 @@ jobs:
 
           gh release create ${{ env.TAG_NAME }} \
                             $deb_files \
+                            $tar_files \
                             $win_files \
                             $setup_files \
                             $hash_files \
@@ -803,6 +842,7 @@ jobs:
           echo "Created release: ${{ env.TAG_NAME }}"
           echo "Artifacts:"
           echo "$deb_files"
+          echo "$tar_files"
           echo "$win_files"
           echo "$setup_files"
         env:

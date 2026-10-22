@@ -4,6 +4,9 @@
 /cmake-build-*/
 *.user
 
+# 打包产物（scripts/package-linux-tarball.sh 的暂存目录与 tar.gz）
+/dist/
+
 # 编辑器
 /.vscode/
 /.idea/
