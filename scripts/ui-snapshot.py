@@ -100,13 +100,28 @@ def build_tool():
     subprocess.run(tokens, cwd=BUILD, check=True)
 
 
-FAKE_NAMES = {"zh": "示例订阅", "en": "Example profile"}
+FAKE_NAMES = {"zh": "示例订阅", "zh_TW": "範例訂閱"}
+FAKE_PROFILE = "Example profile"
+
+# 出图语言 → 配置里的 language 值（与 i18n 的语言表一致）
+LANG_SETTINGS = {
+    "zh": "zh-CN",
+    "zh_TW": "zh-TW",
+    "en": "en-US",
+    "ja": "ja-JP",
+    "ko": "ko-KR",
+    "de": "de-DE",
+    "fr": "fr-FR",
+    "es": "es-ES",
+    "ru": "ru-RU",
+}
 
 
 def patch_profiles(path, lang):
     """把订阅名与订阅链接换成示例值：图片要进仓库，不该带上真实的机场与令牌"""
     text = path.read_text(encoding="utf-8")
-    text = re.sub(r"('name': ')[^']*(')", rf"\g<1>{FAKE_NAMES[lang]}\g<2>", text)
+    name = FAKE_NAMES.get(lang, FAKE_PROFILE)
+    text = re.sub(r"('name': ')[^']*(')", rf"\g<1>{name}\g<2>", text)
     text = re.sub(r"('url': ')[^']*(')", r"\g<1>https://example.com/subscribe\g<2>", text)
     path.write_text(text, encoding="utf-8")
 
@@ -125,7 +140,7 @@ def patch_config(path, lang):
             text = replacement + "\n" + text
 
     set_scalar("appTheme", "light")
-    set_scalar("language", "zh-CN" if lang == "zh" else "en-US")
+    set_scalar("language", LANG_SETTINGS[lang])
     set_scalar("autoCheckUpdate", "false")
     set_scalar("autoUpdateProfileOnStart", "false")
     # 系统代理要关掉：出图不该改动桌面设置，也不能让内核状态显示成「已开启」
@@ -136,7 +151,7 @@ def patch_config(path, lang):
 
 def main():
     parser = argparse.ArgumentParser(description="渲染 clash-qt 界面截图（离屏）")
-    parser.add_argument("--lang", choices=["zh", "en"], default="zh",
+    parser.add_argument("--lang", choices=list(LANG_SETTINGS), default="zh",
                         help="出图语言（默认 zh）")
     parser.add_argument("--out", default=str(ROOT / "docs" / "images"),
                         help="输出目录（默认 docs/images）")
