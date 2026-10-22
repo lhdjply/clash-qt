@@ -35,7 +35,7 @@ AppConfig::AppConfig(QObject *parent) : QObject(parent) {}
 
 QJsonObject AppConfig::defaults()
 {
-    // 与 clash-party 的 defaultConfig（src/main/utils/template.ts）逐项对齐。
+    // 与参照实现的 defaultConfig（src/main/utils/template.ts）逐项对齐。
     // 保持取值一致有两层意义：一是用户从旧版迁移时体验不变；
     // 二是内核生成配置时的默认端口、默认 DNS 行为完全一致。
     QJsonObject config;

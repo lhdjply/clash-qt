@@ -1,6 +1,6 @@
 <!-- 应用图标：渐变圆角方块 + 白色猫头
-     猫是 clash / mihomo 这一族的标志形象（见 mihomo 源码 docs/logo.png、
-     clash-party 的 icon.png），用它可以一眼看出这是 clash 系客户端；
+     猫是 clash / mihomo 这一族的标志形象（见 mihomo 源码 docs/logo.png），
+     用它可以一眼看出这是 clash 系客户端；
      底板沿用本程序界面的蓝→紫渐变，是自己的配色而不是照搬原图。
      用于窗口图标与系统托盘；颜色自带，不参与主题替换。
 

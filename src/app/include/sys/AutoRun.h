@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  开机自启动
 //
-//  对应 clash-party 的 src/main/sys/autoRun.ts。
+//  对应参照实现的 src/main/sys/autoRun.ts。
 //
 //  Linux 实现：写 XDG 自启动项 ~/.config/autostart/clash-qt.desktop。
 //  使用 XDG 目录而不是 systemd user unit，原因：

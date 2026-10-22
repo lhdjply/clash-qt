@@ -37,7 +37,7 @@ QString formatExpire(qint64 timestamp)
     const QDateTime now    = QDateTime::currentDateTime();
     if (expire < now) return QCoreApplication::translate("clashqt::ProfilesPage", "Expired");
     return expire.toString(QStringLiteral("yyyy-MM-dd"))
-           + QCoreApplication::translate("clashqt::ProfilesPage", "(%1 days)").arg(now.daysTo(expire));
+           + QCoreApplication::translate("clashqt::ProfilesPage", " (%1 days)").arg(now.daysTo(expire));
 }
 
 QString formatUsage(const std::optional<SubscriptionUserInfo> &info)
@@ -235,8 +235,14 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
         tr("Profiles"),
         tr("Manage config sources. The active profile is merged with \"Config overrides\" before use."), QStringLiteral("profiles")));
 
-    auto *toolbar = new QHBoxLayout();
-    toolbar->setSpacing(8);
+    // 工具栏用容器包一层：英文标签比中文长，默认左右内边距会把整行顶出
+    // 横向滚动条（默认窗口宽度下「删除」会被切掉），容器上挂一条更紧的
+    // 内边距规则，见 UiFactory 的 QWidget#profileToolbar
+    auto *toolbarHost = new QWidget(this);
+    toolbarHost->setObjectName(QStringLiteral("profileToolbar"));
+    auto *toolbar = new QHBoxLayout(toolbarHost);
+    toolbar->setContentsMargins(0, 0, 0, 0);
+    toolbar->setSpacing(6);
 
     auto *addRemote = ui::makePrimaryButton(tr("Add profile"), this);
     auto *addLocal  = new QPushButton(tr("Import local config"), this);
@@ -264,7 +270,7 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
     toolbar->addWidget(switchBtn);
     toolbar->addWidget(removeBtn);
     toolbar->addStretch(1);
-    root->addLayout(toolbar);
+    root->addWidget(toolbarHost);
 
     m_emptyHint = ui::makeHintLabel(
         tr("No profiles yet. Click \"Add profile\" to enter a subscription URL, or \"Import local config\" to pick an existing Clash config file."),
@@ -280,8 +286,26 @@ ProfilesPage::ProfilesPage(AppContext *context, QWidget *parent)
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->verticalHeader()->setVisible(false);
-    m_table->horizontalHeader()->setStretchLastSection(true);
+    // 名称吃掉剩余宽度，其余列给固定初值：默认列宽（约 100px）放不下
+    // 「1.84 GB / 100 GB」「2027-01-14（84 天）」这类内容，会被截成省略号；
+    // 而按内容自适应又会让表格撑出横向滚动条，所以用可拖拽的固定初值
+    m_table->horizontalHeader()->setStretchLastSection(false);
     m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    const struct {
+        int column;
+        int width;
+    } widths[] = {
+        {0, 56},   // 当前
+        {2, 80},   // 类型
+        {3, 150},  // 流量
+        {4, 160},  // 到期
+        {5, 150},  // 更新时间
+    };
+    for (const auto &entry : widths) {
+        m_table->horizontalHeader()->setSectionResizeMode(entry.column,
+                                                         QHeaderView::Interactive);
+        m_table->setColumnWidth(entry.column, entry.width);
+    }
     root->addWidget(m_table, 1);
 
     QObject::connect(addRemote, &QPushButton::clicked, this, &ProfilesPage::onAddSubscription);

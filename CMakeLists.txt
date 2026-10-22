@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 
 # ---------------------------------------------------------------------------
-# Clash Qt —— clash-party 的 Qt6 / C++ 重写
+# Clash Qt —— Clash 订阅客户端，Qt6 / C++
 #
 # 源码统一收在 src/ 下，构建配置集中在**本文件**（src/core 与 src/app 不再各自
 # 持有 CMakeLists）：
 #   src/core/ : 自研 C++ 内核，目标 clashqt_core（OBJECT 库，直接编入应用）
-#   src/app/  : clash-party 的 Qt6 Widgets 图形界面与内核管理链路
+#   src/app/  : Qt6 Widgets 图形界面与内核管理链路
 #
 # 产物只有一个可执行文件 build/bin/clash-qt；内核不产出 .a，也不产出可执行文件。
 #
@@ -47,7 +47,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
 
 project(clash-qt
     VERSION ${CLASHQT_VERSION_NUMBER}
-    DESCRIPTION "Clash Party rewritten in Qt6 / C++"
+    DESCRIPTION "A Clash subscription client in Qt6 / C++"
     LANGUAGES C CXX)
 
 # Debian 打包的版本号只能来自 debian/changelog（dpkg 的硬约束，不能动态生成）。
@@ -239,7 +239,7 @@ target_include_directories(clashqt_mlkem INTERFACE ${CLASHQT_MLKEM_INCLUDES})
 #    HTTP 与 SOCKS5 入站（含 MIXED 端口嗅探）、隧道分发与双向中继、
 #    连接跟踪与流量统计、Hub 门面。
 #
-#  尚未实现（见 README 的阶段说明）：
+#  尚未实现（见 docs/*/architecture.md）：
 #    外部控制器 REST/WebSocket、geoip/geosite 数据层、TUN/redir/tproxy 入站、
 #    其余出站协议的传输层实现。
 # ===========================================================================
@@ -379,7 +379,7 @@ target_compile_definitions(clashqt_core PUBLIC
 # ===========================================================================
 #  应用（src/app）
 #
-#  对应 clash-party 的 Electron 渲染层与主进程：本目标既承担界面，也承担
+#  对应参照实现的渲染层与主进程：本目标既承担界面，也承担
 #  「应用侧内核管理链路」——配置持久化、配置生成（含覆写合并）、系统代理、
 #  自启动、托盘。内核（clashqt_core）的目标文件直接编入本目标。
 # ===========================================================================
@@ -598,10 +598,10 @@ endif() # CLASHQT_BUILD_APP
 # ---------------------------------------------------------------------------
 # TUN 特权辅助程序
 #
-# 建 TUN、配地址、日后接管路由都需要 CAP_NET_ADMIN。参照实现（clash-party）
-# 的做法是把内核二进制 chown root:root + chmod +sx 做成 setuid；本项目内核是
-# 进程内静态库，没法只给内核加 setuid，而让整个 GUI 以 root 跑是明确要避免的，
-# 因此把「必须 root 的动作」单独放进这个极小、零依赖（不含 Qt）的程序：
+# 建 TUN、配地址、日后接管路由都需要 CAP_NET_ADMIN。参照实现的做法是把内核二进制
+# chown root:root + chmod +sx 做成 setuid；本项目内核是进程内静态库，没法只给内核加
+# setuid，而让整个 GUI 以 root 跑是明确要避免的，因此把「必须 root 的动作」单独放进
+# 这个极小、零依赖（不含 Qt）的程序：
 #   src/tunhelper/main.cpp
 # 授权由主程序在运行时用 pkexec 完成（chown/chmod），构建期不需要任何特权。
 # 仅 Linux 有意义（用到 linux/if_tun.h）。

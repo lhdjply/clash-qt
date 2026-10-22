@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  应用配置（config.yaml）
 //
-//  对应 clash-party 的 src/main/config/app.ts + src/shared/appConfig.ts。
+//  对应参照实现的 src/main/config/app.ts + src/shared/appConfig.ts。
 //
 //  数据模型：以 QJsonObject 持有完整配置，默认值来自 defaults()。
 //  读入时把默认值与文件内容做深合并（deepMerge），因此旧版本配置文件中
@@ -24,7 +24,7 @@ class AppConfig : public QObject {
 public:
     explicit AppConfig(QObject *parent = nullptr);
 
-    // 默认配置（对齐 clash-party 的 defaultConfig）
+    // 默认配置（对齐参照实现的 defaultConfig）
     static QJsonObject defaults();
 
     // 从磁盘加载并与默认值合并；失败时使用默认值
@@ -120,7 +120,7 @@ public:
     int     delayTestConcurrency() const;
 
     // 订阅请求的 User-Agent；为空时由 AppContext 使用内置默认值
-    // （clash-qt/v<版本> (clash.meta)，与 clash-party 的策略一致）
+    // （clash-qt/v<版本> (clash.meta)，与参照实现的策略一致）
     QString userAgent() const;
 
     // 供外部在修改完字段后通知界面刷新。

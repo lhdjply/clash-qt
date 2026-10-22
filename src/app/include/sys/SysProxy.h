@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  系统代理
 //
-//  对应 clash-party 的 src/main/sys/sysproxy.ts（其 Linux 部分通过
+//  对应参照实现的 src/main/sys/sysproxy.ts（其 Linux 部分通过
 //  sysproxy-rs 原生模块实现）。
 //
 //  Linux 平台实现策略：

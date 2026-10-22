@@ -261,6 +261,9 @@ QPushButton#dangerButton {
 }
 QPushButton#dangerButton:hover { background: @dangerSoft; border-color: @danger; }
 
+/* 订阅页工具栏：七个按钮排一行，默认内边距在英文下顶到横向滚动条 */
+QWidget#profileToolbar QPushButton { padding-left: 10px; padding-right: 10px; }
+
 /* ---------- 侧栏：模式分段 / 订阅卡 / 连接卡 ---------- */
 QWidget#segmentBar { background: @hover; border-radius: 10px; }
 QPushButton#segment {

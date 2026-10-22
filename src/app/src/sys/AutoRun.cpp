@@ -182,7 +182,7 @@ bool AutoRun::enable(bool silent, QString *error)
             "Type=Application\n"
             "Version=1.0\n"
             "Name=Clash Qt\n"
-            "Comment=Clash Party rewritten in Qt6 / C++\n"
+            "Comment=A desktop client for Clash-style subscriptions\n"
             "Exec=%1\n"
             "Terminal=false\n"
             "StartupNotify=false\n"

@@ -7,7 +7,7 @@ namespace clashqt {
 namespace calc {
 namespace {
 
-// 与 clash-party 的 formatNumString 保持一致：
+// 与参照实现的 formatNumString 保持一致：
 //  ≤5 字符保留 2 位小数；6 字符保留 1 位；更长直接取整
 QString formatNumber(double value)
 {

@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  覆写（override.yaml + override/<id>.{js,yaml,log}）
 //
-//  对应 clash-party 的 src/main/config/override.ts。
+//  对应参照实现的 src/main/config/override.ts。
 //
 //  覆写的作用是在「订阅原始内容」与「最终内核配置」之间插入用户自定义修改：
 //    * yaml 覆写：按 deepMerge 语义合并，支持 "<key>"、"key!"、"+key" 等修饰

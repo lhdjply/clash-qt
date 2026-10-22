@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  主窗口
 //
-//  对应 clash-party 的 src/renderer/src/App.tsx + components/sider/。
+//  对应参照实现的 src/renderer/src/App.tsx + components/sider/。
 //  布局：左侧为「状态卡片 + 导航」的侧栏，右侧为页面栈。
 //
 //  侧栏按瓦片组织（见 ui/TileButton.h）：出站模式分段、系统代理 / TUN 两块

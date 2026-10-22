@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  应用日志
 //
-//  对应 clash-party 的 src/main/utils/logger.ts 与 logFile.ts。
+//  对应参照实现的 src/main/utils/logger.ts 与 logFile.ts。
 //  职责：
 //    * 把内核日志（core::Logger 的输出）落盘到 logs/core-YYYY-MM-DD.log
 //    * 应用自身日志落盘到 logs/clash-qt-YYYY-MM-DD.log

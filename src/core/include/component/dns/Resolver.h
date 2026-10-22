@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  DNS 解析器
 //
-//  对应参照实现 component/resolver + dns/ 与 clash-party 的 dns 配置段。
+//  对应参照实现的 component/resolver + dns/ 及其 dns 配置段。
 //  能力范围：
 //    * hosts 静态映射（含通配 "*." 前缀）
 //    * nameserver / default-nameserver / fallback 多服务器查询（UDP、TCP）

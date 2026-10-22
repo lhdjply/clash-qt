@@ -11,7 +11,7 @@ namespace clashqt {
 namespace paths {
 namespace {
 
-// 日志文件名中的日期段，与 clash-party 的命名保持一致
+// 日志文件名中的日期段，与参照实现的命名保持一致
 QString dateStamp()
 {
     return QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"));

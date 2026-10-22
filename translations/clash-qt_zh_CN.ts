@@ -956,7 +956,7 @@ Rule: %3</source>
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="40"/>
-        <source>(%1 days)</source>
+        <source> (%1 days)</source>
         <translation>（%1 天）</translation>
     </message>
     <message>
@@ -970,145 +970,145 @@ Rule: %3</source>
         <translation>管理配置来源。当前选中的订阅会与「配置覆写」合并后生效。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="241"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="247"/>
         <source>Add profile</source>
         <translation>添加订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="242"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="248"/>
         <source>Import local config</source>
         <translation>导入本地配置</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="243"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="249"/>
         <source>Edit</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="244"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="250"/>
         <source>Update selected</source>
         <translation>更新选中</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="245"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="251"/>
         <source>Update all</source>
         <translation>更新全部</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="246"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="252"/>
         <source>Set active</source>
         <translation>设为当前</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="247"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="253"/>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="257"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="263"/>
         <source>Edit the name or URL (or double-click a row)</source>
         <translation>修改名称 / 订阅链接（双击某一行也可以）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="270"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="276"/>
         <source>No profiles yet. Click &quot;Add profile&quot; to enter a subscription URL, or &quot;Import local config&quot; to pick an existing Clash config file.</source>
         <translation>还没有任何订阅。点击「添加订阅」填写订阅链接，或「导入本地配置」选择一个已有的 Clash 配置文件。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="276"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="282"/>
         <source>Active</source>
         <translation>当前</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="276"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="282"/>
         <source>Name</source>
         <translation>名称</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="277"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="283"/>
         <source>Type</source>
         <translation>类型</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="277"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="283"/>
         <source>Traffic</source>
         <translation>流量</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="278"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="284"/>
         <source>Expires</source>
         <translation>到期</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="278"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="284"/>
         <source>Updated</source>
         <translation>更新时间</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="317"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="341"/>
         <source>Remote</source>
         <translation>远程</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="318"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="342"/>
         <source>Local</source>
         <translation>本地</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="319"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="343"/>
         <source>Plugin</source>
         <translation>插件</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="362"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="386"/>
         <source>Add failed</source>
         <translation>添加失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="380"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="404"/>
         <source>Choose a config file</source>
         <translation>选择配置文件</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="381"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="405"/>
         <source>Clash config (*.yaml *.yml);;All files (*)</source>
         <translation>Clash 配置 (*.yaml *.yml);;所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="386"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="410"/>
         <source>Import failed</source>
         <translation>导入失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="396"/>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="447"/>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="481"/>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="497"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="420"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="471"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="505"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="521"/>
         <source>Select a profile first</source>
         <translation>请先选择一个订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="414"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="438"/>
         <source>Save failed</source>
         <translation>保存失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="414"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="438"/>
         <source>Failed to write profile config</source>
         <translation>写入订阅配置失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="422"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="446"/>
         <source>Replace failed</source>
         <translation>替换失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="434"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="458"/>
         <source>URL saved</source>
         <translation>链接已保存</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="435"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="459"/>
         <source>URL saved, but fetching the new content failed:
 
 %1
@@ -1121,17 +1121,17 @@ Try &quot;Update selected&quot; again later.</source>
 可稍后用「更新选中」重试。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="453"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="477"/>
         <source>Update failed</source>
         <translation>更新失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="465"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="489"/>
         <source>Some profiles failed to update</source>
         <translation>部分订阅更新失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="466"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="490"/>
         <source>%1 succeeded, %2 failed:
 
 %3</source>
@@ -1140,37 +1140,37 @@ Try &quot;Update selected&quot; again later.</source>
 %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="472"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="496"/>
         <source>Updated %1 profile(s)</source>
         <translation>已更新 %1 个订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="487"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="511"/>
         <source>Switch failed</source>
         <translation>切换失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="503"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="527"/>
         <source>Delete profile</source>
         <translation>删除订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="504"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="528"/>
         <source>Delete &quot;%1&quot;? Its config file will be removed as well.</source>
         <translation>确定要删除「%1」吗？该订阅的配置文件也会被删除。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="508"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="532"/>
         <source>Delete failed</source>
         <translation>删除失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="508"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="532"/>
         <source>Profile not found</source>
         <translation>订阅不存在</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="521"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="545"/>
         <source>Profile deleted, but reloading the config failed: %1</source>
         <translation>订阅已删除，但配置重载失败：%1</translation>
     </message>
@@ -2175,51 +2175,51 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
     </message>
     <message>
         <location filename="../src/app/src/main.cpp" line="65"/>
-        <source>Clash Qt - a Qt6/C++ implementation of Clash Party</source>
-        <translation>Clash Qt —— Clash Party 的 Qt6/C++ 实现</translation>
+        <source>Clash Qt - a desktop client for Clash-style subscriptions</source>
+        <translation>Clash Qt —— Clash 订阅客户端（Qt6 / C++）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="70"/>
+        <location filename="../src/app/src/main.cpp" line="71"/>
         <source>Start without showing the main window (for autostart)</source>
         <translation>启动后不显示主窗口（配合自启动使用）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="72"/>
+        <location filename="../src/app/src/main.cpp" line="73"/>
         <source>Use the data directory next to the executable</source>
         <translation>使用可执行文件旁的 data 目录作为数据目录</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="96"/>
+        <location filename="../src/app/src/main.cpp" line="97"/>
         <source>Another instance is already running: asked it to show its window, exiting</source>
         <translation>检测到已有实例在运行：已请求其显示窗口，本进程退出</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="107"/>
+        <location filename="../src/app/src/main.cpp" line="108"/>
         <source>Starting %1 %2 (%3, silent=%4)</source>
         <translation>启动 %1 %2（%3，silent=%4）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="120"/>
+        <location filename="../src/app/src/main.cpp" line="121"/>
         <source>Initialization failed: %1</source>
         <translation>初始化失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="127"/>
+        <location filename="../src/app/src/main.cpp" line="128"/>
         <source>UI language: %1 (configured value %2)</source>
         <translation>界面语言：%1（配置值 %2）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="147"/>
+        <location filename="../src/app/src/main.cpp" line="148"/>
         <source>Start failed: %1</source>
         <translation>启动失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="176"/>
+        <location filename="../src/app/src/main.cpp" line="177"/>
         <source>Silent start: not showing the main window</source>
         <translation>静默启动：不显示主窗口</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="187"/>
+        <location filename="../src/app/src/main.cpp" line="188"/>
         <source>%1 exited with code %2</source>
         <translation>%1 已退出，退出码 %2</translation>
     </message>
@@ -2564,27 +2564,27 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>系统托盘不可用，跳过托盘初始化</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="737"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="740"/>
         <source>UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5</source>
         <translation>界面样式：Fusion（%1）style=%2 控件底色=%3 强调色=%4 桌面深色=%5</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="738"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="741"/>
         <source>dark</source>
         <translation>深色</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="738"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="741"/>
         <source>light</source>
         <translation>浅色</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="743"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="746"/>
         <source>yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="743"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="746"/>
         <source>no</source>
         <translation>否</translation>
     </message>

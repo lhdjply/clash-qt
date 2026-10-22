@@ -956,8 +956,8 @@ Rule: %3</translation>
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="40"/>
-        <source>(%1 days)</source>
-        <translation>(%1 days)</translation>
+        <source> (%1 days)</source>
+        <translation> (%1 days)</translation>
     </message>
     <message>
         <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="235"/>
@@ -970,145 +970,145 @@ Rule: %3</translation>
         <translation>Manage config sources. The active profile is merged with &quot;Config overrides&quot; before use.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="241"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="247"/>
         <source>Add profile</source>
         <translation>Add profile</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="242"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="248"/>
         <source>Import local config</source>
         <translation>Import local config</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="243"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="249"/>
         <source>Edit</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="244"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="250"/>
         <source>Update selected</source>
         <translation>Update selected</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="245"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="251"/>
         <source>Update all</source>
         <translation>Update all</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="246"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="252"/>
         <source>Set active</source>
         <translation>Set active</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="247"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="253"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="257"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="263"/>
         <source>Edit the name or URL (or double-click a row)</source>
         <translation>Edit the name or URL (or double-click a row)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="270"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="276"/>
         <source>No profiles yet. Click &quot;Add profile&quot; to enter a subscription URL, or &quot;Import local config&quot; to pick an existing Clash config file.</source>
         <translation>No profiles yet. Click &quot;Add profile&quot; to enter a subscription URL, or &quot;Import local config&quot; to pick an existing Clash config file.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="276"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="282"/>
         <source>Active</source>
         <translation>Active</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="276"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="282"/>
         <source>Name</source>
         <translation>Name</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="277"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="283"/>
         <source>Type</source>
         <translation>Type</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="277"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="283"/>
         <source>Traffic</source>
         <translation>Traffic</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="278"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="284"/>
         <source>Expires</source>
         <translation>Expires</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="278"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="284"/>
         <source>Updated</source>
         <translation>Updated</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="317"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="341"/>
         <source>Remote</source>
         <translation>Remote</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="318"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="342"/>
         <source>Local</source>
         <translation>Local</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="319"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="343"/>
         <source>Plugin</source>
         <translation>Plugin</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="362"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="386"/>
         <source>Add failed</source>
         <translation>Add failed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="380"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="404"/>
         <source>Choose a config file</source>
         <translation>Choose a config file</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="381"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="405"/>
         <source>Clash config (*.yaml *.yml);;All files (*)</source>
         <translation>Clash config (*.yaml *.yml);;All files (*)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="386"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="410"/>
         <source>Import failed</source>
         <translation>Import failed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="396"/>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="447"/>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="481"/>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="497"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="420"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="471"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="505"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="521"/>
         <source>Select a profile first</source>
         <translation>Select a profile first</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="414"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="438"/>
         <source>Save failed</source>
         <translation>Save failed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="414"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="438"/>
         <source>Failed to write profile config</source>
         <translation>Failed to write profile config</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="422"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="446"/>
         <source>Replace failed</source>
         <translation>Replace failed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="434"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="458"/>
         <source>URL saved</source>
         <translation>URL saved</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="435"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="459"/>
         <source>URL saved, but fetching the new content failed:
 
 %1
@@ -1121,17 +1121,17 @@ Try &quot;Update selected&quot; again later.</source>
 Try &quot;Update selected&quot; again later.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="453"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="477"/>
         <source>Update failed</source>
         <translation>Update failed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="465"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="489"/>
         <source>Some profiles failed to update</source>
         <translation>Some profiles failed to update</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="466"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="490"/>
         <source>%1 succeeded, %2 failed:
 
 %3</source>
@@ -1140,37 +1140,37 @@ Try &quot;Update selected&quot; again later.</translation>
 %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="472"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="496"/>
         <source>Updated %1 profile(s)</source>
         <translation>Updated %1 profile(s)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="487"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="511"/>
         <source>Switch failed</source>
         <translation>Switch failed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="503"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="527"/>
         <source>Delete profile</source>
         <translation>Delete profile</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="504"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="528"/>
         <source>Delete &quot;%1&quot;? Its config file will be removed as well.</source>
         <translation>Delete &quot;%1&quot;? Its config file will be removed as well.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="508"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="532"/>
         <source>Delete failed</source>
         <translation>Delete failed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="508"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="532"/>
         <source>Profile not found</source>
         <translation>Profile not found</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="521"/>
+        <location filename="../src/app/src/ui/pages/ProfilesPage.cpp" line="545"/>
         <source>Profile deleted, but reloading the config failed: %1</source>
         <translation>Profile deleted, but reloading the config failed: %1</translation>
     </message>
@@ -2175,51 +2175,51 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
     </message>
     <message>
         <location filename="../src/app/src/main.cpp" line="65"/>
-        <source>Clash Qt - a Qt6/C++ implementation of Clash Party</source>
-        <translation>Clash Qt - a Qt6/C++ implementation of Clash Party</translation>
+        <source>Clash Qt - a desktop client for Clash-style subscriptions</source>
+        <translation>Clash Qt - a desktop client for Clash-style subscriptions</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="70"/>
+        <location filename="../src/app/src/main.cpp" line="71"/>
         <source>Start without showing the main window (for autostart)</source>
         <translation>Start without showing the main window (for autostart)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="72"/>
+        <location filename="../src/app/src/main.cpp" line="73"/>
         <source>Use the data directory next to the executable</source>
         <translation>Use the data directory next to the executable</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="96"/>
+        <location filename="../src/app/src/main.cpp" line="97"/>
         <source>Another instance is already running: asked it to show its window, exiting</source>
         <translation>Another instance is already running: asked it to show its window, exiting</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="107"/>
+        <location filename="../src/app/src/main.cpp" line="108"/>
         <source>Starting %1 %2 (%3, silent=%4)</source>
         <translation>Starting %1 %2 (%3, silent=%4)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="120"/>
+        <location filename="../src/app/src/main.cpp" line="121"/>
         <source>Initialization failed: %1</source>
         <translation>Initialization failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="127"/>
+        <location filename="../src/app/src/main.cpp" line="128"/>
         <source>UI language: %1 (configured value %2)</source>
         <translation>UI language: %1 (configured value %2)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="147"/>
+        <location filename="../src/app/src/main.cpp" line="148"/>
         <source>Start failed: %1</source>
         <translation>Start failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="176"/>
+        <location filename="../src/app/src/main.cpp" line="177"/>
         <source>Silent start: not showing the main window</source>
         <translation>Silent start: not showing the main window</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="187"/>
+        <location filename="../src/app/src/main.cpp" line="188"/>
         <source>%1 exited with code %2</source>
         <translation>%1 exited with code %2</translation>
     </message>
@@ -2564,27 +2564,27 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>System tray unavailable; skipping tray setup</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="737"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="740"/>
         <source>UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5</source>
         <translation>UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="738"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="741"/>
         <source>dark</source>
         <translation>dark</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="738"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="741"/>
         <source>light</source>
         <translation>light</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="743"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="746"/>
         <source>yes</source>
         <translation>yes</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="743"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="746"/>
         <source>no</source>
         <translation>no</translation>
     </message>

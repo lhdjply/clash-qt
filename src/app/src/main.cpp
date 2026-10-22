@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 //  clash-qt 应用入口
 //
-//  对应 clash-party 的 src/main/index.ts（进程初始化部分）。
+//  对应参照实现的 src/main/index.ts（进程初始化部分）。
 //
 //  启动顺序（顺序敏感，不可调换）：
 //    1. 解析命令行（--silent / --portable 数据目录已由 Paths 处理）
@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
     QApplication::setApplicationVersion(QStringLiteral(CLASHQT_VERSION_TAG));
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QCoreApplication::translate("clashqt::app", "Clash Qt - a Qt6/C++ implementation of Clash Party"));
+    parser.setApplicationDescription(QCoreApplication::translate(
+        "clashqt::app", "Clash Qt - a desktop client for Clash-style subscriptions"));
     parser.addHelpOption();
     parser.addVersionOption();
 

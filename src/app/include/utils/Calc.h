@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  流量数值格式化
 //
-//  对应 clash-party 的 src/main/utils/calc.ts：
+//  对应参照实现的 src/main/utils/calc.ts：
 //    * calcTraffic(byte)         字节数 -> "1.23 MB" 形式
 //    * calcSpeed(bytePerSecond)  速率 -> "1.23 MB/s" 形式
 //    * calcTimeLeft(used,total,rate) 预计可用时长

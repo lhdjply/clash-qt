@@ -3,11 +3,9 @@
 //
 //  为什么单独一个程序
 //  ---------------------------------------------------------------------------
-//  建 TUN 设备、配地址 / MTU、改路由都需要 CAP_NET_ADMIN。参照实现
-//  （clash-party）在 Linux 上的做法是把**内核二进制** chown root:root +
-//  chmod +sx 做成 setuid，让它以 root 建 TUN（见
-//  clash-party/src/main/core/permissions.ts:grantTunPermissions）。权限检查
-//  同样简单：stat 一下看 setuid 位与 uid==0。
+//  建 TUN 设备、配地址 / MTU、改路由都需要 CAP_NET_ADMIN。参照实现的做法是把
+//  **内核二进制** chown root:root + chmod +sx 做成 setuid，让它以 root 建 TUN。
+//  权限检查同样简单：stat 一下看 setuid 位与 uid==0。
 //
 //  本项目的内核是进程内静态库，没法只给「内核」加 setuid；而把整个 Qt 图形
 //  程序做成 setuid root 是明确要避免的（GUI 与全部业务都以 root 跑，配置

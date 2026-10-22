@@ -52,7 +52,7 @@ constexpr int kDefaultSubscriptionTimeoutMs = 30000;
 
 // 订阅请求的 User-Agent。
 // 机场按 UA 识别客户端：不含 clash 系标识时，多数机场会返回精简配置
-// 甚至直接提示「不支持你的代理软件」。对齐 clash-party 的做法
+// 甚至直接提示「不支持你的代理软件」。对齐参照实现的做法
 // （profile.ts:570），默认在 UA 中带上 (clash.meta) 标识。
 QString subscriptionUserAgent(const QString &itemUserAgent, const QString &appUserAgent)
 {
@@ -318,7 +318,7 @@ bool AppContext::reloadKernel(QString *error)
 // ---------------------------------------------------------------------------
 //  TUN 模式
 //
-//  权限模型与参照实现一致（clash-party/src/main/core/permissions.ts）：
+//  权限模型与参照实现一致：
 //  特权辅助程序 clash-qt-tun 用 pkexec 做一次 chown root:root + chmod +sx，
 //  之后主程序以普通用户身份拉起它，由它建 TUN、配地址、接管路由，
 //  再把 TUN 的 fd 通过 SCM_RIGHTS 交回来 —— 数据面仍在主程序里。

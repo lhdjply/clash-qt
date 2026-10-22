@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //  订阅（配置档案）管理
 //
-//  对应 clash-party 的 src/main/config/profile.ts。
+//  对应参照实现的 src/main/config/profile.ts。
 //
 //    profile.yaml           订阅列表与当前选中项
 //    profiles/<id>.yaml     各订阅的原始配置内容
