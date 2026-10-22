@@ -261,14 +261,48 @@ QPushButton#dangerButton {
 }
 QPushButton#dangerButton:hover { background: @dangerSoft; border-color: @danger; }
 
-/* ---------- 导航 ---------- */
-QListWidget#navList { background: transparent; border: 0px; outline: 0px; }
-QListWidget#navList::item {
-    height: 40px; padding-left: 10px; margin: 3px 0px;
-    border-radius: 10px; color: @text;
+/* ---------- 侧栏：模式分段 / 订阅卡 / 连接卡 ---------- */
+QWidget#segmentBar { background: @hover; border-radius: 10px; }
+QPushButton#segment {
+    background: transparent; border: 0px; border-radius: 8px;
+    padding: 6px 0px; color: @muted; font-size: 13px;
 }
-QListWidget#navList::item:hover { background: @hover; }
-QListWidget#navList::item:selected { background: @accent; color: @onAccent; }
+QPushButton#segment:hover { background: @hover; color: @text; }
+QPushButton#segment:checked { background: @accent; color: @onAccent; font-weight: 500; }
+
+QPushButton#profileCard {
+    background: @card; border: 1px solid @cardBorder; border-radius: 12px;
+    padding: 0px; text-align: left;
+}
+QPushButton#profileCard:hover { background: @hover; }
+QPushButton#profileCard[active="true"] { background: @accent; border-color: @accent; }
+QPushButton#profileCard[active="true"]:hover { background: @accentHover; }
+QLabel#profileName { background: transparent; color: @text; font-size: 13px; font-weight: 600; }
+QLabel#profileName[active="true"] { color: #FFFFFF; }
+QLabel#profileMeta { background: transparent; color: @muted; font-size: 12px; }
+QLabel#profileMeta[active="true"] { color: rgba(255,255,255,0.88); }
+QProgressBar#profileBar { background: @separator; border: 0px; border-radius: 2px; }
+QProgressBar#profileBar[active="true"] { background: rgba(255,255,255,0.34); }
+QProgressBar#profileBar::chunk { background: @accentBorder; border-radius: 2px; }
+QProgressBar#profileBar[active="true"]::chunk { background: #FFFFFF; }
+QToolButton#profileRefresh { background: transparent; border: 0px; border-radius: 6px; }
+QToolButton#profileRefresh:hover { background: @hover; }
+QToolButton#profileRefresh:pressed { background: @accentSoft; }
+QToolButton#profileRefresh[active="true"]:hover { background: rgba(255,255,255,0.20); }
+QToolButton#profileRefresh[active="true"]:pressed { background: rgba(255,255,255,0.32); }
+QToolButton#profileRefresh:disabled { background: transparent; }
+
+QPushButton#trafficCard {
+    background: @card; border: 1px solid @cardBorder; border-radius: 12px;
+    padding: 0px; text-align: left;
+}
+QPushButton#trafficCard:hover { background: @hover; }
+QPushButton#trafficCard[active="true"] { background: @accent; border-color: @accent; }
+QPushButton#trafficCard[active="true"]:hover { background: @accentHover; }
+QLabel#trafficTitle { background: transparent; font-size: 13px; font-weight: 600; color: @text; }
+QLabel#trafficTitle[active="true"] { color: #FFFFFF; }
+QLabel#speedValue { background: transparent; font-size: 12px; color: @muted; }
+QLabel#speedValue[active="true"] { color: rgba(255,255,255,0.88); }
 
 /* ---------- 表格 / 列表 ---------- */
 QTableWidget {

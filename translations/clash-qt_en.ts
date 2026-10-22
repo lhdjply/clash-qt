@@ -65,295 +65,295 @@
         <translation>TUN disabled; system routes restored</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="433"/>
+        <location filename="../src/app/src/AppContext.cpp" line="436"/>
         <source>TUN helper not found (it should sit next to the main executable): %1</source>
         <translation>TUN helper not found (it should sit next to the main executable): %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="471"/>
+        <location filename="../src/app/src/AppContext.cpp" line="475"/>
         <source>Removed the wildcard &quot;*&quot; from fake-ip-filter (it makes every domain skip fake-ip)</source>
         <translation>Removed the wildcard &quot;*&quot; from fake-ip-filter (it makes every domain skip fake-ip)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="473"/>
+        <location filename="../src/app/src/AppContext.cpp" line="477"/>
         <source>Fixed the DNS config: the &quot;*&quot; in fake-ip-filter made every domain skip fake-ip, so it was removed</source>
         <translation>Fixed the DNS config: the &quot;*&quot; in fake-ip-filter made every domain skip fake-ip, so it was removed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="487"/>
+        <location filename="../src/app/src/AppContext.cpp" line="491"/>
         <source>TUN device name changed from Mihomo to %1</source>
         <translation>TUN device name changed from Mihomo to %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="501"/>
+        <location filename="../src/app/src/AppContext.cpp" line="505"/>
         <source>TUN mode needs kernel DNS (fake-ip); DNS override was enabled automatically</source>
         <translation>TUN mode needs kernel DNS (fake-ip); DNS override was enabled automatically</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="503"/>
+        <location filename="../src/app/src/AppContext.cpp" line="507"/>
         <source>TUN mode needs kernel DNS; &quot;DNS override&quot; was enabled automatically</source>
         <translation>TUN mode needs kernel DNS; &quot;DNS override&quot; was enabled automatically</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="518"/>
+        <location filename="../src/app/src/AppContext.cpp" line="522"/>
         <source>The kernel failed to start, so TUN cannot be enabled</source>
         <translation>The kernel failed to start, so TUN cannot be enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="541"/>
-        <location filename="../src/app/src/AppContext.cpp" line="589"/>
+        <location filename="../src/app/src/AppContext.cpp" line="545"/>
+        <location filename="../src/app/src/AppContext.cpp" line="597"/>
         <source>Failed to enable TUN: %1</source>
         <translation>Failed to enable TUN: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="562"/>
+        <location filename="../src/app/src/AppContext.cpp" line="566"/>
         <source>Enabling TUN timed out; state was force-reset</source>
         <translation>Enabling TUN timed out; state was force-reset</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="565"/>
+        <location filename="../src/app/src/AppContext.cpp" line="569"/>
         <source>Timed out enabling TUN; state was reset, please try again</source>
         <translation>Timed out enabling TUN; state was reset, please try again</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="569"/>
+        <location filename="../src/app/src/AppContext.cpp" line="573"/>
         <source>Enabling TUN…</source>
         <translation>Enabling TUN…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="590"/>
+        <location filename="../src/app/src/AppContext.cpp" line="598"/>
         <source>Could not take over the device</source>
         <translation>Could not take over the device</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="602"/>
+        <location filename="../src/app/src/AppContext.cpp" line="610"/>
         <source>TUN enabled (system routes taken over)</source>
         <translation>TUN enabled (system routes taken over)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="603"/>
+        <location filename="../src/app/src/AppContext.cpp" line="611"/>
         <source>TUN enabled (routes not taken over)</source>
         <translation>TUN enabled (routes not taken over)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="612"/>
+        <location filename="../src/app/src/AppContext.cpp" line="620"/>
         <source>Kernel is not running; skipping switch-state restore</source>
         <translation>Kernel is not running; skipping switch-state restore</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="622"/>
+        <location filename="../src/app/src/AppContext.cpp" line="630"/>
         <source>Restored TUN to its previous state</source>
         <translation>Restored TUN to its previous state</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="625"/>
+        <location filename="../src/app/src/AppContext.cpp" line="633"/>
         <source>Failed to restore TUN: %1</source>
         <translation>Failed to restore TUN: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="627"/>
+        <location filename="../src/app/src/AppContext.cpp" line="635"/>
         <source>Failed to restore TUN mode: %1</source>
         <translation>Failed to restore TUN mode: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="636"/>
+        <location filename="../src/app/src/AppContext.cpp" line="644"/>
         <source>Restored the system proxy to its previous state</source>
         <translation>Restored the system proxy to its previous state</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="639"/>
-        <location filename="../src/app/src/AppContext.cpp" line="641"/>
+        <location filename="../src/app/src/AppContext.cpp" line="647"/>
+        <location filename="../src/app/src/AppContext.cpp" line="649"/>
         <source>Failed to restore the system proxy: %1</source>
         <translation>Failed to restore the system proxy: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="656"/>
+        <location filename="../src/app/src/AppContext.cpp" line="664"/>
         <source>Start failed; system proxy not enabled: %1</source>
         <translation>Start failed; system proxy not enabled: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="668"/>
+        <location filename="../src/app/src/AppContext.cpp" line="676"/>
         <source>No inbound port available; cannot set the system proxy</source>
         <translation>No inbound port available; cannot set the system proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="678"/>
+        <location filename="../src/app/src/AppContext.cpp" line="686"/>
         <source>127.0.0.1:%1 is not listening locally; refusing to enable the system proxy (the whole desktop would lose connectivity by pointing at an empty port)</source>
         <translation>127.0.0.1:%1 is not listening locally; refusing to enable the system proxy (the whole desktop would lose connectivity by pointing at an empty port)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="690"/>
+        <location filename="../src/app/src/AppContext.cpp" line="698"/>
         <source>Failed to set the system proxy: %1</source>
         <translation>Failed to set the system proxy: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="698"/>
+        <location filename="../src/app/src/AppContext.cpp" line="706"/>
         <source>Failed to turn off the system proxy: %1</source>
         <translation>Failed to turn off the system proxy: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="731"/>
+        <location filename="../src/app/src/AppContext.cpp" line="739"/>
         <source>Unknown outbound mode: %1</source>
         <translation>Unknown outbound mode: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="770"/>
-        <location filename="../src/app/src/AppContext.cpp" line="795"/>
-        <location filename="../src/app/src/AppContext.cpp" line="883"/>
-        <location filename="../src/app/src/AppContext.cpp" line="961"/>
+        <location filename="../src/app/src/AppContext.cpp" line="778"/>
+        <location filename="../src/app/src/AppContext.cpp" line="803"/>
+        <location filename="../src/app/src/AppContext.cpp" line="891"/>
+        <location filename="../src/app/src/AppContext.cpp" line="969"/>
         <source>Failed to write the profile contents</source>
         <translation>Failed to write the profile contents</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="775"/>
-        <location filename="../src/app/src/AppContext.cpp" line="887"/>
+        <location filename="../src/app/src/AppContext.cpp" line="783"/>
+        <location filename="../src/app/src/AppContext.cpp" line="895"/>
         <source>Failed to write the profile list</source>
         <translation>Failed to write the profile list</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="779"/>
+        <location filename="../src/app/src/AppContext.cpp" line="787"/>
         <source>Added local config: %1</source>
         <translation>Added local config: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="787"/>
-        <location filename="../src/app/src/AppContext.cpp" line="899"/>
-        <location filename="../src/app/src/AppContext.cpp" line="1002"/>
+        <location filename="../src/app/src/AppContext.cpp" line="795"/>
+        <location filename="../src/app/src/AppContext.cpp" line="907"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1010"/>
         <source>Profile does not exist: %1</source>
         <translation>Profile does not exist: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="801"/>
+        <location filename="../src/app/src/AppContext.cpp" line="809"/>
         <source>Replaced the config file of &quot;%1&quot;</source>
         <translation>Replaced the config file of &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="813"/>
+        <location filename="../src/app/src/AppContext.cpp" line="821"/>
         <source>Invalid profile URL: %1</source>
         <translation>Invalid profile URL: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="840"/>
+        <location filename="../src/app/src/AppContext.cpp" line="848"/>
         <source>Profile download timed out (%1 ms)</source>
         <translation>Profile download timed out (%1 ms)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="847"/>
+        <location filename="../src/app/src/AppContext.cpp" line="855"/>
         <source>Profile download failed: %1</source>
         <translation>Profile download failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="866"/>
+        <location filename="../src/app/src/AppContext.cpp" line="874"/>
         <source>The profile is not a valid Clash config: %1</source>
         <translation>The profile is not a valid Clash config: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="891"/>
+        <location filename="../src/app/src/AppContext.cpp" line="899"/>
         <source>Added profile: %1</source>
         <translation>Added profile: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="903"/>
+        <location filename="../src/app/src/AppContext.cpp" line="911"/>
         <source>Profile &quot;%1&quot; is not a remote profile; nothing to update</source>
         <translation>Profile &quot;%1&quot; is not a remote profile; nothing to update</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="930"/>
+        <location filename="../src/app/src/AppContext.cpp" line="938"/>
         <source>Updating &quot;%1&quot; timed out</source>
         <translation>Updating &quot;%1&quot; timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="936"/>
+        <location filename="../src/app/src/AppContext.cpp" line="944"/>
         <source>Failed to update &quot;%1&quot;: %2</source>
         <translation>Failed to update &quot;%1&quot;: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="954"/>
+        <location filename="../src/app/src/AppContext.cpp" line="962"/>
         <source>The update for &quot;%1&quot; returned invalid content; the old config was kept: %2</source>
         <translation>The update for &quot;%1&quot; returned invalid content; the old config was kept: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="975"/>
+        <location filename="../src/app/src/AppContext.cpp" line="983"/>
         <source>Profile updated: %1</source>
         <translation>Profile updated: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1007"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1015"/>
         <source>Switched to profile: %1</source>
         <translation>Switched to profile: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1022"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1030"/>
         <source>Override content must be a YAML mapping: %1</source>
         <translation>Override content must be a YAML mapping: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1029"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1037"/>
         <source>Unnamed override</source>
         <translation>Unnamed override</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1036"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1044"/>
         <source>Failed to write the override contents</source>
         <translation>Failed to write the override contents</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1040"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1048"/>
         <source>Failed to write the override list</source>
         <translation>Failed to write the override list</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1044"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1052"/>
         <source>Added override: %1</source>
         <translation>Added override: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1075"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1083"/>
         <source>Failed to parse the rule-override file; treating it as empty: %1</source>
         <translation>Failed to parse the rule-override file; treating it as empty: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1099"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1107"/>
         <source>No profile selected; cannot save custom rules</source>
         <translation>No profile selected; cannot save custom rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1111"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1119"/>
         <source>%1 entry %2 contains a line break (each rule must stay on one line)</source>
         <translation>%1 entry %2 contains a line break (each rule must stay on one line)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1119"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1127"/>
         <source>%1 entry %2 is not a valid rule (expected at least &quot;type,target&quot;): %3</source>
         <translation>%1 entry %2 is not a valid rule (expected at least &quot;type,target&quot;): %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1129"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1137"/>
         <source>Custom rules</source>
         <translation>Custom rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1130"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1138"/>
         <source>Fallback rules</source>
         <translation>Fallback rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1131"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1139"/>
         <source>Removal rules</source>
         <translation>Removal rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1164"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1172"/>
         <source>Failed to write custom rules: %1</source>
         <translation>Failed to write custom rules: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1169"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1177"/>
         <source>Custom rules saved (profile %1): %2 total, %3 disabled, %4 fallback / %5 removal</source>
         <translation>Custom rules saved (profile %1): %2 total, %3 disabled, %4 fallback / %5 removal</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1178"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1186"/>
         <source>Custom rules applied</source>
         <translation>Custom rules applied</translation>
     </message>
@@ -472,186 +472,202 @@
 <context>
     <name>clashqt::MainWindow</name>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="179"/>
-        <source>Quick settings</source>
-        <translation>Quick settings</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="183"/>
-        <source>Rule mode</source>
-        <translation>Rule mode</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="184"/>
-        <source>Global mode</source>
-        <translation>Global mode</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="185"/>
-        <source>Direct mode</source>
-        <translation>Direct mode</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="189"/>
-        <source>Outbound mode</source>
-        <translation>Outbound mode</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="192"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="270"/>
         <source>System proxy</source>
         <translation>System proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="199"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="279"/>
         <source>No system proxy backend found (gsettings / kwriteconfig); system proxy is unavailable</source>
         <translation>No system proxy backend found (gsettings / kwriteconfig); system proxy is unavailable</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="206"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="435"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="285"/>
         <source>TUN mode</source>
         <translation>TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="209"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="291"/>
         <source>Captures all local traffic, including apps that ignore the system proxy. The first enable requires a one-time password prompt.</source>
         <translation>Captures all local traffic, including apps that ignore the system proxy. The first enable requires a one-time password prompt.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="215"/>
-        <source>Statistics</source>
-        <translation>Statistics</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="241"/>
-        <source>Up</source>
-        <translation>Up</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="243"/>
-        <source>Down</source>
-        <translation>Down</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="295"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="406"/>
         <source>Proxies</source>
         <translation>Proxies</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="296"/>
-        <source>Profiles</source>
-        <translation>Profiles</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="297"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
         <source>Connections</source>
         <translation>Connections</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="298"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="407"/>
         <source>Rules</source>
         <translation>Rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="299"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="408"/>
         <source>Overrides</source>
         <translation>Overrides</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="300"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="409"/>
         <source>Logs</source>
         <translation>Logs</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="301"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="471"/>
         <source>Traffic</source>
         <translation>Traffic</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="302"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="412"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="326"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="405"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="234"/>
+        <source>Rule</source>
+        <translation>Rule</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="235"/>
+        <source>Global</source>
+        <translation>Global</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="236"/>
+        <source>Direct</source>
+        <translation>Direct</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="338"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="694"/>
+        <source>Update this subscription</source>
+        <translation>Update this subscription</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="680"/>
+        <source>No profile selected</source>
+        <translation>No profile selected</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="695"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="743"/>
+        <source>Local profiles have no URL to update from</source>
+        <translation>Local profiles have no URL to update from</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="707"/>
+        <source>%1 / %2</source>
+        <translation>%1 / %2</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="716"/>
+        <source>Updated %1</source>
+        <translation>Updated %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="731"/>
+        <source>Open the profiles page</source>
+        <translation>Open the profiles page</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="738"/>
+        <source>Select a profile first</source>
+        <translation>Select a profile first</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="751"/>
+        <source>Update failed: %1</source>
+        <translation>Update failed: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="753"/>
+        <source>Subscription updated</source>
+        <translation>Subscription updated</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="778"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="857"/>
         <source>Disable system proxy</source>
         <translation>Disable system proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="334"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="442"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="786"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="893"/>
         <source>Enable TUN mode</source>
         <translation>Enable TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="341"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="793"/>
         <source>Show main window</source>
         <translation>Show main window</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="349"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="801"/>
         <source>Quit</source>
         <translation>Quit</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="406"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="858"/>
         <source>Enable system proxy</source>
         <translation>Enable system proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="411"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="440"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="863"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="891"/>
         <source>Enabling TUN…</source>
         <translation>Enabling TUN…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="415"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="867"/>
         <source>System proxy + TUN enabled</source>
         <translation>System proxy + TUN enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="416"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="868"/>
         <source>TUN enabled</source>
         <translation>TUN enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="417"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
         <source>System proxy enabled</source>
         <translation>System proxy enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="418"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
         <source>System proxy disabled</source>
         <translation>System proxy disabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="434"/>
-        <source>TUN mode (enabling…)</source>
-        <translation>TUN mode (enabling…)</translation>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="886"/>
+        <source>enabling…</source>
+        <translation>enabling…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="441"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="892"/>
         <source>Disable TUN mode</source>
         <translation>Disable TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="468"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="902"/>
         <source>Mixed port %1</source>
         <translation>Mixed port %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="470"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="904"/>
         <source>Not running</source>
         <translation>Not running</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="487"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="932"/>
         <source>Failed to switch outbound mode: %1</source>
         <translation>Failed to switch outbound mode: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="491"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="938"/>
         <source>Outbound mode: %1</source>
         <translation>Outbound mode: %1</translation>
     </message>
@@ -1237,97 +1253,97 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>Test all groups</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="395"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="409"/>
         <source>The active profile has no proxy groups</source>
         <translation>The active profile has no proxy groups</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="428"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="442"/>
         <source>Type %1 · %2 members</source>
         <translation>Type %1 · %2 members</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="433"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="447"/>
         <source>Current node: %1</source>
         <translation>Current node: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="461"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="475"/>
         <source>Proxy group · %1</source>
         <translation>Proxy group · %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="462"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="476"/>
         <source>Protocol · %1</source>
         <translation>Protocol · %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="463"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="477"/>
         <source>Unknown</source>
         <translation>Unknown</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="465"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="479"/>
         <source>This protocol is not supported yet; connections will fail explicitly</source>
         <translation>This protocol is not supported yet; connections will fail explicitly</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="471"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="485"/>
         <source>Last latency test timed out</source>
         <translation>Last latency test timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="476"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="490"/>
         <source>Last latency %1 ms</source>
         <translation>Last latency %1 ms</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="477"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="491"/>
         <source>Last test timed out</source>
         <translation>Last test timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="482"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="496"/>
         <source>Currently pointing at %1</source>
         <translation>Currently pointing at %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="484"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="498"/>
         <source>Click the bolt icon in a row to test that node</source>
         <translation>Click the bolt icon in a row to test that node</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="683"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="697"/>
         <source>Node no longer exists</source>
         <translation>Node no longer exists</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="714"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="728"/>
         <source>Latency test finished: %1/%2 nodes available</source>
         <translation>Latency test finished: %1/%2 nodes available</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="718"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="732"/>
         <source>%1 latency test failed: %2</source>
         <translation>%1 latency test failed: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="734"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="748"/>
         <source>These nodes are being tested, or none can be tested</source>
         <translation>These nodes are being tested, or none can be tested</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="747"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="761"/>
         <source>Testing %1 nodes (%2 at a time, results fill in as they finish)</source>
         <translation>Testing %1 nodes (%2 at a time, results fill in as they finish)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="775"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="789"/>
         <source>Failed to switch node: %1</source>
         <translation>Failed to switch node: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="783"/>
+        <location filename="../src/app/src/ui/pages/ProxiesPage.cpp" line="797"/>
         <source>%1 switched to %2</source>
         <translation>%1 switched to %2</translation>
     </message>
@@ -1957,493 +1973,640 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
 <context>
     <name>clashqt::app</name>
     <message>
-        <location filename="../src/app/src/utils/Calc.cpp" line="71"/>
+        <location filename="../src/app/src/utils/Calc.cpp" line="70"/>
         <source>Used up</source>
         <translation>Used up</translation>
     </message>
     <message>
-        <location filename="../src/app/src/utils/Calc.cpp" line="78"/>
+        <location filename="../src/app/src/utils/Calc.cpp" line="77"/>
         <source>%1 d %2 h</source>
         <translation>%1 d %2 h</translation>
     </message>
     <message>
-        <location filename="../src/app/src/utils/Calc.cpp" line="79"/>
+        <location filename="../src/app/src/utils/Calc.cpp" line="78"/>
         <source>%1 h %2 min</source>
         <translation>%1 h %2 min</translation>
     </message>
     <message>
-        <location filename="../src/app/src/utils/Calc.cpp" line="80"/>
+        <location filename="../src/app/src/utils/Calc.cpp" line="79"/>
         <source>%1 min</source>
         <translation>%1 min</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="122"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="121"/>
         <source>Atom feed</source>
         <translation>Atom feed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="186"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="185"/>
         <source>Skipped: overall time budget exhausted</source>
         <translation>Skipped: overall time budget exhausted</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="294"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="293"/>
         <source>Request timed out</source>
         <translation>Request timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="374"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="373"/>
         <source>Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)</source>
         <translation>Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="392"/>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="394"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="391"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="393"/>
         <source>Not attempted</source>
         <translation>Not attempted</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="397"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="396"/>
         <source>No update source available</source>
         <translation>No update source available</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="405"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="404"/>
         <source>Could not parse the response: %1</source>
         <translation>Could not parse the response: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="487"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="486"/>
         <source>Could not parse the content: %1</source>
         <translation>Could not parse the content: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/AppConfig.cpp" line="209"/>
+        <location filename="../src/app/src/config/AppConfig.cpp" line="208"/>
         <source>Failed to parse the app config; using defaults: %1</source>
         <translation>Failed to parse the app config; using defaults: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/AppConfig.cpp" line="229"/>
+        <location filename="../src/app/src/config/AppConfig.cpp" line="228"/>
         <source>Failed to write back the app config: %1</source>
         <translation>Failed to write back the app config: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/AppConfig.cpp" line="239"/>
+        <location filename="../src/app/src/config/AppConfig.cpp" line="238"/>
         <source>Failed to save the app config: %1</source>
         <translation>Failed to save the app config: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ControledKernelConfig.cpp" line="227"/>
+        <location filename="../src/app/src/config/ControledKernelConfig.cpp" line="226"/>
         <source>Failed to parse the legacy managed config (%1): %2</source>
         <translation>Failed to parse the legacy managed config (%1): %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ControledKernelConfig.cpp" line="233"/>
+        <location filename="../src/app/src/config/ControledKernelConfig.cpp" line="232"/>
         <source>Merged the legacy managed config into config.yaml and deleted it: %1</source>
         <translation>Merged the legacy managed config into config.yaml and deleted it: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="121"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="120"/>
         <source>Failed to parse the profile list: %1</source>
         <translation>Failed to parse the profile list: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="144"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="143"/>
         <source>Failed to save the profile list: %1</source>
         <translation>Failed to save the profile list: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="229"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="228"/>
         <source>Failed to write profile content (%1): %2</source>
         <translation>Failed to write profile content (%1): %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/OverrideConfig.cpp" line="75"/>
+        <location filename="../src/app/src/config/OverrideConfig.cpp" line="74"/>
         <source>Failed to parse the override list: %1</source>
         <translation>Failed to parse the override list: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/OverrideConfig.cpp" line="93"/>
+        <location filename="../src/app/src/config/OverrideConfig.cpp" line="92"/>
         <source>Failed to save the override list: %1</source>
         <translation>Failed to save the override list: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/OverrideConfig.cpp" line="157"/>
+        <location filename="../src/app/src/config/OverrideConfig.cpp" line="156"/>
         <source>Failed to write override content (%1.%2): %3</source>
         <translation>Failed to write override content (%1.%2): %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="99"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="98"/>
         <source>References an override that does not exist: %1</source>
         <translation>References an override that does not exist: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="108"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="107"/>
         <source>Override %1 has no content file</source>
         <translation>Override %1 has no content file</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="117"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="116"/>
         <source>Override &quot;%1&quot; is a JS script, and the JS override engine is not supported yet; it was skipped (the config will not apply it)</source>
         <translation>Override &quot;%1&quot; is a JS script, and the JS override engine is not supported yet; it was skipped (the config will not apply it)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="127"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="126"/>
         <source>Failed to parse override &quot;%1&quot;: %2</source>
         <translation>Failed to parse override &quot;%1&quot;: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="134"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="133"/>
         <source>The root of override &quot;%1&quot; must be a mapping</source>
         <translation>The root of override &quot;%1&quot; must be a mapping</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="160"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="159"/>
         <source>Failed to parse the rule-override file: %1</source>
         <translation>Failed to parse the rule-override file: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="229"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="228"/>
         <source>No profile selected yet. Add one on the Profiles page and select it first.</source>
         <translation>No profile selected yet. Add one on the Profiles page and select it first.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="240"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="239"/>
         <source>Profile &quot;%1&quot; is empty or missing</source>
         <translation>Profile &quot;%1&quot; is empty or missing</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="250"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="249"/>
         <source>Failed to parse the profile content: %1</source>
         <translation>Failed to parse the profile content: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="357"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="356"/>
         <source>Failed to write the config: %1</source>
         <translation>Failed to write the config: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/Factory.cpp" line="362"/>
+        <location filename="../src/app/src/config/Factory.cpp" line="361"/>
         <source>Generated the runtime config: %1 (profile %2)</source>
         <translation>Generated the runtime config: %1 (profile %2)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/utils/AppLogger.cpp" line="153"/>
+        <location filename="../src/app/src/utils/AppLogger.cpp" line="152"/>
         <source>Removed %1 expired log file(s) (retention %2 days)</source>
         <translation>Removed %1 expired log file(s) (retention %2 days)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/utils/SafeFile.cpp" line="19"/>
+        <location filename="../src/app/src/utils/SafeFile.cpp" line="18"/>
         <source>Could not create the directory: %1</source>
         <translation>Could not create the directory: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/utils/SafeFile.cpp" line="27"/>
+        <location filename="../src/app/src/utils/SafeFile.cpp" line="26"/>
         <source>Could not write %1: %2</source>
         <translation>Could not write %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/utils/SafeFile.cpp" line="33"/>
+        <location filename="../src/app/src/utils/SafeFile.cpp" line="32"/>
         <source>Incomplete write to %1: %2</source>
         <translation>Incomplete write to %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/utils/SafeFile.cpp" line="39"/>
+        <location filename="../src/app/src/utils/SafeFile.cpp" line="38"/>
         <source>Failed to commit %1: %2</source>
         <translation>Failed to commit %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="60"/>
+        <location filename="../src/app/src/main.cpp" line="65"/>
         <source>Clash Qt - a Qt6/C++ implementation of Clash Party</source>
         <translation>Clash Qt - a Qt6/C++ implementation of Clash Party</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="65"/>
+        <location filename="../src/app/src/main.cpp" line="70"/>
         <source>Start without showing the main window (for autostart)</source>
         <translation>Start without showing the main window (for autostart)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="67"/>
+        <location filename="../src/app/src/main.cpp" line="72"/>
         <source>Use the data directory next to the executable</source>
         <translation>Use the data directory next to the executable</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="79"/>
+        <location filename="../src/app/src/main.cpp" line="96"/>
         <source>Another instance is already running: asked it to show its window, exiting</source>
         <translation>Another instance is already running: asked it to show its window, exiting</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="90"/>
+        <location filename="../src/app/src/main.cpp" line="107"/>
         <source>Starting %1 %2 (%3, silent=%4)</source>
         <translation>Starting %1 %2 (%3, silent=%4)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="104"/>
+        <location filename="../src/app/src/main.cpp" line="120"/>
         <source>Initialization failed: %1</source>
         <translation>Initialization failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="113"/>
+        <location filename="../src/app/src/main.cpp" line="127"/>
         <source>UI language: %1 (configured value %2)</source>
         <translation>UI language: %1 (configured value %2)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="133"/>
+        <location filename="../src/app/src/main.cpp" line="147"/>
         <source>Start failed: %1</source>
         <translation>Start failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="162"/>
+        <location filename="../src/app/src/main.cpp" line="176"/>
         <source>Silent start: not showing the main window</source>
         <translation>Silent start: not showing the main window</translation>
     </message>
     <message>
-        <location filename="../src/app/src/main.cpp" line="173"/>
+        <location filename="../src/app/src/main.cpp" line="187"/>
         <source>%1 exited with code %2</source>
         <translation>%1 exited with code %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="73"/>
+        <location filename="../src/app/src/AppContext.cpp" line="71"/>
         <source>Could not read file %1: %2</source>
         <translation>Could not read file %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="83"/>
+        <location filename="../src/app/src/AppContext.cpp" line="81"/>
         <source>Not a valid Clash config: %1</source>
         <translation>Not a valid Clash config: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="87"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="258"/>
         <source>System-proxy backend: %1 (XDG_CURRENT_DESKTOP=%2)</source>
         <translation>System-proxy backend: %1 (XDG_CURRENT_DESKTOP=%2)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="96"/>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="98"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="273"/>
         <source>unavailable</source>
         <translation>unavailable</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="106"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="327"/>
+        <source>Could not write ProxyServer to the registry</source>
+        <translation>Could not write ProxyServer to the registry</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="335"/>
+        <source>Failed to write the system-proxy ignore list</source>
+        <translation>Failed to write the system-proxy ignore list</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="339"/>
+        <source>Could not enable the system proxy in the registry</source>
+        <translation>Could not enable the system proxy in the registry</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="387"/>
+        <source>Could not turn off the system proxy in the registry</source>
+        <translation>Could not turn off the system proxy in the registry</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="438"/>
         <source>Could not start %1</source>
         <translation>Could not start %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="111"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="443"/>
         <source>%1 timed out</source>
         <translation>%1 timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="116"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="448"/>
         <source>%1 failed: %2</source>
         <translation>%1 failed: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="183"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="515"/>
         <source>Failed to write the system-proxy ignore list: %1</source>
         <translation>Failed to write the system-proxy ignore list: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="245"/>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="288"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="577"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="620"/>
         <source>kwriteconfig5/6 not found</source>
         <translation>kwriteconfig5/6 not found</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="349"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="356"/>
         <source>No usable system-proxy backend detected (gsettings or kwriteconfig5/6 is required)</source>
         <translation>No usable system-proxy backend detected (gsettings or kwriteconfig5/6 is required)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="365"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="372"/>
         <source>Failed to enable the system proxy: %1</source>
         <translation>Failed to enable the system proxy: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="371"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="350"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="378"/>
         <source>System proxy enabled (%1): %2:%3</source>
         <translation>System proxy enabled (%1): %2:%3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="378"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="234"/>
+        <source>System-proxy backend: %1</source>
+        <translation>System-proxy backend: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="402"/>
         <source>No usable system-proxy backend detected</source>
         <translation>No usable system-proxy backend detected</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="394"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="418"/>
         <source>Failed to turn off the system proxy: %1</source>
         <translation>Failed to turn off the system proxy: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SysProxy.cpp" line="399"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="398"/>
+        <location filename="../src/app/src/sys/SysProxy.cpp" line="423"/>
         <source>System proxy disabled</source>
         <translation>System proxy disabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/AutoRun.cpp" line="33"/>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="53"/>
+        <source>Could not open the autostart registry key</source>
+        <translation>Could not open the autostart registry key</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="68"/>
+        <source>Could not write the autostart entry (error %1)</source>
+        <translation>Could not write the autostart entry (error %1)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="109"/>
         <source>Could not create the autostart directory</source>
         <translation>Could not create the autostart directory</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/AutoRun.cpp" line="76"/>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="161"/>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="193"/>
         <source>Failed to enable autostart: %1</source>
         <translation>Failed to enable autostart: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/AutoRun.cpp" line="79"/>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="167"/>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="196"/>
         <source>Autostart enabled: %1</source>
         <translation>Autostart enabled: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/AutoRun.cpp" line="89"/>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="215"/>
+        <source>Could not remove the autostart entry (error %1)</source>
+        <translation>Could not remove the autostart entry (error %1)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="231"/>
         <source>Could not remove the autostart entry: %1</source>
         <translation>Could not remove the autostart entry: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/AutoRun.cpp" line="93"/>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="224"/>
+        <location filename="../src/app/src/sys/AutoRun.cpp" line="235"/>
         <source>Autostart disabled</source>
         <translation>Autostart disabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/SingleInstance.cpp" line="54"/>
+        <location filename="../src/app/src/sys/SingleInstance.cpp" line="53"/>
         <source>The single-instance guard failed to start (%1); running as multiple instances this time: %2</source>
         <translation>The single-instance guard failed to start (%1); running as multiple instances this time: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="66"/>
-        <location filename="../src/app/src/sys/TunController.cpp" line="125"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="321"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="513"/>
         <source>Helper not found: %1</source>
         <translation>Helper not found: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="82"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="337"/>
         <source>Could not start pkexec: %1</source>
         <translation>Could not start pkexec: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="89"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="344"/>
         <source>Authorization timed out (the password prompt may have been cancelled)</source>
         <translation>Authorization timed out (the password prompt may have been cancelled)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="94"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="349"/>
         <source>%1 failed (exit code %2): %3</source>
         <translation>%1 failed (exit code %2): %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="104"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="359"/>
         <source>TUN permissions granted (chown root:root + chmod +sx): %1</source>
         <translation>TUN permissions granted (chown root:root + chmod +sx): %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="117"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="505"/>
         <source>Found a stale TUN-enabled state; cleaned it up and retried</source>
         <translation>Found a stale TUN-enabled state; cleaned it up and retried</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="121"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="369"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="509"/>
         <source>TUN is starting or already running</source>
         <translation>TUN is starting or already running</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="129"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="117"/>
+        <source>Could not set the TUN adapter address</source>
+        <translation>Could not set the TUN adapter address</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="134"/>
+        <source>Could not read the TUN adapter settings</source>
+        <translation>Could not read the TUN adapter settings</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="150"/>
+        <source>Could not set the TUN adapter MTU/metric</source>
+        <translation>Could not set the TUN adapter MTU/metric</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="175"/>
+        <source>Could not add the TUN route</source>
+        <translation>Could not add the TUN route</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="203"/>
+        <source>Could not start netsh</source>
+        <translation>Could not start netsh</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="208"/>
+        <source>netsh timed out</source>
+        <translation>netsh timed out</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="312"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="383"/>
+        <source>TUN mode on Windows requires administrator privileges. Close the app and start it again with &quot;Run as administrator&quot;.</source>
+        <translation>TUN mode on Windows requires administrator privileges. Close the app and start it again with &quot;Run as administrator&quot;.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="389"/>
+        <source>wintun.dll was not found. Put wintun.dll next to the executable and try again.</source>
+        <translation>wintun.dll was not found. Put wintun.dll next to the executable and try again.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="402"/>
+        <source>Invalid TUN address: %1</source>
+        <translation>Invalid TUN address: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="410"/>
+        <source>Could not create the TUN adapter</source>
+        <translation>Could not create the TUN adapter</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="415"/>
+        <source>Could not read the TUN adapter LUID</source>
+        <translation>Could not read the TUN adapter LUID</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="448"/>
+        <source>Invalid fake-ip CIDR: %1</source>
+        <translation>Invalid fake-ip CIDR: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="468"/>
+        <source>Could not point system DNS at the TUN address: %1</source>
+        <translation>Could not point system DNS at the TUN address: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="481"/>
+        <source>TUN adapter ready: %1 %2/%3, MTU %4, routes %5, Wintun %6</source>
+        <translation>TUN adapter ready: %1 %2/%3, MTU %4, routes %5, Wintun %6</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="487"/>
+        <source>taken over</source>
+        <translation>taken over</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="488"/>
+        <source>not taken over</source>
+        <translation>not taken over</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/sys/TunController.cpp" line="517"/>
         <source>TUN permission not granted yet (enter the password in the prompt that appears)</source>
         <translation>TUN permission not granted yet (enter the password in the prompt that appears)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="154"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="542"/>
         <source>Socket path too long</source>
         <translation>Socket path too long</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="165"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="553"/>
         <source>Failed to listen on the socket: %1</source>
         <translation>Failed to listen on the socket: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="195"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="583"/>
         <source>Could not start the helper: %1</source>
         <translation>Could not start the helper: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="207"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="595"/>
         <source>Timed out waiting for the helper (20 s)</source>
         <translation>Timed out waiting for the helper (20 s)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="223"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="611"/>
         <source>The helper exited unexpectedly (exit code %1)</source>
         <translation>The helper exited unexpectedly (exit code %1)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="228"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="616"/>
         <source>Started the TUN helper; waiting for the device: %1</source>
         <translation>Started the TUN helper; waiting for the device: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="230"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="618"/>
         <source>TUN handshake details: socket=%1 autoRoute=%2 excludes=%3 cmd=%4 %5</source>
         <translation>TUN handshake details: socket=%1 autoRoute=%2 excludes=%3 cmd=%4 %5</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="299"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="700"/>
         <source>The TUN helper disconnected</source>
         <translation>The TUN helper disconnected</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="348"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="749"/>
         <source>The helper did not send a TUN fd</source>
         <translation>The helper did not send a TUN fd</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="359"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="760"/>
         <source>TUN ready: %1 (%2)</source>
         <translation>TUN ready: %1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="361"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="762"/>
         <source>real device</source>
         <translation>real device</translation>
     </message>
     <message>
-        <location filename="../src/app/src/sys/TunController.cpp" line="432"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="815"/>
+        <location filename="../src/app/src/sys/TunController.cpp" line="868"/>
         <source>TUN is closed</source>
         <translation>TUN is closed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="312"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="764"/>
         <source>System tray unavailable; skipping tray setup</source>
         <translation>System tray unavailable; skipping tray setup</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="704"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="737"/>
         <source>UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5</source>
         <translation>UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="705"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="738"/>
         <source>dark</source>
         <translation>dark</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="705"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="738"/>
         <source>light</source>
         <translation>light</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="710"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="743"/>
         <source>yes</source>
         <translation>yes</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="710"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="743"/>
         <source>no</source>
         <translation>no</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/Icons.cpp" line="54"/>
+        <location filename="../src/app/src/ui/Icons.cpp" line="53"/>
         <source>Icon resource missing: %1 (check resources/clash-qt.qrc)</source>
         <translation>Icon resource missing: %1 (check resources/clash-qt.qrc)</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/Wintun.cpp" line="130"/>
+        <source>wintun.dll was not found. Put wintun.dll next to the executable.</source>
+        <translation>wintun.dll was not found. Put wintun.dll next to the executable.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/Wintun.cpp" line="145"/>
+        <source>Could not create the Wintun adapter</source>
+        <translation>Could not create the Wintun adapter</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/Wintun.cpp" line="175"/>
+        <source>Wintun is unavailable</source>
+        <translation>Wintun is unavailable</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/Wintun.cpp" line="182"/>
+        <source>Could not start the Wintun session</source>
+        <translation>Could not start the Wintun session</translation>
     </message>
 </context>
 <context>
@@ -2655,32 +2818,32 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>YAML emit failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="314"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="312"/>
         <source>Unknown error</source>
         <translation>Unknown error</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="551"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="549"/>
         <source>Stream closed</source>
         <translation>Stream closed</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="568"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="566"/>
         <source>Write timed out (flow-control window stayed closed)</source>
         <translation>Write timed out (flow-control window stayed closed)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="572"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="570"/>
         <source>Session released</source>
         <translation>Session released</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="629"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="627"/>
         <source>Session release</source>
         <translation>Session release</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="658"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="656"/>
         <source>Could not parse server address %1 (%2)</source>
         <translation>Could not parse server address %1 (%2)</translation>
     </message>
@@ -2690,145 +2853,145 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>Failed to create the UDP socket: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="690"/>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="701"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="689"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="700"/>
         <source>UDP connect failed: %1</source>
         <translation>UDP connect failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="715"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="714"/>
         <source>Failed to create the QUIC context</source>
         <translation>Failed to create the QUIC context</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="729"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="728"/>
         <source>Failed to create the QUIC connection</source>
         <translation>Failed to create the QUIC connection</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="740"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="741"/>
         <source>Failed to bind the UDP socket</source>
         <translation>Failed to bind the UDP socket</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="753"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="756"/>
         <source>Failed to read the peer address: %1</source>
         <translation>Failed to read the peer address: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="773"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="776"/>
         <source>Failed to build the initial QUIC peer address</source>
         <translation>Failed to build the initial QUIC peer address</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="788"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="791"/>
         <source>QUIC handshake failed: %1</source>
         <translation>QUIC handshake failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="803"/>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="860"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="805"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="861"/>
         <location filename="../src/core/src/common/Hysteria2Client.cpp" line="887"/>
         <location filename="../src/core/src/common/Hysteria2Client.cpp" line="894"/>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="948"/>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1091"/>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1154"/>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1171"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="947"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1089"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1152"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1168"/>
         <source>QUIC event handling failed: %1</source>
         <translation>QUIC event handling failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="808"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="810"/>
         <source>QUIC handshake timed out (port %1)</source>
         <translation>QUIC handshake timed out (port %1)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="818"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="820"/>
         <source>The server provided no certificate</source>
         <translation>The server provided no certificate</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="829"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="831"/>
         <source>Server certificate fingerprint does not match the config (fingerprint check failed)</source>
         <translation>Server certificate fingerprint does not match the config (fingerprint check failed)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="850"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="852"/>
         <source>Failed to create a QUIC stream: %1</source>
         <translation>Failed to create a QUIC stream: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="854"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="856"/>
         <source>Timed out creating a QUIC stream</source>
         <translation>Timed out creating a QUIC stream</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="875"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="876"/>
         <source>Failed to write to a QUIC stream: %1</source>
         <translation>Failed to write to a QUIC stream: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="880"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="881"/>
         <source>Timed out writing to a QUIC stream</source>
         <translation>Timed out writing to a QUIC stream</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="972"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="971"/>
         <source>No response to authentication (timeout or connection reset, port %1)</source>
         <translation>No response to authentication (timeout or connection reset, port %1)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="980"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="979"/>
         <source>Authentication rejected (HTTP status %1; check the password)</source>
         <translation>Authentication rejected (HTTP status %1; check the password)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1009"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1008"/>
         <source>Node is missing server</source>
         <translation>Node is missing server</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1013"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1012"/>
         <source>Node is missing password</source>
         <translation>Node is missing password</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1020"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1019"/>
         <source>Socket setup</source>
         <translation>Socket setup</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1021"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1020"/>
         <source>Handshake</source>
         <translation>Handshake</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1024"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1023"/>
         <source>Authentication</source>
         <translation>Authentication</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1035"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1034"/>
         <source>Session unavailable</source>
         <translation>Session unavailable</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1039"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1038"/>
         <source>Invalid target address</source>
         <translation>Invalid target address</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1108"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1106"/>
         <source>Target %1 did not respond (timeout)</source>
         <translation>Target %1 did not respond (timeout)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1116"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1114"/>
         <source>Connection to target %1 refused</source>
         <translation>Connection to target %1 refused</translation>
     </message>
     <message>
-        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1117"/>
+        <location filename="../src/core/src/common/Hysteria2Client.cpp" line="1115"/>
         <source>Connection to target %1 refused: %2</source>
         <translation>Connection to target %1 refused: %2</translation>
     </message>
@@ -3145,7 +3308,7 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
     </message>
     <message>
         <location filename="../src/core/src/component/dns/Resolver.cpp" line="1045"/>
-        <location filename="../src/core/src/hub/Hub.cpp" line="428"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="487"/>
         <source>DNS resolution failed: %1</source>
         <translation>DNS resolution failed: %1</translation>
     </message>
@@ -3257,42 +3420,42 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>This protocol is not implemented yet</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="79"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="82"/>
         <source>Skipped non-mapping entries in proxies</source>
         <translation>Skipped non-mapping entries in proxies</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="88"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="91"/>
         <source>Unrecognized node: %1 (type=%2)</source>
         <translation>Unrecognized node: %1 (type=%2)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="89"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="92"/>
         <source>&lt;unnamed&gt;</source>
         <translation>&lt;unnamed&gt;</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="93"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="96"/>
         <source>Duplicate node name; ignoring the later definition: %1</source>
         <translation>Duplicate node name; ignoring the later definition: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="111"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="115"/>
         <source>Unrecognized proxy group: %1 (type=%2)</source>
         <translation>Unrecognized proxy group: %1 (type=%2)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="150"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="154"/>
         <source>Proxy group %1 has no members</source>
         <translation>Proxy group %1 has no members</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="164"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="168"/>
         <source>Proxy group %1 has members that cannot be resolved (a missing node or a reference cycle); skipped. Members: %2</source>
         <translation>Proxy group %1 has members that cannot be resolved (a missing node or a reference cycle); skipped. Members: %2</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="172"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="180"/>
         <source>Adapters loaded: %1 nodes/groups, %2 unimplemented protocols, %3 warnings</source>
         <translation>Adapters loaded: %1 nodes/groups, %2 unimplemented protocols, %3 warnings</translation>
     </message>
@@ -3480,42 +3643,42 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>Node %1 transport %2 does not support UDP</translation>
     </message>
     <message>
-        <location filename="../src/core/src/listener/Listener.cpp" line="45"/>
+        <location filename="../src/core/src/listener/Listener.cpp" line="54"/>
         <source>%1 has an invalid listen address: %2</source>
         <translation>%1 has an invalid listen address: %2</translation>
     </message>
     <message>
-        <location filename="../src/core/src/listener/Listener.cpp" line="53"/>
+        <location filename="../src/core/src/listener/Listener.cpp" line="62"/>
         <source>%1 failed to listen on %2:%3: %4</source>
         <translation>%1 failed to listen on %2:%3: %4</translation>
     </message>
     <message>
-        <location filename="../src/core/src/listener/Listener.cpp" line="67"/>
+        <location filename="../src/core/src/listener/Listener.cpp" line="76"/>
         <source>%1 inbound started: %2:%3 (concurrency limit %4)</source>
         <translation>%1 inbound started: %2:%3 (concurrency limit %4)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/listener/Listener.cpp" line="94"/>
+        <location filename="../src/core/src/listener/Listener.cpp" line="126"/>
         <source>%1 still has %2 open connection(s)</source>
         <translation>%1 still has %2 open connection(s)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/listener/Listener.cpp" line="122"/>
+        <location filename="../src/core/src/listener/Listener.cpp" line="154"/>
         <source>Concurrency limit %1 reached; rejecting new connections</source>
         <translation>Concurrency limit %1 reached; rejecting new connections</translation>
     </message>
     <message>
-        <location filename="../src/core/src/listener/Listener.cpp" line="142"/>
+        <location filename="../src/core/src/listener/Listener.cpp" line="182"/>
         <source>Failed to duplicate the connection descriptor; connection dropped</source>
         <translation>Failed to duplicate the connection descriptor; connection dropped</translation>
     </message>
     <message>
-        <location filename="../src/core/src/listener/Listener.cpp" line="166"/>
+        <location filename="../src/core/src/listener/Listener.cpp" line="216"/>
         <source>%1 accepted connection %2:%3</source>
         <translation>%1 accepted connection %2:%3</translation>
     </message>
     <message>
-        <location filename="../src/core/src/listener/Listener.cpp" line="174"/>
+        <location filename="../src/core/src/listener/Listener.cpp" line="231"/>
         <source>Could not rebuild a socket from descriptor %1</source>
         <translation>Could not rebuild a socket from descriptor %1</translation>
     </message>
@@ -3626,43 +3789,79 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>UDP dial failed</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="51"/>
-        <location filename="../src/core/src/hub/Hub.cpp" line="374"/>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="97"/>
+        <source>Could not resolve the TUN adapter from its LUID</source>
+        <translation>Could not resolve the TUN adapter from its LUID</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="116"/>
+        <source>Could not get the Wintun read event</source>
+        <translation>Could not get the Wintun read event</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="161"/>
+        <source>The Wintun session was closed</source>
+        <translation>The Wintun session was closed</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="199"/>
+        <source>DNS is not taken over on the TUN address (%1): %2</source>
+        <translation>DNS is not taken over on the TUN address (%1): %2</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="282"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="427"/>
+        <source>Invalid TUN adapter</source>
+        <translation>Invalid TUN adapter</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="287"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="432"/>
         <source>Invalid TUN device fd</source>
         <translation>Invalid TUN device fd</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="71"/>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="306"/>
+        <source>Failed to send a packet to the TUN adapter</source>
+        <translation>Failed to send a packet to the TUN adapter</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="314"/>
         <source>Failed to write to the TUN device: %1</source>
         <translation>Failed to write to the TUN device: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="106"/>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="342"/>
+        <source>Could not open the TUN adapter</source>
+        <translation>Could not open the TUN adapter</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="349"/>
+        <source>TUN data plane ready (worker thread %1, Wintun %2)</source>
+        <translation>TUN data plane ready (worker thread %1, Wintun %2)</translation>
+    </message>
+    <message>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="382"/>
         <source>TUN data plane ready (worker thread %1, DNS 53 %2)</source>
         <translation>TUN data plane ready (worker thread %1, DNS 53 %2)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="108"/>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="384"/>
         <source>Taken over</source>
         <translation>Taken over</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="108"/>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="384"/>
         <source>Not taken over</source>
         <translation>Not taken over</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="111"/>
-        <source>The TUN data plane is not implemented on this platform yet</source>
-        <translation>The TUN data plane is not implemented on this platform yet</translation>
-    </message>
-    <message>
-        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="137"/>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="412"/>
         <source>Failed to read the TUN device: %1</source>
         <translation>Failed to read the TUN device: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="139"/>
+        <location filename="../src/core/src/tunnel/TunDevice.cpp" line="414"/>
         <source>Failed to read the TUN device</source>
         <translation>Failed to read the TUN device</translation>
     </message>
@@ -3920,140 +4119,136 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>WebSocket frame too long</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="114"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="127"/>
         <source>DNS override is off; using system resolution</source>
         <translation>DNS override is off; using system resolution</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="139"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="152"/>
         <source>Rule set %1 has an invalid behavior: %2</source>
         <translation>Rule set %1 has an invalid behavior: %2</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="165"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="178"/>
         <source>Could not read the rule-set file: %1</source>
         <translation>Could not read the rule-set file: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="168"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="181"/>
         <source>Remote rule sets (type=http) are not implemented yet; skipped</source>
         <translation>Remote rule sets (type=http) are not implemented yet; skipped</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="194"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="207"/>
         <source>Config hot-reloaded (inbound listeners kept)</source>
         <translation>Config hot-reloaded (inbound listeners kept)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="235"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="248"/>
         <source>Mixed port %1 failed to start</source>
         <translation>Mixed port %1 failed to start</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="252"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="265"/>
         <source>SOCKS5 port %1 failed to start</source>
         <translation>SOCKS5 port %1 failed to start</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="267"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="280"/>
         <source>HTTP port %1 failed to start</source>
         <translation>HTTP port %1 failed to start</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="277"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="290"/>
         <source>redir-port / tproxy-port transparent proxying is not implemented yet (Phase 2); those ports are not listening</source>
         <translation>redir-port / tproxy-port transparent proxying is not implemented yet (Phase 2); those ports are not listening</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="282"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="295"/>
         <source>No inbound port is enabled in the config (mixed-port / socks-port / port are all 0)</source>
         <translation>No inbound port is enabled in the config (mixed-port / socks-port / port are all 0)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="301"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="335"/>
         <source>No config has been applied yet</source>
         <translation>No config has been applied yet</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="315"/>
-        <location filename="../src/core/src/hub/Hub.cpp" line="316"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="349"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="350"/>
         <source>Started</source>
         <translation>Started</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="333"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="367"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="384"/>
         <source>Stopped</source>
         <translation>Stopped</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="352"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="403"/>
         <source>Outbound mode switched to %1</source>
         <translation>Outbound mode switched to %1</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="378"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="437"/>
         <source>TUN is already running</source>
         <translation>TUN is already running</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="388"/>
-        <location filename="../src/core/src/hub/Hub.cpp" line="534"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="447"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="593"/>
         <source>TUN is closed</source>
         <translation>TUN is closed</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="397"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="456"/>
         <source>No usable outbound matched</source>
         <translation>No usable outbound matched</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="471"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="530"/>
         <source>TUN data-plane error (%1); TUN stopped</source>
         <translation>TUN data-plane error (%1); TUN stopped</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="486"/>
-        <source>TUN taken over (fd=%1); data plane running on a worker thread</source>
-        <translation>TUN taken over (fd=%1); data plane running on a worker thread</translation>
+        <location filename="../src/core/src/hub/Hub.cpp" line="545"/>
+        <source>TUN taken over (device=%1); data plane running on a worker thread</source>
+        <translation>TUN taken over (device=%1); data plane running on a worker thread</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="527"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="586"/>
         <source>The TUN data-plane thread is still winding down; it will be released after exit</source>
         <translation>The TUN data-plane thread is still winding down; it will be released after exit</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="540"/>
-        <source>TUN is not implemented on this platform yet</source>
-        <translation>TUN is not implemented on this platform yet</translation>
-    </message>
-    <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="582"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="633"/>
         <source>Group %1 does not exist</source>
         <translation>Group %1 does not exist</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="587"/>
-        <location filename="../src/core/src/hub/Hub.cpp" line="715"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="638"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="766"/>
         <source>%1 is not a proxy group</source>
         <translation>%1 is not a proxy group</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="591"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="642"/>
         <source>Group %1 has no member %2</source>
         <translation>Group %1 has no member %2</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="627"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="678"/>
         <source>Group %1 references member %2, which no longer exists; ignored</source>
         <translation>Group %1 references member %2, which no longer exists; ignored</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="637"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="688"/>
         <source>Restored manual selections for %1 proxy group(s)</source>
         <translation>Restored manual selections for %1 proxy group(s)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/hub/Hub.cpp" line="652"/>
+        <location filename="../src/core/src/hub/Hub.cpp" line="703"/>
         <source>Node does not exist: %1</source>
         <translation>Node does not exist: %1</translation>
     </message>
@@ -4068,7 +4263,7 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>Built the built-in GLOBAL group with %1 member(s)</translation>
     </message>
     <message>
-        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="236"/>
+        <location filename="../src/core/src/adapter/AdapterRegistry.cpp" line="234"/>
         <source>The profile has no usable node; the GLOBAL group only contains DIRECT</source>
         <translation>The profile has no usable node; the GLOBAL group only contains DIRECT</translation>
     </message>

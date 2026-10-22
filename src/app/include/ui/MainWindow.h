@@ -6,24 +6,31 @@
 //  对应 clash-party 的 src/renderer/src/App.tsx + components/sider/。
 //  布局：左侧为「状态卡片 + 导航」的侧栏，右侧为页面栈。
 //
-//  与原实现的差异：Electron 版的侧栏卡片可拖拽排序（dnd-kit），
-//  本阶段先提供固定顺序；卡片排序与悬浮窗属于后续阶段。
+//  侧栏按瓦片组织（见 ui/TileButton.h）：出站模式分段、系统代理 / TUN 两块
+//  开关瓦片、当前订阅的流量卡、导航瓦片网格，底部是流量入口与实时速率。
+//  订阅页不占导航位（上方订阅卡即入口），设置页是网格里的最后一块瓦片。
 // ---------------------------------------------------------------------------
 
-#include <QCheckBox>
-#include <QComboBox>
 #include <QLabel>
 #include <QMainWindow>
-#include <QPushButton>
 #include <QStringList>
 #include <QSystemTrayIcon>
+#include <QVector>
 
-class QListWidget;
+class QButtonGroup;
+class QProgressBar;
+class QPushButton;
 class QStackedWidget;
+class QToolButton;
 
 namespace clashqt {
 
 class AppContext;
+class ProfileItem;
+
+namespace ui {
+class TileButton;
+}
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -38,9 +45,8 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private slots:
-    void onNavChanged(int index);
     void onKernelRunningChanged(bool running);
-    void onOutboundModeChanged(int index);
+    void onOutboundModeChanged(int id);
     void onSysProxyToggled(bool enabled);
     // 快捷设置 / 托盘菜单共用的 TUN 开关入口
     void onTunToggleRequested(bool enabled);
@@ -52,8 +58,37 @@ private slots:
 private:
     // 构建左侧栏（状态卡片与导航）
     QWidget *buildSider();
-    // 注册全部页面，返回页面标题列表（顺序与导航项一致）
-    QStringList registerPages();
+    // 品牌行：图标 + 名称版本
+    QWidget *buildBrand();
+    // 出站模式分段控件
+    QWidget *buildModeSegment();
+    // 系统代理 / TUN 两块开关瓦片
+    QWidget *buildToggleTiles();
+    // 当前订阅的流量卡
+    QWidget *buildProfileCard();
+    // 导航瓦片网格 + 底部流量卡
+    QWidget *buildNavGrid();
+    // 底部「流量」卡：入口 + 上下行实时速率
+    QWidget *buildTrafficCard();
+    // 订阅卡 / 流量卡在对应页面时的选中态（与强调色瓦片一致）
+    void updateProfileCardState();
+    void updateTrafficCardState();
+
+    // 注册全部页面（顺序即页面栈下标）
+    void registerPages();
+    // 切到指定页面，并同步导航瓦片的选中态
+    void showPage(int page);
+    // 刷新导航瓦片的选中态
+    void updateTileStates();
+    // 刷新导航瓦片的计数徽标（代理组数 / 规则条数 / 覆写条数 / 连接数）
+    void refreshBadges();
+    // 只刷新连接数徽标：连接变化每秒都会通知，不能连带去读规则覆写文件
+    void refreshConnectionBadge();
+    // 刷新订阅卡的名称、流量与到期日
+    void refreshProfileCard();
+    // 重新拉取当前订阅（订阅卡右上角刷新按钮）
+    void refreshCurrentSubscription();
+
     // 构建系统托盘
     void buildTray();
     // 刷新托盘图标与菜单状态
@@ -64,25 +99,40 @@ private:
     QString trayStateText() const;
     // 依据配置应用主题
     void applyThemeFromConfig();
-    // 刷新导航图标：选中项是实心强调色底，图标取白；其余取正文色
-    void updateNavIcons();
 
     AppContext     *m_context = nullptr;
-    QListWidget    *m_navList = nullptr;
     QStackedWidget *m_pages = nullptr;
     // 原始页面部件。页面被 QScrollArea 包裹后才进 m_pages，
     // 因此按类型访问页面必须用本列表而不是 m_pages->widget()。
     QList<QWidget *> m_pageContents;
 
-    // 导航标题（顺序与页面一致），刷新图标时按标题取图标
-    QStringList m_navTitles;
-    QStringList m_navIcons;
+    // 导航瓦片（下标与 m_navPages 对应）
+    QVector<ui::TileButton *> m_navTiles;
+    QVector<int>              m_navPages;
+    int                       m_currentPage = 0;
+    // 需要显示计数徽标的导航瓦片下标（代理组 / 规则 / 覆写 / 连接）
+    int m_proxyTileIndex     = -1;
+    int m_ruleTileIndex      = -1;
+    int m_overrideTileIndex  = -1;
+    int m_connectionTileIndex = -1;
 
-    QLabel     *m_uploadLabel = nullptr;
-    QLabel     *m_downloadLabel = nullptr;
-    QComboBox  *m_modeCombo = nullptr;
-    QCheckBox  *m_sysProxySwitch = nullptr;
-    QCheckBox  *m_tunSwitch = nullptr;
+    QButtonGroup *m_modeGroup    = nullptr;
+    ui::TileButton *m_sysProxyTile = nullptr;
+    ui::TileButton *m_tunTile      = nullptr;
+
+    QWidget     *m_profileCard  = nullptr;
+    QLabel      *m_profileName  = nullptr;
+    QLabel      *m_profileUsage = nullptr;
+    QLabel      *m_profileExpire = nullptr;
+    QProgressBar *m_profileBar  = nullptr;
+    // 订阅卡右上角的刷新按钮（重新拉取当前远程订阅）
+    QToolButton *m_profileRefresh = nullptr;
+
+    QPushButton *m_trafficCard  = nullptr;
+    QLabel      *m_trafficTitle = nullptr;
+    QLabel      *m_trafficIcon  = nullptr;
+    QLabel      *m_uploadLabel = nullptr;
+    QLabel      *m_downloadLabel = nullptr;
 
     QSystemTrayIcon *m_tray = nullptr;
     QAction  *m_trayToggleSysProxy = nullptr;
