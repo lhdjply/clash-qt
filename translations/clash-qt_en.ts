@@ -482,52 +482,52 @@
         <translation>System proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="279"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="280"/>
         <source>No system proxy backend found (gsettings / kwriteconfig); system proxy is unavailable</source>
         <translation>No system proxy backend found (gsettings / kwriteconfig); system proxy is unavailable</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="285"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="286"/>
         <source>TUN mode</source>
         <translation>TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="291"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="293"/>
         <source>Captures all local traffic, including apps that ignore the system proxy. The first enable requires a one-time password prompt.</source>
         <translation>Captures all local traffic, including apps that ignore the system proxy. The first enable requires a one-time password prompt.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="407"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
         <source>Proxies</source>
         <translation>Proxies</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="411"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="418"/>
         <source>Connections</source>
         <translation>Connections</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="408"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="412"/>
         <source>Rules</source>
         <translation>Rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="409"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="414"/>
         <source>Overrides</source>
         <translation>Overrides</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="416"/>
         <source>Logs</source>
         <translation>Logs</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="472"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="482"/>
         <source>Traffic</source>
         <translation>Traffic</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="413"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="421"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
@@ -547,132 +547,132 @@
         <translation>Direct</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="339"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="695"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="341"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="706"/>
         <source>Update this subscription</source>
         <translation>Update this subscription</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="681"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="692"/>
         <source>No profile selected</source>
         <translation>No profile selected</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="696"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="744"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="707"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="755"/>
         <source>Local profiles have no URL to update from</source>
         <translation>Local profiles have no URL to update from</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="708"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="719"/>
         <source>%1 / %2</source>
         <translation>%1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="717"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="728"/>
         <source>Updated %1</source>
         <translation>Updated %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="732"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="743"/>
         <source>Open the profiles page</source>
         <translation>Open the profiles page</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="739"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="750"/>
         <source>Select a profile first</source>
         <translation>Select a profile first</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="752"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="763"/>
         <source>Update failed: %1</source>
         <translation>Update failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="754"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="765"/>
         <source>Subscription updated</source>
         <translation>Subscription updated</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="779"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="858"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="790"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
         <source>Disable system proxy</source>
         <translation>Disable system proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="787"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="894"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="798"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="905"/>
         <source>Enable TUN mode</source>
         <translation>Enable TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="794"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="805"/>
         <source>Show main window</source>
         <translation>Show main window</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="802"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="813"/>
         <source>Quit</source>
         <translation>Quit</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="859"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
         <source>Enable system proxy</source>
         <translation>Enable system proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="864"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="892"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="875"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="903"/>
         <source>Enabling TUN…</source>
         <translation>Enabling TUN…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="868"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="879"/>
         <source>System proxy + TUN enabled</source>
         <translation>System proxy + TUN enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="880"/>
         <source>TUN enabled</source>
         <translation>TUN enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="881"/>
         <source>System proxy enabled</source>
         <translation>System proxy enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="871"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="882"/>
         <source>System proxy disabled</source>
         <translation>System proxy disabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="887"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="898"/>
         <source>enabling…</source>
         <translation>enabling…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="893"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="904"/>
         <source>Disable TUN mode</source>
         <translation>Disable TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="903"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="914"/>
         <source>Mixed port %1</source>
         <translation>Mixed port %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="905"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="916"/>
         <source>Not running</source>
         <translation>Not running</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="933"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="944"/>
         <source>Failed to switch outbound mode: %1</source>
         <translation>Failed to switch outbound mode: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="939"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="950"/>
         <source>Outbound mode: %1</source>
         <translation>Outbound mode: %1</translation>
     </message>
@@ -1955,22 +1955,27 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>(No release notes for this version; see the release page.)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="94"/>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="97"/>
+        <source>No package has been attached to this release yet; it may still be uploading.</source>
+        <translation>No package has been attached to this release yet; it may still be uploading.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="100"/>
         <source>Published on %1. Download the package from the release page.</source>
         <translation>Published on %1. Download the package from the release page.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="96"/>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="103"/>
         <source>Download the package from the release page.</source>
         <translation>Download the package from the release page.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="104"/>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="112"/>
         <source>Later</source>
         <translation>Later</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="105"/>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="113"/>
         <source>Open download page</source>
         <translation>Open download page</translation>
     </message>
@@ -1998,43 +2003,43 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>%1 min</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="121"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="146"/>
         <source>Atom feed</source>
         <translation>Atom feed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="185"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="210"/>
         <source>Skipped: overall time budget exhausted</source>
         <translation>Skipped: overall time budget exhausted</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="293"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="327"/>
         <source>Request timed out</source>
         <translation>Request timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="373"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="407"/>
         <source>Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)</source>
         <translation>Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="391"/>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="393"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="425"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="427"/>
         <source>Not attempted</source>
         <translation>Not attempted</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="396"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="430"/>
         <source>No update source available</source>
         <translation>No update source available</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="404"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="438"/>
         <source>Could not parse the response: %1</source>
         <translation>Could not parse the response: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="486"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="521"/>
         <source>Could not parse the content: %1</source>
         <translation>Could not parse the content: %1</translation>
     </message>
@@ -2559,32 +2564,32 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>TUN is closed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="765"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="776"/>
         <source>System tray unavailable; skipping tray setup</source>
         <translation>System tray unavailable; skipping tray setup</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="740"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="767"/>
         <source>UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5</source>
         <translation>UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="741"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="768"/>
         <source>dark</source>
         <translation>dark</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="741"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="768"/>
         <source>light</source>
         <translation>light</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="746"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="773"/>
         <source>yes</source>
         <translation>yes</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="746"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="773"/>
         <source>no</source>
         <translation>no</translation>
     </message>

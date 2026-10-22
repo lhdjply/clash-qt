@@ -67,6 +67,31 @@ QVector<int> versionParts(const QString &version)
     return parts;
 }
 
+// 这条 Atom 条目是不是「tag 已推、Release 还没建」的占位条目。
+//
+// 正式发布的标题与正文都来自 Release；占位条目的标题直接就是 tag 名，正文是
+// tag 说明 —— 本项目的 CI 打的是 "clash-qt v1.1.0" 这种一行，用户自己打的也
+// 多半只有一句。两种形态在正常发布里都不出现，所以可以拿来当判据。
+bool looksLikePlaceholder(const ReleaseInfo &info)
+{
+    const QString title = info.title.trimmed();
+    if (!title.isEmpty() && title.compare(info.tagName, Qt::CaseInsensitive) == 0) return true;
+
+    QString plain = info.notes;
+    // Atom 的正文是 HTML；这里只做形态判断，去掉标签与空白即可
+    if (plain.contains(QLatin1Char('<'))) {
+        plain.remove(QRegularExpression(QStringLiteral("<[^>]*>")));
+    }
+    plain = plain.simplified();
+    // 正文为空是另一回事（对话框里有兜底），不当占位处理
+    if (plain.isEmpty()) return false;
+
+    if (plain.compare(info.tagName, Qt::CaseInsensitive) == 0) return true;
+    // 「项目名 + 版本号」两段式：不写死项目名，第二段等于 tag 就算
+    const QStringList words = plain.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    return words.size() == 2 && words.at(1).compare(info.tagName, Qt::CaseInsensitive) == 0;
+}
+
 } // namespace
 
 UpdateChecker::UpdateChecker(QObject *parent)
@@ -239,6 +264,15 @@ void UpdateChecker::cancelInflight()
     const QList<QNetworkReply *> replies = m_inflight;
     m_inflight.clear();
     if (m_hedgeTimer) m_hedgeTimer->stop();
+
+    // 占位条目的确认请求不在状态机里，单独收拾
+    if (m_verifyReply) {
+        QNetworkReply *reply = m_verifyReply;
+        m_verifyReply = nullptr;
+        reply->disconnect(this);
+        reply->abort();
+        reply->deleteLater();
+    }
 
     for (QNetworkReply *reply : replies) {
         if (!reply) continue;
@@ -431,6 +465,7 @@ bool UpdateChecker::parseApi(const QByteArray &payload)
         info.notesIsHtml = false;
         info.pageUrl     = QUrl(object.value(QStringLiteral("html_url")).toString());
         info.publishedAt = object.value(QStringLiteral("published_at")).toString();
+        info.hasAssets   = !object.value(QStringLiteral("assets")).toArray().isEmpty();
         report(info);
         return true;
     }
@@ -504,7 +539,9 @@ bool UpdateChecker::parseAtom(const QByteArray &payload)
         info.notesIsHtml = true;
         info.pageUrl     = QUrl(entry.link);
         info.publishedAt = entry.updated;
-        report(info);
+        // tag 推上去就会出现在 Atom 里，这时 Release 可能还没建：先确认再提示
+        if (looksLikePlaceholder(info)) verifyPlaceholder(info);
+        else report(info);
         return true;
     }
 
@@ -512,6 +549,89 @@ bool UpdateChecker::parseAtom(const QByteArray &payload)
     m_running = false;
     emit upToDate(QLatin1String(CLASHQT_VERSION));
     return true;
+}
+
+QUrl UpdateChecker::releaseTagsUrl(const QString &tag) const
+{
+    QUrl url = m_endpoint;
+    url.setQuery(QString()); // 去掉 per_page / 任何筛选条件
+    QString path = url.path();
+    if (!path.endsWith(QLatin1Char('/'))) path += QLatin1Char('/');
+    url.setPath(path + QStringLiteral("tags/") + tag);
+    return url;
+}
+
+void UpdateChecker::verifyPlaceholder(const ReleaseInfo &info)
+{
+    // 没有 API、配额用尽或时间不够：这一次就当没有更新。占位条目上除了一行
+    // tag 说明什么都没有，提示出去只会让人以为发布已经完成、然后找不到安装包。
+    if (!m_manager || m_endpoint.isEmpty() || apiRateLimited()
+        || remainingBudgetMs() < kMinBudgetMs) {
+        m_running = false;
+        emit upToDate(QLatin1String(CLASHQT_VERSION));
+        return;
+    }
+
+    QNetworkRequest request(releaseTagsUrl(info.tagName));
+    request.setHeader(QNetworkRequest::UserAgentHeader,
+                      QStringLiteral("clash-qt/%1").arg(QLatin1String(CLASHQT_VERSION)));
+    request.setRawHeader("Accept", "application/vnd.github+json");
+    request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+
+    QNetworkReply *reply = m_manager->get(request);
+    m_verifyReply = reply;
+
+    const int timeout = qBound(1000, remainingBudgetMs(), kTimeoutMs);
+    QTimer::singleShot(timeout, this, [this, reply]() {
+        if (m_verifyReply == reply) reply->abort();
+    });
+
+    QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, info]() {
+        if (m_verifyReply != reply) { // 已被 cancelInflight 放弃
+            reply->deleteLater();
+            return;
+        }
+        m_verifyReply = nullptr;
+        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 403) {
+            noteRateLimit(reply);
+        }
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QByteArray payload = reply->readAll();
+        reply->deleteLater();
+
+        // 404：tag 在、Release 还没建 —— 正是 CI 编译的那几分钟。其余失败
+        // （限流、超时、5xx）也一样：两个占位信号都命中了，不冒这个险。
+        if (status != 200) {
+            m_running = false;
+            emit upToDate(QLatin1String(CLASHQT_VERSION));
+            return;
+        }
+
+        // 确认到正式 Release：以 API 的数据为准，它比 Atom 多出资产列表，
+        // 正文也是原始 Markdown（Atom 那份是渲染后的 HTML）
+        const QJsonObject object = QJsonDocument::fromJson(payload).object();
+        ReleaseInfo merged = info;
+
+        const QString title = object.value(QStringLiteral("name")).toString();
+        if (!title.trimmed().isEmpty()) merged.title = title;
+
+        const QString body = object.value(QStringLiteral("body")).toString();
+        if (!body.trimmed().isEmpty()) {
+            merged.notes       = body;
+            merged.notesIsHtml = false;
+        }
+        merged.hasAssets = !object.value(QStringLiteral("assets")).toArray().isEmpty();
+
+        const QUrl page(object.value(QStringLiteral("html_url")).toString());
+        if (!page.isEmpty()) merged.pageUrl = page;
+
+        const QString published = object.value(QStringLiteral("published_at")).toString();
+        if (!published.isEmpty()) merged.publishedAt = published;
+
+        report(merged);
+    });
 }
 
 void UpdateChecker::report(const ReleaseInfo &release)

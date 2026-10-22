@@ -23,6 +23,13 @@
 //  只做「查询 + 展示」两件事：不下载、不安装。安装包由用户自己到发布页取 ——
 //  在缺少签名校验与包管理器的前提下让程序替换自己的二进制，风险远大于收益。
 //
+//  第三件要防的事：**tag 一推上去，Atom 里就有条目了**。GitHub 会把还没建 Release
+//  的 tag 也挂进 releases.atom，标题就是 tag 名、正文就是 tag 说明；此时 CI 还在
+//  编译，安装包一个都没有。这种占位条目不能当更新提示出去 —— 用户点开会看到一篇
+//  只有版本号的「更新日志」，发布页上也没有可下的包。因此 Atom 命中版本更新后先
+//  判一下形态（见 looksLikePlaceholder），像占位条目就回 API 查这个 tag 有没有真
+//  正的 Release：404 说明确实还没建，这一次静默略过。
+//
 //  网络默认走本机混合端口（HTTP 代理）：GitHub 在很多网络环境直连不通，而
 //  用户开着代理时它一定可用；内核没起时退回直连（例如系统级代理已生效）。
 //  失败必须给出可读原因，不静默 —— 「没动静」最容易被理解成「没有更新」。
@@ -51,6 +58,9 @@ struct ReleaseInfo {
     bool    notesIsHtml = false;
     QUrl    pageUrl;     // html_url：浏览器打开后可看到安装包
     QString publishedAt; // ISO 8601 时间
+    // 是否已经附带安装包。Atom 不提供这个信息，按「有」处理；只有 API 明确给出
+    // 空的资产列表时才置 false，用于提示「包还在传」。
+    bool    hasAssets = true;
 };
 
 class UpdateChecker : public QObject {
@@ -114,6 +124,11 @@ private:
     bool parseAtom(const QByteArray &payload);
     void report(const ReleaseInfo &release);
 
+    // 占位条目（tag 已推、Release 还没建）再回 API 确认一次，确认不到就当没有更新
+    void verifyPlaceholder(const ReleaseInfo &info);
+    // .../releases?per_page=20 → .../releases/tags/<tag>
+    QUrl releaseTagsUrl(const QString &tag) const;
+
     QUrl                   m_endpoint;     // GitHub API
     QUrl                   m_atomEndpoint; // GitHub Atom 订阅
     Source                 m_source = Source::Atom;
@@ -127,6 +142,7 @@ private:
     QNetworkAccessManager *m_manager = nullptr;
     QList<QNetworkReply *> m_inflight;        // 当前来源在飞的请求（1~2 条）
     QTimer                *m_hedgeTimer = nullptr;
+    QNetworkReply         *m_verifyReply = nullptr; // 占位条目的确认请求（独立于上面的状态机）
 };
 
 } // namespace clashqt

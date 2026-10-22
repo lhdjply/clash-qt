@@ -19,7 +19,11 @@
   falls back to `releases.atom`. Both paths skip releases whose tag isn't a version (e.g.
   `continuous_build`) and skip prereleases. Requests leave through the local mixed port,
   so it works with or without the system proxy; it only shows the changelog and a link to
-  the release page — downloading and installing is left to the user.
+  the release page — downloading and installing is left to the user. A freshly pushed tag
+  shows up in the Atom feed immediately (title = tag name, body = tag message) while CI
+  is still building and no packages exist yet; such placeholder entries are confirmed
+  against the API once and dropped when no release exists, so nobody opens a changelog
+  that is just a version number.
 - **System proxy on exit**: quitting (closing the window, tray exit, SIGTERM) restores the
   system proxy to direct before stopping the kernel. The test is whether the desktop's
   manual http/https/socks proxies all point at the local inbound port — it only touches

@@ -137,10 +137,35 @@ const char kReleasesAtom[] =
     "    <updated>2026-10-19T05:00:00Z</updated>\n"
     "    <link rel=\"alternate\" type=\"text/html\""
     " href=\"https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0\"/>\n"
-    "    <title>v999.0.0</title>\n"
+    // 正式 Release 的标题由 CI 的 --title 指定，不是 tag 名；标题等于 tag 名的
+    // 那种是「tag 推上去、Release 还没建」的占位条目（见下面 kPlaceholderAtom）
+    "    <title>clash-qt v999.0.0</title>\n"
     "    <content type=\"html\">&lt;p&gt;修复了托盘图标&lt;/p&gt;</content>\n"
     "  </entry>\n"
     "</feed>\n";
+
+// tag 刚推上去、CI 还没建 Release 时 Atom 里的样子：标题是 tag 名，正文是
+// tag 说明（GitHub 直接拿它填），发布页上还没有任何安装包
+const char kPlaceholderAtom[] =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    "<feed xmlns=\"http://www.w3.org/2005/Atom\">\n"
+    "  <entry>\n"
+    "    <id>tag:github.com,2008:Repository/1/v999.0.0</id>\n"
+    "    <updated>2026-10-22T02:35:00Z</updated>\n"
+    "    <link rel=\"alternate\" type=\"text/html\""
+    " href=\"https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0\"/>\n"
+    "    <title>v999.0.0</title>\n"
+    "    <content type=\"html\">&lt;p&gt;clash-qt v999.0.0&lt;/p&gt;</content>\n"
+    "  </entry>\n"
+    "</feed>\n";
+
+// 确认成功后 API 返回的单条 Release（比 Atom 多出资产列表）
+const char kReleaseObjectJson[] =
+    R"({"tag_name":"v999.0.0","name":"clash-qt v999.0.0",)"
+    R"("body":"## 更新内容\n\n- 侧栏改版",)"
+    R"("html_url":"https://github.com/lhdjply/clash-qt/releases/tag/v999.0.0",)"
+    R"("published_at":"2026-10-22T02:30:00Z",)"
+    R"("assets":[{"name":"clash-qt_1.1.0_amd64.deb"}]})";
 
 } // namespace
 
@@ -164,6 +189,8 @@ private slots:
     void transientFailureIsRetried();
     void stalledRequestIsHedged();
     void rateLimitedApiIsSkipped();
+    void tagPlaceholderIsNotReported();
+    void placeholderConfirmedByApiIsReported();
 };
 
 // ---------------------------------------------------------------------------
@@ -436,6 +463,59 @@ void TestUpdateChecker::rateLimitedApiIsSkipped()
     QVERIFY2(second.first().at(0).toString().contains(QStringLiteral("Rate limit exhausted")),
              qPrintable(second.first().at(0).toString()));
     QCOMPARE(server.hits.value(QStringLiteral("/latest")), 1);
+}
+
+// tag 推上去、CI 还没跑完：Atom 里已经有条目了，但它只是 tag 的占位
+void TestUpdateChecker::tagPlaceholderIsNotReported()
+{
+    FakeServer server;
+    server.routes.insert(QStringLiteral("/releases.atom"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kPlaceholderAtom)});
+    // /latest/tags/v999.0.0 未配置 → 404，正是「tag 在、Release 还没建」
+    QVERIFY(server.start());
+
+    UpdateChecker checker(server.url(QStringLiteral("/latest")),
+                          server.url(QStringLiteral("/releases.atom")));
+    QSignalSpy updated(&checker, &UpdateChecker::updateAvailable);
+    QSignalSpy upToDate(&checker, &UpdateChecker::upToDate);
+
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(updated.count() + upToDate.count(), 1, 8000);
+
+    QCOMPARE(updated.count(), 0);
+    QCOMPARE(upToDate.count(), 1);
+    // 确实回 API 问过一次「这个 tag 有 Release 吗」
+    QCOMPARE(server.hits.value(QStringLiteral("/latest/tags/v999.0.0")), 1);
+}
+
+// 占位形态，但 Release 其实已经建好：正文与资产以 API 为准，照常提示
+void TestUpdateChecker::placeholderConfirmedByApiIsReported()
+{
+    FakeServer server;
+    server.routes.insert(QStringLiteral("/releases.atom"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kPlaceholderAtom)});
+    server.routes.insert(QStringLiteral("/latest/tags/v999.0.0"),
+                         {QByteArrayLiteral("200 OK"), QByteArray(kReleaseObjectJson)});
+    QVERIFY(server.start());
+
+    UpdateChecker checker(server.url(QStringLiteral("/latest")),
+                          server.url(QStringLiteral("/releases.atom")));
+    ReleaseInfo received;
+    int         count = 0;
+    QObject::connect(&checker, &UpdateChecker::updateAvailable,
+                     [&](const ReleaseInfo &info) {
+                         received = info;
+                         ++count;
+                     });
+
+    QVERIFY(checker.check(0));
+    QTRY_COMPARE_WITH_TIMEOUT(count, 1, 8000);
+
+    // Atom 那份正文还是 tag 说明，确认后应当换成 API 的 Markdown 与资产状态
+    QCOMPARE(received.version, QStringLiteral("999.0.0"));
+    QVERIFY(!received.notesIsHtml);
+    QVERIFY2(received.notes.contains(QStringLiteral("侧栏改版")), qPrintable(received.notes));
+    QVERIFY(received.hasAssets);
 }
 
 QTEST_GUILESS_MAIN(TestUpdateChecker)

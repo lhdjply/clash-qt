@@ -482,52 +482,52 @@
         <translation>系统代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="279"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="280"/>
         <source>No system proxy backend found (gsettings / kwriteconfig); system proxy is unavailable</source>
         <translation>未检测到系统代理后端（gsettings / kwriteconfig），系统代理不可用</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="285"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="286"/>
         <source>TUN mode</source>
         <translation>TUN 模式</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="291"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="293"/>
         <source>Captures all local traffic, including apps that ignore the system proxy. The first enable requires a one-time password prompt.</source>
         <translation>接管本机全部流量（含不读系统代理的程序）。首次启用需要输入一次密码授权。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="407"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
         <source>Proxies</source>
         <translation>代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="411"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="418"/>
         <source>Connections</source>
         <translation>连接</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="408"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="412"/>
         <source>Rules</source>
         <translation>规则</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="409"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="414"/>
         <source>Overrides</source>
         <translation>覆写</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="416"/>
         <source>Logs</source>
         <translation>日志</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="472"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="482"/>
         <source>Traffic</source>
         <translation>流量</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="413"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="421"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
@@ -547,132 +547,132 @@
         <translation>直连</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="339"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="695"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="341"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="706"/>
         <source>Update this subscription</source>
         <translation>更新此订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="681"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="692"/>
         <source>No profile selected</source>
         <translation>未选择订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="696"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="744"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="707"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="755"/>
         <source>Local profiles have no URL to update from</source>
         <translation>本地订阅没有可更新的链接</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="708"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="719"/>
         <source>%1 / %2</source>
         <translation>%1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="717"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="728"/>
         <source>Updated %1</source>
         <translation>更新于 %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="732"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="743"/>
         <source>Open the profiles page</source>
         <translation>打开订阅页</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="739"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="750"/>
         <source>Select a profile first</source>
         <translation>请先选择一个订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="752"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="763"/>
         <source>Update failed: %1</source>
         <translation>更新失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="754"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="765"/>
         <source>Subscription updated</source>
         <translation>订阅已更新</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="779"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="858"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="790"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
         <source>Disable system proxy</source>
         <translation>关闭系统代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="787"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="894"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="798"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="905"/>
         <source>Enable TUN mode</source>
         <translation>启用 TUN 模式</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="794"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="805"/>
         <source>Show main window</source>
         <translation>显示主窗口</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="802"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="813"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="859"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
         <source>Enable system proxy</source>
         <translation>启用系统代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="864"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="892"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="875"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="903"/>
         <source>Enabling TUN…</source>
         <translation>TUN 启用中…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="868"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="879"/>
         <source>System proxy + TUN enabled</source>
         <translation>系统代理 + TUN 已开启</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="880"/>
         <source>TUN enabled</source>
         <translation>TUN 已开启</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="881"/>
         <source>System proxy enabled</source>
         <translation>系统代理已开启</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="871"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="882"/>
         <source>System proxy disabled</source>
         <translation>系统代理已关闭</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="887"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="898"/>
         <source>enabling…</source>
         <translation>启用中…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="893"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="904"/>
         <source>Disable TUN mode</source>
         <translation>关闭 TUN 模式</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="903"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="914"/>
         <source>Mixed port %1</source>
         <translation>混合端口 %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="905"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="916"/>
         <source>Not running</source>
         <translation>未启动</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="933"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="944"/>
         <source>Failed to switch outbound mode: %1</source>
         <translation>切换出站模式失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="939"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="950"/>
         <source>Outbound mode: %1</source>
         <translation>出站模式：%1</translation>
     </message>
@@ -1955,22 +1955,27 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>（这次发布没有填写更新说明，可直接到发布页查看。）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="94"/>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="97"/>
+        <source>No package has been attached to this release yet; it may still be uploading.</source>
+        <translation>该版本还没有附带安装包，可能仍在上传。</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="100"/>
         <source>Published on %1. Download the package from the release page.</source>
         <translation>发布于 %1。安装包请到发布页下载。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="96"/>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="103"/>
         <source>Download the package from the release page.</source>
         <translation>安装包请到发布页下载。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="104"/>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="112"/>
         <source>Later</source>
         <translation>稍后再说</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="105"/>
+        <location filename="../src/app/src/ui/UpdateDialog.cpp" line="113"/>
         <source>Open download page</source>
         <translation>打开下载页</translation>
     </message>
@@ -1998,43 +2003,43 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>%1 分</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="121"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="146"/>
         <source>Atom feed</source>
         <translation>Atom 订阅源</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="185"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="210"/>
         <source>Skipped: overall time budget exhausted</source>
         <translation>总耗时超限，未尝试</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="293"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="327"/>
         <source>Request timed out</source>
         <translation>请求超时</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="373"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="407"/>
         <source>Rate limit exhausted (resets in about %1 min; the current node may share this egress IP)</source>
         <translation>配额已用尽（约 %1 分钟后重置，当前节点可能共享该出口 IP）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="391"/>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="393"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="425"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="427"/>
         <source>Not attempted</source>
         <translation>未尝试</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="396"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="430"/>
         <source>No update source available</source>
         <translation>没有可用的更新源</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="404"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="438"/>
         <source>Could not parse the response: %1</source>
         <translation>返回内容无法解析：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="486"/>
+        <location filename="../src/app/src/updater/UpdateChecker.cpp" line="521"/>
         <source>Could not parse the content: %1</source>
         <translation>内容无法解析：%1</translation>
     </message>
@@ -2559,32 +2564,32 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>TUN 已关闭</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="765"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="776"/>
         <source>System tray unavailable; skipping tray setup</source>
         <translation>系统托盘不可用，跳过托盘初始化</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="740"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="767"/>
         <source>UI style: Fusion (%1) style=%2 field=%3 accent=%4 desktop dark=%5</source>
         <translation>界面样式：Fusion（%1）style=%2 控件底色=%3 强调色=%4 桌面深色=%5</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="741"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="768"/>
         <source>dark</source>
         <translation>深色</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="741"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="768"/>
         <source>light</source>
         <translation>浅色</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="746"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="773"/>
         <source>yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/UiFactory.cpp" line="746"/>
+        <location filename="../src/app/src/ui/UiFactory.cpp" line="773"/>
         <source>no</source>
         <translation>否</translation>
     </message>

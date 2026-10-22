@@ -89,12 +89,20 @@ UpdateDialog::UpdateDialog(const ReleaseInfo &release, QWidget *parent) : QDialo
 
     const QDateTime published =
         QDateTime::fromString(release.publishedAt, Qt::ISODate).toLocalTime();
-    root->addWidget(ui::makeHintLabel(
-        published.isValid()
-            ? tr("Published on %1. Download the package from the release page.")
-                  .arg(published.toString(QStringLiteral("yyyy-MM-dd")))
-            : tr("Download the package from the release page."),
-        this));
+
+    // 占位条目在检查阶段就拦掉了；这里兜的是「Release 已建、安装包还在上传」——
+    // 不能让用户顺着按钮过去只看到一张空列表
+    QString hint;
+    if (!release.hasAssets) {
+        hint = tr("No package has been attached to this release yet; "
+                  "it may still be uploading.");
+    } else if (published.isValid()) {
+        hint = tr("Published on %1. Download the package from the release page.")
+                   .arg(published.toString(QStringLiteral("yyyy-MM-dd")));
+    } else {
+        hint = tr("Download the package from the release page.");
+    }
+    root->addWidget(ui::makeHintLabel(hint, this));
 
     auto *actions = new QHBoxLayout();
     actions->setContentsMargins(0, 0, 0, 0);
