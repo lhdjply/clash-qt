@@ -4,356 +4,361 @@
 <context>
     <name>clashqt::AppContext</name>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="187"/>
+        <location filename="../src/app/src/AppContext.cpp" line="188"/>
         <source>Failed to turn off the system proxy on exit: %1 (the desktop still points at the local port)</source>
         <translation>Failed to turn off the system proxy on exit: %1 (the desktop still points at the local port)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="192"/>
+        <location filename="../src/app/src/AppContext.cpp" line="193"/>
         <source>System proxy turned off before exit, so the desktop stops pointing at a stopped local port</source>
         <translation>System proxy turned off before exit, so the desktop stops pointing at a stopped local port</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="207"/>
+        <location filename="../src/app/src/AppContext.cpp" line="208"/>
         <source>Failed to load the config. Check that the files in %1 are writable</source>
         <translation>Failed to load the config. Check that the files in %1 are writable</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="221"/>
+        <location filename="../src/app/src/AppContext.cpp" line="224"/>
         <source>Data directory: %1 (portable: %2)</source>
         <translation>Data directory: %1 (portable: %2)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="222"/>
+        <location filename="../src/app/src/AppContext.cpp" line="225"/>
         <source>yes</source>
         <translation>yes</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="223"/>
+        <location filename="../src/app/src/AppContext.cpp" line="226"/>
         <source>no</source>
         <translation>no</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="236"/>
+        <location filename="../src/app/src/AppContext.cpp" line="239"/>
         <source>Config generation failed: %1</source>
         <translation>Config generation failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="265"/>
+        <location filename="../src/app/src/AppContext.cpp" line="268"/>
         <source>Start failed: %1</source>
         <translation>Start failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="266"/>
+        <location filename="../src/app/src/AppContext.cpp" line="269"/>
         <source>Startup failed: %1</source>
         <translation>Startup failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="374"/>
-        <location filename="../src/app/src/AppContext.cpp" line="401"/>
+        <location filename="../src/app/src/AppContext.cpp" line="304"/>
+        <source>Kernel failed to restart after config reload: %1</source>
+        <translation>Kernel failed to restart after config reload: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/AppContext.cpp" line="384"/>
+        <location filename="../src/app/src/AppContext.cpp" line="411"/>
         <source>Config not loaded yet</source>
         <translation>Config not loaded yet</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="413"/>
+        <location filename="../src/app/src/AppContext.cpp" line="423"/>
         <source>TUN enable request: enabled=%1 running=%2 starting(old)=%3</source>
         <translation>TUN enable request: enabled=%1 running=%2 starting(old)=%3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="424"/>
+        <location filename="../src/app/src/AppContext.cpp" line="434"/>
         <source>TUN disabled; system routes restored</source>
         <translation>TUN disabled; system routes restored</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="436"/>
+        <location filename="../src/app/src/AppContext.cpp" line="446"/>
         <source>TUN helper not found (it should sit next to the main executable): %1</source>
         <translation>TUN helper not found (it should sit next to the main executable): %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="475"/>
+        <location filename="../src/app/src/AppContext.cpp" line="485"/>
         <source>Removed the wildcard &quot;*&quot; from fake-ip-filter (it makes every domain skip fake-ip)</source>
         <translation>Removed the wildcard &quot;*&quot; from fake-ip-filter (it makes every domain skip fake-ip)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="477"/>
+        <location filename="../src/app/src/AppContext.cpp" line="487"/>
         <source>Fixed the DNS config: the &quot;*&quot; in fake-ip-filter made every domain skip fake-ip, so it was removed</source>
         <translation>Fixed the DNS config: the &quot;*&quot; in fake-ip-filter made every domain skip fake-ip, so it was removed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="491"/>
+        <location filename="../src/app/src/AppContext.cpp" line="501"/>
         <source>TUN device name changed from Mihomo to %1</source>
         <translation>TUN device name changed from Mihomo to %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="505"/>
+        <location filename="../src/app/src/AppContext.cpp" line="515"/>
         <source>TUN mode needs kernel DNS (fake-ip); DNS override was enabled automatically</source>
         <translation>TUN mode needs kernel DNS (fake-ip); DNS override was enabled automatically</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="507"/>
+        <location filename="../src/app/src/AppContext.cpp" line="517"/>
         <source>TUN mode needs kernel DNS; &quot;DNS override&quot; was enabled automatically</source>
         <translation>TUN mode needs kernel DNS; &quot;DNS override&quot; was enabled automatically</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="522"/>
+        <location filename="../src/app/src/AppContext.cpp" line="532"/>
         <source>The kernel failed to start, so TUN cannot be enabled</source>
         <translation>The kernel failed to start, so TUN cannot be enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="545"/>
-        <location filename="../src/app/src/AppContext.cpp" line="597"/>
+        <location filename="../src/app/src/AppContext.cpp" line="555"/>
+        <location filename="../src/app/src/AppContext.cpp" line="607"/>
         <source>Failed to enable TUN: %1</source>
         <translation>Failed to enable TUN: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="566"/>
+        <location filename="../src/app/src/AppContext.cpp" line="576"/>
         <source>Enabling TUN timed out; state was force-reset</source>
         <translation>Enabling TUN timed out; state was force-reset</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="569"/>
+        <location filename="../src/app/src/AppContext.cpp" line="579"/>
         <source>Timed out enabling TUN; state was reset, please try again</source>
         <translation>Timed out enabling TUN; state was reset, please try again</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="573"/>
+        <location filename="../src/app/src/AppContext.cpp" line="583"/>
         <source>Enabling TUN…</source>
         <translation>Enabling TUN…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="598"/>
+        <location filename="../src/app/src/AppContext.cpp" line="608"/>
         <source>Could not take over the device</source>
         <translation>Could not take over the device</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="610"/>
+        <location filename="../src/app/src/AppContext.cpp" line="620"/>
         <source>TUN enabled (system routes taken over)</source>
         <translation>TUN enabled (system routes taken over)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="611"/>
+        <location filename="../src/app/src/AppContext.cpp" line="621"/>
         <source>TUN enabled (routes not taken over)</source>
         <translation>TUN enabled (routes not taken over)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="620"/>
+        <location filename="../src/app/src/AppContext.cpp" line="630"/>
         <source>Kernel is not running; skipping switch-state restore</source>
         <translation>Kernel is not running; skipping switch-state restore</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="630"/>
+        <location filename="../src/app/src/AppContext.cpp" line="640"/>
         <source>Restored TUN to its previous state</source>
         <translation>Restored TUN to its previous state</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="633"/>
+        <location filename="../src/app/src/AppContext.cpp" line="643"/>
         <source>Failed to restore TUN: %1</source>
         <translation>Failed to restore TUN: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="635"/>
+        <location filename="../src/app/src/AppContext.cpp" line="645"/>
         <source>Failed to restore TUN mode: %1</source>
         <translation>Failed to restore TUN mode: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="644"/>
+        <location filename="../src/app/src/AppContext.cpp" line="654"/>
         <source>Restored the system proxy to its previous state</source>
         <translation>Restored the system proxy to its previous state</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="647"/>
-        <location filename="../src/app/src/AppContext.cpp" line="649"/>
+        <location filename="../src/app/src/AppContext.cpp" line="657"/>
+        <location filename="../src/app/src/AppContext.cpp" line="659"/>
         <source>Failed to restore the system proxy: %1</source>
         <translation>Failed to restore the system proxy: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="664"/>
+        <location filename="../src/app/src/AppContext.cpp" line="674"/>
         <source>Start failed; system proxy not enabled: %1</source>
         <translation>Start failed; system proxy not enabled: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="676"/>
+        <location filename="../src/app/src/AppContext.cpp" line="686"/>
         <source>No inbound port available; cannot set the system proxy</source>
         <translation>No inbound port available; cannot set the system proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="686"/>
+        <location filename="../src/app/src/AppContext.cpp" line="696"/>
         <source>127.0.0.1:%1 is not listening locally; refusing to enable the system proxy (the whole desktop would lose connectivity by pointing at an empty port)</source>
         <translation>127.0.0.1:%1 is not listening locally; refusing to enable the system proxy (the whole desktop would lose connectivity by pointing at an empty port)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="698"/>
+        <location filename="../src/app/src/AppContext.cpp" line="708"/>
         <source>Failed to set the system proxy: %1</source>
         <translation>Failed to set the system proxy: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="706"/>
+        <location filename="../src/app/src/AppContext.cpp" line="716"/>
         <source>Failed to turn off the system proxy: %1</source>
         <translation>Failed to turn off the system proxy: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="739"/>
+        <location filename="../src/app/src/AppContext.cpp" line="749"/>
         <source>Unknown outbound mode: %1</source>
         <translation>Unknown outbound mode: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="778"/>
-        <location filename="../src/app/src/AppContext.cpp" line="803"/>
-        <location filename="../src/app/src/AppContext.cpp" line="891"/>
-        <location filename="../src/app/src/AppContext.cpp" line="969"/>
+        <location filename="../src/app/src/AppContext.cpp" line="788"/>
+        <location filename="../src/app/src/AppContext.cpp" line="813"/>
+        <location filename="../src/app/src/AppContext.cpp" line="901"/>
+        <location filename="../src/app/src/AppContext.cpp" line="979"/>
         <source>Failed to write the profile contents</source>
         <translation>Failed to write the profile contents</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="783"/>
-        <location filename="../src/app/src/AppContext.cpp" line="895"/>
+        <location filename="../src/app/src/AppContext.cpp" line="793"/>
+        <location filename="../src/app/src/AppContext.cpp" line="905"/>
         <source>Failed to write the profile list</source>
         <translation>Failed to write the profile list</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="787"/>
+        <location filename="../src/app/src/AppContext.cpp" line="797"/>
         <source>Added local config: %1</source>
         <translation>Added local config: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="795"/>
-        <location filename="../src/app/src/AppContext.cpp" line="907"/>
-        <location filename="../src/app/src/AppContext.cpp" line="1010"/>
+        <location filename="../src/app/src/AppContext.cpp" line="805"/>
+        <location filename="../src/app/src/AppContext.cpp" line="917"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1020"/>
         <source>Profile does not exist: %1</source>
         <translation>Profile does not exist: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="809"/>
+        <location filename="../src/app/src/AppContext.cpp" line="819"/>
         <source>Replaced the config file of &quot;%1&quot;</source>
         <translation>Replaced the config file of &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="821"/>
+        <location filename="../src/app/src/AppContext.cpp" line="831"/>
         <source>Invalid profile URL: %1</source>
         <translation>Invalid profile URL: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="848"/>
+        <location filename="../src/app/src/AppContext.cpp" line="858"/>
         <source>Profile download timed out (%1 ms)</source>
         <translation>Profile download timed out (%1 ms)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="855"/>
+        <location filename="../src/app/src/AppContext.cpp" line="865"/>
         <source>Profile download failed: %1</source>
         <translation>Profile download failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="874"/>
+        <location filename="../src/app/src/AppContext.cpp" line="884"/>
         <source>The profile is not a valid Clash config: %1</source>
         <translation>The profile is not a valid Clash config: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="899"/>
+        <location filename="../src/app/src/AppContext.cpp" line="909"/>
         <source>Added profile: %1</source>
         <translation>Added profile: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="911"/>
+        <location filename="../src/app/src/AppContext.cpp" line="921"/>
         <source>Profile &quot;%1&quot; is not a remote profile; nothing to update</source>
         <translation>Profile &quot;%1&quot; is not a remote profile; nothing to update</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="938"/>
+        <location filename="../src/app/src/AppContext.cpp" line="948"/>
         <source>Updating &quot;%1&quot; timed out</source>
         <translation>Updating &quot;%1&quot; timed out</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="944"/>
+        <location filename="../src/app/src/AppContext.cpp" line="954"/>
         <source>Failed to update &quot;%1&quot;: %2</source>
         <translation>Failed to update &quot;%1&quot;: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="962"/>
+        <location filename="../src/app/src/AppContext.cpp" line="972"/>
         <source>The update for &quot;%1&quot; returned invalid content; the old config was kept: %2</source>
         <translation>The update for &quot;%1&quot; returned invalid content; the old config was kept: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="983"/>
+        <location filename="../src/app/src/AppContext.cpp" line="993"/>
         <source>Profile updated: %1</source>
         <translation>Profile updated: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1015"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1025"/>
         <source>Switched to profile: %1</source>
         <translation>Switched to profile: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1030"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1040"/>
         <source>Override content must be a YAML mapping: %1</source>
         <translation>Override content must be a YAML mapping: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1037"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1047"/>
         <source>Unnamed override</source>
         <translation>Unnamed override</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1044"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1054"/>
         <source>Failed to write the override contents</source>
         <translation>Failed to write the override contents</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1048"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1058"/>
         <source>Failed to write the override list</source>
         <translation>Failed to write the override list</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1052"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1062"/>
         <source>Added override: %1</source>
         <translation>Added override: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1083"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1093"/>
         <source>Failed to parse the rule-override file; treating it as empty: %1</source>
         <translation>Failed to parse the rule-override file; treating it as empty: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1107"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1117"/>
         <source>No profile selected; cannot save custom rules</source>
         <translation>No profile selected; cannot save custom rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1119"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1129"/>
         <source>%1 entry %2 contains a line break (each rule must stay on one line)</source>
         <translation>%1 entry %2 contains a line break (each rule must stay on one line)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1127"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1137"/>
         <source>%1 entry %2 is not a valid rule (expected at least &quot;type,target&quot;): %3</source>
         <translation>%1 entry %2 is not a valid rule (expected at least &quot;type,target&quot;): %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1137"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1147"/>
         <source>Custom rules</source>
         <translation>Custom rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1138"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1148"/>
         <source>Fallback rules</source>
         <translation>Fallback rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1139"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1149"/>
         <source>Removal rules</source>
         <translation>Removal rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1172"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1182"/>
         <source>Failed to write custom rules: %1</source>
         <translation>Failed to write custom rules: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1177"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1187"/>
         <source>Custom rules saved (profile %1): %2 total, %3 disabled, %4 fallback / %5 removal</source>
         <translation>Custom rules saved (profile %1): %2 total, %3 disabled, %4 fallback / %5 removal</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1186"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1196"/>
         <source>Custom rules applied</source>
         <translation>Custom rules applied</translation>
     </message>
@@ -492,37 +497,37 @@
         <translation>Captures all local traffic, including apps that ignore the system proxy. The first enable requires a one-time password prompt.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="406"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="407"/>
         <source>Proxies</source>
         <translation>Proxies</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="411"/>
         <source>Connections</source>
         <translation>Connections</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="407"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="408"/>
         <source>Rules</source>
         <translation>Rules</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="408"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="409"/>
         <source>Overrides</source>
         <translation>Overrides</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="409"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
         <source>Logs</source>
         <translation>Logs</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="471"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="472"/>
         <source>Traffic</source>
         <translation>Traffic</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="412"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="413"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
@@ -542,132 +547,132 @@
         <translation>Direct</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="338"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="694"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="339"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="695"/>
         <source>Update this subscription</source>
         <translation>Update this subscription</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="680"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="681"/>
         <source>No profile selected</source>
         <translation>No profile selected</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="695"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="743"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="696"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="744"/>
         <source>Local profiles have no URL to update from</source>
         <translation>Local profiles have no URL to update from</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="707"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="708"/>
         <source>%1 / %2</source>
         <translation>%1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="716"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="717"/>
         <source>Updated %1</source>
         <translation>Updated %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="731"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="732"/>
         <source>Open the profiles page</source>
         <translation>Open the profiles page</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="738"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="739"/>
         <source>Select a profile first</source>
         <translation>Select a profile first</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="751"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="752"/>
         <source>Update failed: %1</source>
         <translation>Update failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="753"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="754"/>
         <source>Subscription updated</source>
         <translation>Subscription updated</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="778"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="857"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="779"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="858"/>
         <source>Disable system proxy</source>
         <translation>Disable system proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="786"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="893"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="787"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="894"/>
         <source>Enable TUN mode</source>
         <translation>Enable TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="793"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="794"/>
         <source>Show main window</source>
         <translation>Show main window</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="801"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="802"/>
         <source>Quit</source>
         <translation>Quit</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="858"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="859"/>
         <source>Enable system proxy</source>
         <translation>Enable system proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="863"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="891"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="864"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="892"/>
         <source>Enabling TUN…</source>
         <translation>Enabling TUN…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="867"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="868"/>
         <source>System proxy + TUN enabled</source>
         <translation>System proxy + TUN enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="868"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
         <source>TUN enabled</source>
         <translation>TUN enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
         <source>System proxy enabled</source>
         <translation>System proxy enabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="871"/>
         <source>System proxy disabled</source>
         <translation>System proxy disabled</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="886"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="887"/>
         <source>enabling…</source>
         <translation>enabling…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="892"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="893"/>
         <source>Disable TUN mode</source>
         <translation>Disable TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="902"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="903"/>
         <source>Mixed port %1</source>
         <translation>Mixed port %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="904"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="905"/>
         <source>Not running</source>
         <translation>Not running</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="932"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="933"/>
         <source>Failed to switch outbound mode: %1</source>
         <translation>Failed to switch outbound mode: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="938"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="939"/>
         <source>Outbound mode: %1</source>
         <translation>Outbound mode: %1</translation>
     </message>
@@ -1568,178 +1573,178 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>Logs</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="78"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="80"/>
         <source>Log level</source>
         <translation>Log level</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="83"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="85"/>
         <source> days</source>
         <translation> days</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="86"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="88"/>
         <source>Log retention (days)</source>
         <translation>Log retention (days)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="87"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="89"/>
         <source>Log files older than the retention period are removed at startup.</source>
         <translation>Log files older than the retention period are removed at startup.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="90"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="92"/>
         <source>Open data folder</source>
         <translation>Open data folder</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="99"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="101"/>
         <source>Config overrides</source>
         <translation>Config overrides</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="102"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="104"/>
         <source>Manage DNS settings in this app</source>
         <translation>Manage DNS settings in this app</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="105"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="107"/>
         <source>When on, the DNS section configured here is used; when off, the profile&apos;s own DNS settings apply.</source>
         <translation>When on, the DNS section configured here is used; when off, the profile&apos;s own DNS settings apply.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="108"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="110"/>
         <source>Manage domain sniffing in this app</source>
         <translation>Manage domain sniffing in this app</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="114"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="116"/>
         <source>Inbound ports</source>
         <translation>Inbound ports</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="128"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="130"/>
         <source>Mixed port (HTTP + SOCKS5)</source>
         <translation>Mixed port (HTTP + SOCKS5)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="130"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="132"/>
         <source>SOCKS5 port</source>
         <translation>SOCKS5 port</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="131"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="133"/>
         <source>Set it equal to the mixed port to reuse the mixed port.</source>
         <translation>Set it equal to the mixed port to reuse the mixed port.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="133"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="135"/>
         <source>HTTP port</source>
         <translation>HTTP port</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="138"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="140"/>
         <source>System integration</source>
         <translation>System integration</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="141"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="143"/>
         <source>Start at login</source>
         <translation>Start at login</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="143"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="145"/>
         <source>Implemented via an XDG autostart entry (~/.config/autostart/clash-qt.desktop).</source>
         <translation>Implemented via an XDG autostart entry (~/.config/autostart/clash-qt.desktop).</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="146"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="148"/>
         <source>System proxy</source>
         <translation>System proxy</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="149"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="151"/>
         <source>Points the system HTTP/HTTPS/SOCKS proxy at this app&apos;s mixed port. Current backend: %1</source>
         <translation>Points the system HTTP/HTTPS/SOCKS proxy at this app&apos;s mixed port. Current backend: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="153"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="155"/>
         <source>TUN mode</source>
         <translation>TUN mode</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="156"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="158"/>
         <source>Creates a virtual network interface to capture all traffic, including apps that ignore the system proxy (games, CLI tools, some Electron apps). The first enable asks for your password once; it only takes effect together with &quot;Route domain traffic&quot;.</source>
         <translation>Creates a virtual network interface to capture all traffic, including apps that ignore the system proxy (games, CLI tools, some Electron apps). The first enable asks for your password once; it only takes effect together with &quot;Route domain traffic&quot;.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="159"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="161"/>
         <source>Route domain traffic (fake-IP)</source>
         <translation>Route domain traffic (fake-IP)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="162"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="164"/>
         <source>Routes the fake-IP range to the TUN interface (removed together with the interface). The default route is untouched, so connectivity is unaffected; with this off, TUN receives no traffic.</source>
         <translation>Routes the fake-IP range to the TUN interface (removed together with the interface). The default route is untouched, so connectivity is unaffected; with this off, TUN receives no traffic.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="168"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="170"/>
         <source>About</source>
         <translation>About</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="172"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="174"/>
         <source>Version v%1</source>
         <translation>Version v%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="175"/>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="463"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="177"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="467"/>
         <source>Check for updates</source>
         <translation>Check for updates</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="185"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="187"/>
         <source>Fetches the latest version from GitHub Releases. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</source>
         <translation>Fetches the latest version from GitHub Releases. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="237"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="239"/>
         <source>Already up to date (v%1)</source>
         <translation>Already up to date (v%1)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="245"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="247"/>
         <source> (the kernel is not running; start the proxy and try again)</source>
         <translation> (the kernel is not running; start the proxy and try again)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="247"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="249"/>
         <source>Update check failed: %1%2</source>
         <translation>Update check failed: %1%2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="285"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="287"/>
         <source>Data folder: %1</source>
         <translation>Data folder: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="341"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="345"/>
         <source>Reload failed after port change: %1</source>
         <translation>Reload failed after port change: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="354"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="358"/>
         <source>Failed to change startup setting: %1</source>
         <translation>Failed to change startup setting: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="438"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="442"/>
         <source>Language saved; restart the app to apply.</source>
         <translation>Language saved; restart the app to apply.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="463"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="467"/>
         <source>Checking…</source>
         <translation>Checking…</translation>
     </message>
@@ -2059,17 +2064,17 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>Merged the legacy managed config into config.yaml and deleted it: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="120"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="134"/>
         <source>Failed to parse the profile list: %1</source>
         <translation>Failed to parse the profile list: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="143"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="157"/>
         <source>Failed to save the profile list: %1</source>
         <translation>Failed to save the profile list: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="228"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="242"/>
         <source>Failed to write profile content (%1): %2</source>
         <translation>Failed to write profile content (%1): %2</translation>
     </message>
@@ -2219,12 +2224,12 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>%1 exited with code %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="71"/>
+        <location filename="../src/app/src/AppContext.cpp" line="72"/>
         <source>Could not read file %1: %2</source>
         <translation>Could not read file %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="81"/>
+        <location filename="../src/app/src/AppContext.cpp" line="82"/>
         <source>Not a valid Clash config: %1</source>
         <translation>Not a valid Clash config: %1</translation>
     </message>
@@ -2554,7 +2559,7 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>TUN is closed</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="764"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="765"/>
         <source>System tray unavailable; skipping tray setup</source>
         <translation>System tray unavailable; skipping tray setup</translation>
     </message>

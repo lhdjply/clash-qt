@@ -18,6 +18,7 @@
 #include "utils/SafeFile.h"
 
 #include "common/Yaml.h"
+#include "constant/Constants.h"
 
 #include <QDateTime>
 #include <QEventLoop>
@@ -212,6 +213,8 @@ bool AppContext::initialize(QString *error)
     }
 
     // 日志设置随配置生效
+    AppLogger::instance().setLevel(core::parseLogLevel(m_controledConfig->logLevel())
+                                       .value_or(core::LogLevel::Info));
     AppLogger::instance().setMaxLogDays(m_appConfig->maxLogDays());
     AppLogger::instance().setMaxFileSizeMB(m_appConfig->maxLogFileSizeMB());
     AppLogger::instance().setAppLogDisabled(m_appConfig->disableAppLog());
@@ -284,14 +287,21 @@ bool AppContext::isKernelRunning() const { return m_hub->isRunning(); }
 
 bool AppContext::reloadKernel(QString *error)
 {
+    // 运行态必须在重载前记下来：Hub::applyConfig 一定会先关监听、把 m_running
+    // 置 false（它只换配置，不负责重新监听），重载完再问 isRunning() 必然是
+    // false —— 重启分支永远走不到，内核就静默停在「未启动」。改日志等级、
+    // 端口、DNS 开关都会踩到这条路径。
+    const bool wasRunning = m_hub->isRunning();
+
     if (!applyGeneratedConfig(error)) return false;
 
-    // 已在运行时需要重新应用监听配置（端口可能变化）
-    if (m_hub->isRunning()) {
-        m_hub->stop();
+    // 端口可能变化，已在运行时按新配置重新监听
+    if (wasRunning) {
         QString startError;
         if (!m_hub->start(&startError)) {
             if (error) *error = startError;
+            AppLogger::instance().error(
+                tr("Kernel failed to restart after config reload: %1").arg(startError));
             emit kernelRunningChanged(false);
             return false;
         }

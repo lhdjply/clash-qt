@@ -4,356 +4,361 @@
 <context>
     <name>clashqt::AppContext</name>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="187"/>
+        <location filename="../src/app/src/AppContext.cpp" line="188"/>
         <source>Failed to turn off the system proxy on exit: %1 (the desktop still points at the local port)</source>
         <translation>退出时关闭系统代理失败：%1（桌面仍指向本机端口）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="192"/>
+        <location filename="../src/app/src/AppContext.cpp" line="193"/>
         <source>System proxy turned off before exit, so the desktop stops pointing at a stopped local port</source>
         <translation>退出前已关闭系统代理：避免桌面继续指向已停止的本机端口</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="207"/>
+        <location filename="../src/app/src/AppContext.cpp" line="208"/>
         <source>Failed to load the config. Check that the files in %1 are writable</source>
         <translation>配置加载失败，请检查 %1 目录下的文件是否可写</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="221"/>
+        <location filename="../src/app/src/AppContext.cpp" line="224"/>
         <source>Data directory: %1 (portable: %2)</source>
         <translation>数据目录：%1（便携模式：%2）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="222"/>
+        <location filename="../src/app/src/AppContext.cpp" line="225"/>
         <source>yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="223"/>
+        <location filename="../src/app/src/AppContext.cpp" line="226"/>
         <source>no</source>
         <translation>否</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="236"/>
+        <location filename="../src/app/src/AppContext.cpp" line="239"/>
         <source>Config generation failed: %1</source>
         <translation>配置生成失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="265"/>
+        <location filename="../src/app/src/AppContext.cpp" line="268"/>
         <source>Start failed: %1</source>
         <translation>启动失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="266"/>
+        <location filename="../src/app/src/AppContext.cpp" line="269"/>
         <source>Startup failed: %1</source>
         <translation>启动失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="374"/>
-        <location filename="../src/app/src/AppContext.cpp" line="401"/>
+        <location filename="../src/app/src/AppContext.cpp" line="304"/>
+        <source>Kernel failed to restart after config reload: %1</source>
+        <translation>配置重载后内核重启失败：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/AppContext.cpp" line="384"/>
+        <location filename="../src/app/src/AppContext.cpp" line="411"/>
         <source>Config not loaded yet</source>
         <translation>尚未加载配置</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="413"/>
+        <location filename="../src/app/src/AppContext.cpp" line="423"/>
         <source>TUN enable request: enabled=%1 running=%2 starting(old)=%3</source>
         <translation>TUN 启用请求：enabled=%1 running=%2 starting(旧)=%3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="424"/>
+        <location filename="../src/app/src/AppContext.cpp" line="434"/>
         <source>TUN disabled; system routes restored</source>
         <translation>TUN 已关闭，系统路由已还原</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="436"/>
+        <location filename="../src/app/src/AppContext.cpp" line="446"/>
         <source>TUN helper not found (it should sit next to the main executable): %1</source>
         <translation>找不到 TUN 辅助程序（应与主程序同目录）：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="475"/>
+        <location filename="../src/app/src/AppContext.cpp" line="485"/>
         <source>Removed the wildcard &quot;*&quot; from fake-ip-filter (it makes every domain skip fake-ip)</source>
         <translation>已从 fake-ip-filter 移除通配 &quot;*&quot;（它会让所有域名都跳过 fake-ip）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="477"/>
+        <location filename="../src/app/src/AppContext.cpp" line="487"/>
         <source>Fixed the DNS config: the &quot;*&quot; in fake-ip-filter made every domain skip fake-ip, so it was removed</source>
         <translation>已修正 DNS 配置：fake-ip-filter 里的 &quot;*&quot; 会导致所有域名都不走 fake-ip，已移除</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="491"/>
+        <location filename="../src/app/src/AppContext.cpp" line="501"/>
         <source>TUN device name changed from Mihomo to %1</source>
         <translation>TUN 设备名已从 Mihomo 改为 %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="505"/>
+        <location filename="../src/app/src/AppContext.cpp" line="515"/>
         <source>TUN mode needs kernel DNS (fake-ip); DNS override was enabled automatically</source>
         <translation>TUN 模式需要内核 DNS（fake-ip），已自动开启 DNS 覆写</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="507"/>
+        <location filename="../src/app/src/AppContext.cpp" line="517"/>
         <source>TUN mode needs kernel DNS; &quot;DNS override&quot; was enabled automatically</source>
         <translation>TUN 模式需要内核 DNS，已自动开启「DNS 覆写」</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="522"/>
+        <location filename="../src/app/src/AppContext.cpp" line="532"/>
         <source>The kernel failed to start, so TUN cannot be enabled</source>
         <translation>内核启动失败，无法启用 TUN</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="545"/>
-        <location filename="../src/app/src/AppContext.cpp" line="597"/>
+        <location filename="../src/app/src/AppContext.cpp" line="555"/>
+        <location filename="../src/app/src/AppContext.cpp" line="607"/>
         <source>Failed to enable TUN: %1</source>
         <translation>TUN 启用失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="566"/>
+        <location filename="../src/app/src/AppContext.cpp" line="576"/>
         <source>Enabling TUN timed out; state was force-reset</source>
         <translation>TUN 启用超时，已强制复位</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="569"/>
+        <location filename="../src/app/src/AppContext.cpp" line="579"/>
         <source>Timed out enabling TUN; state was reset, please try again</source>
         <translation>TUN 启用超时，已复位，请重试</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="573"/>
+        <location filename="../src/app/src/AppContext.cpp" line="583"/>
         <source>Enabling TUN…</source>
         <translation>TUN 启用中…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="598"/>
+        <location filename="../src/app/src/AppContext.cpp" line="608"/>
         <source>Could not take over the device</source>
         <translation>无法接管设备</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="610"/>
+        <location filename="../src/app/src/AppContext.cpp" line="620"/>
         <source>TUN enabled (system routes taken over)</source>
         <translation>TUN 已启用（已接管系统路由）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="611"/>
+        <location filename="../src/app/src/AppContext.cpp" line="621"/>
         <source>TUN enabled (routes not taken over)</source>
         <translation>TUN 已启用（未接管路由）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="620"/>
+        <location filename="../src/app/src/AppContext.cpp" line="630"/>
         <source>Kernel is not running; skipping switch-state restore</source>
         <translation>内核未运行，跳过开关状态恢复</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="630"/>
+        <location filename="../src/app/src/AppContext.cpp" line="640"/>
         <source>Restored TUN to its previous state</source>
         <translation>已按上次的状态恢复 TUN</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="633"/>
+        <location filename="../src/app/src/AppContext.cpp" line="643"/>
         <source>Failed to restore TUN: %1</source>
         <translation>恢复 TUN 失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="635"/>
+        <location filename="../src/app/src/AppContext.cpp" line="645"/>
         <source>Failed to restore TUN mode: %1</source>
         <translation>恢复 TUN 模式失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="644"/>
+        <location filename="../src/app/src/AppContext.cpp" line="654"/>
         <source>Restored the system proxy to its previous state</source>
         <translation>已按上次的状态恢复系统代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="647"/>
-        <location filename="../src/app/src/AppContext.cpp" line="649"/>
+        <location filename="../src/app/src/AppContext.cpp" line="657"/>
+        <location filename="../src/app/src/AppContext.cpp" line="659"/>
         <source>Failed to restore the system proxy: %1</source>
         <translation>恢复系统代理失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="664"/>
+        <location filename="../src/app/src/AppContext.cpp" line="674"/>
         <source>Start failed; system proxy not enabled: %1</source>
         <translation>启动失败，未启用系统代理：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="676"/>
+        <location filename="../src/app/src/AppContext.cpp" line="686"/>
         <source>No inbound port available; cannot set the system proxy</source>
         <translation>没有可用的入站端口，无法设置系统代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="686"/>
+        <location filename="../src/app/src/AppContext.cpp" line="696"/>
         <source>127.0.0.1:%1 is not listening locally; refusing to enable the system proxy (the whole desktop would lose connectivity by pointing at an empty port)</source>
         <translation>本机 127.0.0.1:%1 未在监听，已拒绝启用系统代理（否则整个桌面会因指向空端口而断网）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="698"/>
+        <location filename="../src/app/src/AppContext.cpp" line="708"/>
         <source>Failed to set the system proxy: %1</source>
         <translation>设置系统代理失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="706"/>
+        <location filename="../src/app/src/AppContext.cpp" line="716"/>
         <source>Failed to turn off the system proxy: %1</source>
         <translation>关闭系统代理失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="739"/>
+        <location filename="../src/app/src/AppContext.cpp" line="749"/>
         <source>Unknown outbound mode: %1</source>
         <translation>未知的出站模式：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="778"/>
-        <location filename="../src/app/src/AppContext.cpp" line="803"/>
-        <location filename="../src/app/src/AppContext.cpp" line="891"/>
-        <location filename="../src/app/src/AppContext.cpp" line="969"/>
+        <location filename="../src/app/src/AppContext.cpp" line="788"/>
+        <location filename="../src/app/src/AppContext.cpp" line="813"/>
+        <location filename="../src/app/src/AppContext.cpp" line="901"/>
+        <location filename="../src/app/src/AppContext.cpp" line="979"/>
         <source>Failed to write the profile contents</source>
         <translation>订阅内容写入失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="783"/>
-        <location filename="../src/app/src/AppContext.cpp" line="895"/>
+        <location filename="../src/app/src/AppContext.cpp" line="793"/>
+        <location filename="../src/app/src/AppContext.cpp" line="905"/>
         <source>Failed to write the profile list</source>
         <translation>订阅列表写入失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="787"/>
+        <location filename="../src/app/src/AppContext.cpp" line="797"/>
         <source>Added local config: %1</source>
         <translation>已添加本地配置：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="795"/>
-        <location filename="../src/app/src/AppContext.cpp" line="907"/>
-        <location filename="../src/app/src/AppContext.cpp" line="1010"/>
+        <location filename="../src/app/src/AppContext.cpp" line="805"/>
+        <location filename="../src/app/src/AppContext.cpp" line="917"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1020"/>
         <source>Profile does not exist: %1</source>
         <translation>订阅不存在：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="809"/>
+        <location filename="../src/app/src/AppContext.cpp" line="819"/>
         <source>Replaced the config file of &quot;%1&quot;</source>
         <translation>已替换「%1」的配置文件</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="821"/>
+        <location filename="../src/app/src/AppContext.cpp" line="831"/>
         <source>Invalid profile URL: %1</source>
         <translation>订阅地址无效：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="848"/>
+        <location filename="../src/app/src/AppContext.cpp" line="858"/>
         <source>Profile download timed out (%1 ms)</source>
         <translation>订阅下载超时（%1 ms）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="855"/>
+        <location filename="../src/app/src/AppContext.cpp" line="865"/>
         <source>Profile download failed: %1</source>
         <translation>订阅下载失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="874"/>
+        <location filename="../src/app/src/AppContext.cpp" line="884"/>
         <source>The profile is not a valid Clash config: %1</source>
         <translation>订阅内容不是合法的 Clash 配置：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="899"/>
+        <location filename="../src/app/src/AppContext.cpp" line="909"/>
         <source>Added profile: %1</source>
         <translation>已添加订阅：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="911"/>
+        <location filename="../src/app/src/AppContext.cpp" line="921"/>
         <source>Profile &quot;%1&quot; is not a remote profile; nothing to update</source>
         <translation>订阅「%1」不是远程订阅，无需更新</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="938"/>
+        <location filename="../src/app/src/AppContext.cpp" line="948"/>
         <source>Updating &quot;%1&quot; timed out</source>
         <translation>更新「%1」超时</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="944"/>
+        <location filename="../src/app/src/AppContext.cpp" line="954"/>
         <source>Failed to update &quot;%1&quot;: %2</source>
         <translation>更新「%1」失败：%2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="962"/>
+        <location filename="../src/app/src/AppContext.cpp" line="972"/>
         <source>The update for &quot;%1&quot; returned invalid content; the old config was kept: %2</source>
         <translation>更新「%1」返回的内容不合法，已保留原配置：%2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="983"/>
+        <location filename="../src/app/src/AppContext.cpp" line="993"/>
         <source>Profile updated: %1</source>
         <translation>订阅已更新：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1015"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1025"/>
         <source>Switched to profile: %1</source>
         <translation>已切换到订阅：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1030"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1040"/>
         <source>Override content must be a YAML mapping: %1</source>
         <translation>覆写内容必须是 YAML 映射：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1037"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1047"/>
         <source>Unnamed override</source>
         <translation>未命名覆写</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1044"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1054"/>
         <source>Failed to write the override contents</source>
         <translation>覆写内容写入失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1048"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1058"/>
         <source>Failed to write the override list</source>
         <translation>覆写列表写入失败</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1052"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1062"/>
         <source>Added override: %1</source>
         <translation>已添加覆写：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1083"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1093"/>
         <source>Failed to parse the rule-override file; treating it as empty: %1</source>
         <translation>规则覆写文件解析失败，已按空处理：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1107"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1117"/>
         <source>No profile selected; cannot save custom rules</source>
         <translation>尚未选择订阅，无法保存自定义规则</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1119"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1129"/>
         <source>%1 entry %2 contains a line break (each rule must stay on one line)</source>
         <translation>%1 第 %2 条包含换行（每条规则必须写在一行内）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1127"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1137"/>
         <source>%1 entry %2 is not a valid rule (expected at least &quot;type,target&quot;): %3</source>
         <translation>%1 第 %2 条不是合法规则（至少需要「类型,目标」）：%3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1137"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1147"/>
         <source>Custom rules</source>
         <translation>自定义规则</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1138"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1148"/>
         <source>Fallback rules</source>
         <translation>兜底规则</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1139"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1149"/>
         <source>Removal rules</source>
         <translation>删除规则</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1172"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1182"/>
         <source>Failed to write custom rules: %1</source>
         <translation>自定义规则写入失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1177"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1187"/>
         <source>Custom rules saved (profile %1): %2 total, %3 disabled, %4 fallback / %5 removal</source>
         <translation>自定义规则已保存（订阅 %1）：共 %2 条，其中停用 %3 条，兜底 %4 条 / 删除 %5 条</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="1186"/>
+        <location filename="../src/app/src/AppContext.cpp" line="1196"/>
         <source>Custom rules applied</source>
         <translation>自定义规则已生效</translation>
     </message>
@@ -492,37 +497,37 @@
         <translation>接管本机全部流量（含不读系统代理的程序）。首次启用需要输入一次密码授权。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="406"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="407"/>
         <source>Proxies</source>
         <translation>代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="411"/>
         <source>Connections</source>
         <translation>连接</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="407"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="408"/>
         <source>Rules</source>
         <translation>规则</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="408"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="409"/>
         <source>Overrides</source>
         <translation>覆写</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="409"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="410"/>
         <source>Logs</source>
         <translation>日志</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="471"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="472"/>
         <source>Traffic</source>
         <translation>流量</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="412"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="413"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
@@ -542,132 +547,132 @@
         <translation>直连</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="338"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="694"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="339"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="695"/>
         <source>Update this subscription</source>
         <translation>更新此订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="680"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="681"/>
         <source>No profile selected</source>
         <translation>未选择订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="695"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="743"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="696"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="744"/>
         <source>Local profiles have no URL to update from</source>
         <translation>本地订阅没有可更新的链接</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="707"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="708"/>
         <source>%1 / %2</source>
         <translation>%1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="716"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="717"/>
         <source>Updated %1</source>
         <translation>更新于 %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="731"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="732"/>
         <source>Open the profiles page</source>
         <translation>打开订阅页</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="738"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="739"/>
         <source>Select a profile first</source>
         <translation>请先选择一个订阅</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="751"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="752"/>
         <source>Update failed: %1</source>
         <translation>更新失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="753"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="754"/>
         <source>Subscription updated</source>
         <translation>订阅已更新</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="778"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="857"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="779"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="858"/>
         <source>Disable system proxy</source>
         <translation>关闭系统代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="786"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="893"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="787"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="894"/>
         <source>Enable TUN mode</source>
         <translation>启用 TUN 模式</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="793"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="794"/>
         <source>Show main window</source>
         <translation>显示主窗口</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="801"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="802"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="858"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="859"/>
         <source>Enable system proxy</source>
         <translation>启用系统代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="863"/>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="891"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="864"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="892"/>
         <source>Enabling TUN…</source>
         <translation>TUN 启用中…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="867"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="868"/>
         <source>System proxy + TUN enabled</source>
         <translation>系统代理 + TUN 已开启</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="868"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
         <source>TUN enabled</source>
         <translation>TUN 已开启</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="869"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
         <source>System proxy enabled</source>
         <translation>系统代理已开启</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="870"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="871"/>
         <source>System proxy disabled</source>
         <translation>系统代理已关闭</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="886"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="887"/>
         <source>enabling…</source>
         <translation>启用中…</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="892"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="893"/>
         <source>Disable TUN mode</source>
         <translation>关闭 TUN 模式</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="902"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="903"/>
         <source>Mixed port %1</source>
         <translation>混合端口 %1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="904"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="905"/>
         <source>Not running</source>
         <translation>未启动</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="932"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="933"/>
         <source>Failed to switch outbound mode: %1</source>
         <translation>切换出站模式失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="938"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="939"/>
         <source>Outbound mode: %1</source>
         <translation>出站模式：%1</translation>
     </message>
@@ -1568,178 +1573,178 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>日志</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="78"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="80"/>
         <source>Log level</source>
         <translation>日志等级</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="83"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="85"/>
         <source> days</source>
         <translation> 天</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="86"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="88"/>
         <source>Log retention (days)</source>
         <translation>日志保留天数</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="87"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="89"/>
         <source>Log files older than the retention period are removed at startup.</source>
         <translation>超过保留天数的日志文件会在启动时清理。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="90"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="92"/>
         <source>Open data folder</source>
         <translation>打开数据目录</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="99"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="101"/>
         <source>Config overrides</source>
         <translation>配置覆写</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="102"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="104"/>
         <source>Manage DNS settings in this app</source>
         <translation>由本应用管理 DNS 配置</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="105"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="107"/>
         <source>When on, the DNS section configured here is used; when off, the profile&apos;s own DNS settings apply.</source>
         <translation>开启后使用本应用设置的 DNS 段；关闭则沿用订阅自带的 DNS 配置。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="108"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="110"/>
         <source>Manage domain sniffing in this app</source>
         <translation>由本应用管理域名嗅探</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="114"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="116"/>
         <source>Inbound ports</source>
         <translation>入站端口</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="128"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="130"/>
         <source>Mixed port (HTTP + SOCKS5)</source>
         <translation>混合端口（HTTP + SOCKS5）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="130"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="132"/>
         <source>SOCKS5 port</source>
         <translation>SOCKS5 端口</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="131"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="133"/>
         <source>Set it equal to the mixed port to reuse the mixed port.</source>
         <translation>设为与混合端口相同则复用混合端口。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="133"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="135"/>
         <source>HTTP port</source>
         <translation>HTTP 端口</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="138"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="140"/>
         <source>System integration</source>
         <translation>系统集成</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="141"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="143"/>
         <source>Start at login</source>
         <translation>开机自启动</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="143"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="145"/>
         <source>Implemented via an XDG autostart entry (~/.config/autostart/clash-qt.desktop).</source>
         <translation>通过 XDG 自启动项实现（~/.config/autostart/clash-qt.desktop）。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="146"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="148"/>
         <source>System proxy</source>
         <translation>系统代理</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="149"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="151"/>
         <source>Points the system HTTP/HTTPS/SOCKS proxy at this app&apos;s mixed port. Current backend: %1</source>
         <translation>将系统 HTTP/HTTPS/SOCKS 代理指向本应用的混合端口。当前后端：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="153"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="155"/>
         <source>TUN mode</source>
         <translation>TUN 模式</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="156"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="158"/>
         <source>Creates a virtual network interface to capture all traffic, including apps that ignore the system proxy (games, CLI tools, some Electron apps). The first enable asks for your password once; it only takes effect together with &quot;Route domain traffic&quot;.</source>
         <translation>创建虚拟网卡接管流量，连不认系统代理的程序（游戏 / 命令行 / 部分 Electron）也能走代理。首次开启会弹系统密码框授权一次；必须与「接管域名流量」配合才真正生效。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="159"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="161"/>
         <source>Route domain traffic (fake-IP)</source>
         <translation>接管域名流量（fake-ip 路由）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="162"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="164"/>
         <source>Routes the fake-IP range to the TUN interface (removed together with the interface). The default route is untouched, so connectivity is unaffected; with this off, TUN receives no traffic.</source>
         <translation>把假 IP 网段的路由指向 TUN（关闭 TUN 时随接口一起消失）。不改动系统默认路由，因此不会影响网络连通性；关掉这一项，TUN 将收不到任何流量。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="168"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="170"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="172"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="174"/>
         <source>Version v%1</source>
         <translation>当前版本 v%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="175"/>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="463"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="177"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="467"/>
         <source>Check for updates</source>
         <translation>检查更新</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="185"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="187"/>
         <source>Fetches the latest version from GitHub Releases. When an update exists, its changelog is shown and the release page can be opened in your browser; downloading and installing is up to you.</source>
         <translation>从 GitHub Releases 获取最新版本。有更新时会显示更新日志，可一键在浏览器中打开发布页，下载与安装由你自己决定。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="237"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="239"/>
         <source>Already up to date (v%1)</source>
         <translation>已是最新版本 v%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="245"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="247"/>
         <source> (the kernel is not running; start the proxy and try again)</source>
         <translation>（当前内核未运行，请先开启代理再试）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="247"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="249"/>
         <source>Update check failed: %1%2</source>
         <translation>检查更新失败：%1%2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="285"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="287"/>
         <source>Data folder: %1</source>
         <translation>数据目录：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="341"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="345"/>
         <source>Reload failed after port change: %1</source>
         <translation>端口修改后重载失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="354"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="358"/>
         <source>Failed to change startup setting: %1</source>
         <translation>自启动设置失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="438"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="442"/>
         <source>Language saved; restart the app to apply.</source>
         <translation>界面语言已保存，重启应用后生效。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="463"/>
+        <location filename="../src/app/src/ui/pages/SettingsPage.cpp" line="467"/>
         <source>Checking…</source>
         <translation>检查中…</translation>
     </message>
@@ -2059,17 +2064,17 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>已将旧受控配置并入 config.yaml 并删除：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="120"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="134"/>
         <source>Failed to parse the profile list: %1</source>
         <translation>订阅列表解析失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="143"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="157"/>
         <source>Failed to save the profile list: %1</source>
         <translation>订阅列表保存失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/app/src/config/ProfileConfig.cpp" line="228"/>
+        <location filename="../src/app/src/config/ProfileConfig.cpp" line="242"/>
         <source>Failed to write profile content (%1): %2</source>
         <translation>订阅内容写入失败（%1）：%2</translation>
     </message>
@@ -2219,12 +2224,12 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>%1 已退出，退出码 %2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="71"/>
+        <location filename="../src/app/src/AppContext.cpp" line="72"/>
         <source>Could not read file %1: %2</source>
         <translation>无法读取文件 %1：%2</translation>
     </message>
     <message>
-        <location filename="../src/app/src/AppContext.cpp" line="81"/>
+        <location filename="../src/app/src/AppContext.cpp" line="82"/>
         <source>Not a valid Clash config: %1</source>
         <translation>不是合法的 Clash 配置：%1</translation>
     </message>
@@ -2554,7 +2559,7 @@ Latency sorts ascending; untested and timed-out nodes go last. Sorting never cha
         <translation>TUN 已关闭</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/MainWindow.cpp" line="764"/>
+        <location filename="../src/app/src/ui/MainWindow.cpp" line="765"/>
         <source>System tray unavailable; skipping tray setup</source>
         <translation>系统托盘不可用，跳过托盘初始化</translation>
     </message>

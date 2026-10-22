@@ -294,9 +294,11 @@ void SettingsPage::onLogLevelChanged(const QString &level)
     if (m_loading) return;
 
     m_context->controledConfig()->patch(QJsonObject{{QStringLiteral("log-level"), level}});
+    // 只改应用侧的日志器，不重载内核：运行期没有任何地方读运行配置里的
+    // log-level（内核日志统一经 AppLogger 落盘），重载反而要重建监听、把
+    // 所有在途连接掐断。
     AppLogger::instance().setLevel(
         core::parseLogLevel(level).value_or(core::LogLevel::Info));
-    m_context->reloadKernel();
 }
 
 void SettingsPage::onMaxLogDaysChanged(int days)
