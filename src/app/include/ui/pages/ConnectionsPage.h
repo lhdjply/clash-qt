@@ -3,21 +3,24 @@
 // ---------------------------------------------------------------------------
 //  连接页
 //
-//  对应参照实现的 src/renderer/src/pages/connections.tsx。
-//  展示内核当前的活动连接（目标、规则、出站链、流量、速度），
-//  支持关闭选中连接与全部关闭。
+//  展示内核当前的活动连接：一条一张卡片，显示进程与目标、协议、出口节点、
+//  累计流量和存活时长。支持单条关闭与全部关闭。
 // ---------------------------------------------------------------------------
 
+#include <QString>
 #include <QWidget>
 
 class QCheckBox;
 class QLabel;
-class QTableWidget;
+class QListView;
+class QStackedWidget;
 class QTimer;
 
 namespace clashqt {
 
 class AppContext;
+class ConnectionListModel;
+class ConnectionRowDelegate;
 
 class ConnectionsPage : public QWidget {
     Q_OBJECT
@@ -33,15 +36,19 @@ private slots:
     void onCloseAll();
 
 private:
-    AppContext   *m_context = nullptr;
-    QTableWidget *m_table = nullptr;
-    QLabel       *m_summary = nullptr;
-    QCheckBox    *m_autoRefresh = nullptr;
-    QTimer       *m_refreshTimer = nullptr;
+    // 「3 分钟前」这类相对时长；时间戳解析不了时返回空
+    QString elapsedText(const QString &start) const;
 
-    // 连接 id 与表格行的对应关系
-    // （连接 id 由内核生成，界面上以 UserRole 携带）
-    QStringList m_connectionIds;
+    AppContext            *m_context = nullptr;
+    ConnectionListModel   *m_model = nullptr;
+    ConnectionRowDelegate *m_delegate = nullptr;
+
+    QListView      *m_list = nullptr;
+    QStackedWidget *m_stack = nullptr;
+    QLabel         *m_empty = nullptr;
+    QLabel         *m_summary = nullptr;
+    QCheckBox      *m_autoRefresh = nullptr;
+    QTimer         *m_refreshTimer = nullptr;
 };
 
 } // namespace clashqt

@@ -364,84 +364,87 @@
     </message>
 </context>
 <context>
+    <name>clashqt::ConnectionListModel</name>
+    <message>
+        <location filename="../src/app/src/ui/ConnectionList.cpp" line="67"/>
+        <source>Rule: %1</source>
+        <translation>规则：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/ConnectionList.cpp" line="68"/>
+        <source>Outbound: %1</source>
+        <translation>出站：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/ConnectionList.cpp" line="69"/>
+        <source>Up %1 · Down %2 · %3</source>
+        <translation>上传 %1 · 下载 %2 · %3</translation>
+    </message>
+</context>
+<context>
     <name>clashqt::ConnectionsPage</name>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="30"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="38"/>
         <source>Connections</source>
         <translation>连接</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="31"/>
-        <source>Active connections. Double-click a row to close that connection.</source>
-        <translation>当前活动的连接。双击某一行可关闭该连接。</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="39"/>
+        <source>Active connections, one card each. Double-click a card, or use the × on its right, to close that connection.</source>
+        <translation>当前的活动连接，一条一张卡片。双击卡片，或点右侧的 ×，即可关闭该连接。</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="39"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="48"/>
         <source>Auto refresh (1 s)</source>
         <translation>自动刷新（1 秒）</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="43"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="52"/>
         <source>Close selected</source>
         <translation>关闭选中</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="44"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="53"/>
         <source>Close all</source>
         <translation>关闭全部</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="55"/>
-        <source>Host</source>
-        <translation>主机</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="79"/>
+        <source>No active connections</source>
+        <translation>暂无活动连接</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="55"/>
-        <source>Rules</source>
-        <translation>规则</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="120"/>
+        <source>just now</source>
+        <translation>刚刚</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="56"/>
-        <source>Outbound chain</source>
-        <translation>出站链</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="121"/>
+        <source>%1 min ago</source>
+        <translation>%1 分钟前</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="56"/>
-        <source>Network</source>
-        <translation>网络</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="122"/>
+        <source>%1 h ago</source>
+        <translation>%1 小时前</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="57"/>
-        <source>Upload</source>
-        <translation>上传</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="123"/>
+        <source>%1 d ago</source>
+        <translation>%1 天前</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="57"/>
-        <source>Download</source>
-        <translation>下载</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="58"/>
-        <source>↑ Speed</source>
-        <translation>↑速度</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="58"/>
-        <source>↓ Speed</source>
-        <translation>↓速度</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="92"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="152"/>
         <source>%1 active connection(s) · Total up %2 · Total down %3</source>
         <translation>活动连接 %1 · 累计上传 %2 · 累计下载 %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="147"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="233"/>
         <source>Select a connection first</source>
         <translation>请先选择一条连接</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="160"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="247"/>
         <source>Closed %1 connection(s)</source>
         <translation>已关闭 %1 条连接</translation>
     </message>

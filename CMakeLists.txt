@@ -416,6 +416,7 @@ set(APP_SOURCES
     src/app/src/ui/Icons.cpp
     src/app/src/ui/TileButton.cpp
     src/app/src/ui/UpdateDialog.cpp
+    src/app/src/ui/ConnectionList.cpp
     src/app/src/ui/pages/ProxiesPage.cpp
     src/app/src/ui/pages/ProfilesPage.cpp
     src/app/src/ui/pages/ConnectionsPage.cpp
@@ -455,6 +456,7 @@ set(APP_HEADERS
     src/app/include/ui/UpdateDialog.h
     src/app/include/ui/Icons.h
     src/app/include/ui/TileButton.h
+    src/app/include/ui/ConnectionList.h
     src/app/include/ui/pages/ProxiesPage.h
     src/app/include/ui/pages/ProfilesPage.h
     src/app/include/ui/pages/ConnectionsPage.h

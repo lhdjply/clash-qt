@@ -364,84 +364,87 @@
     </message>
 </context>
 <context>
+    <name>clashqt::ConnectionListModel</name>
+    <message>
+        <location filename="../src/app/src/ui/ConnectionList.cpp" line="67"/>
+        <source>Rule: %1</source>
+        <translation>Rule: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/ConnectionList.cpp" line="68"/>
+        <source>Outbound: %1</source>
+        <translation>Outbound: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/src/ui/ConnectionList.cpp" line="69"/>
+        <source>Up %1 · Down %2 · %3</source>
+        <translation>Up %1 · Down %2 · %3</translation>
+    </message>
+</context>
+<context>
     <name>clashqt::ConnectionsPage</name>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="30"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="38"/>
         <source>Connections</source>
         <translation>Connections</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="31"/>
-        <source>Active connections. Double-click a row to close that connection.</source>
-        <translation>Active connections. Double-click a row to close that connection.</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="39"/>
+        <source>Active connections, one card each. Double-click a card, or use the × on its right, to close that connection.</source>
+        <translation>Active connections, one card each. Double-click a card, or use the × on its right, to close that connection.</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="39"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="48"/>
         <source>Auto refresh (1 s)</source>
         <translation>Auto refresh (1 s)</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="43"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="52"/>
         <source>Close selected</source>
         <translation>Close selected</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="44"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="53"/>
         <source>Close all</source>
         <translation>Close all</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="55"/>
-        <source>Host</source>
-        <translation>Host</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="79"/>
+        <source>No active connections</source>
+        <translation>No active connections</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="55"/>
-        <source>Rules</source>
-        <translation>Rules</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="120"/>
+        <source>just now</source>
+        <translation>just now</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="56"/>
-        <source>Outbound chain</source>
-        <translation>Outbound chain</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="121"/>
+        <source>%1 min ago</source>
+        <translation>%1 min ago</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="56"/>
-        <source>Network</source>
-        <translation>Network</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="122"/>
+        <source>%1 h ago</source>
+        <translation>%1 h ago</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="57"/>
-        <source>Upload</source>
-        <translation>Upload</translation>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="123"/>
+        <source>%1 d ago</source>
+        <translation>%1 d ago</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="57"/>
-        <source>Download</source>
-        <translation>Download</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="58"/>
-        <source>↑ Speed</source>
-        <translation>↑ Speed</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="58"/>
-        <source>↓ Speed</source>
-        <translation>↓ Speed</translation>
-    </message>
-    <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="92"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="152"/>
         <source>%1 active connection(s) · Total up %2 · Total down %3</source>
         <translation>%1 active connection(s) · Total up %2 · Total down %3</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="147"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="233"/>
         <source>Select a connection first</source>
         <translation>Select a connection first</translation>
     </message>
     <message>
-        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="160"/>
+        <location filename="../src/app/src/ui/pages/ConnectionsPage.cpp" line="247"/>
         <source>Closed %1 connection(s)</source>
         <translation>Closed %1 connection(s)</translation>
     </message>
