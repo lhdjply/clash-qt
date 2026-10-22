@@ -75,6 +75,8 @@ SettingsPage::SettingsPage(AppContext *context, QWidget *parent)
 
     m_logLevelCombo = new QComboBox(logCard);
     for (const QString &level : core::logLevelNames()) m_logLevelCombo->addItem(level);
+    // 滚轮不参与改值，避免鼠标划过时误改（滚轮留给页面滚动）
+    ui::ignoreWheel(m_logLevelCombo);
     logLayout->addWidget(ui::makeFormRow(tr("Log level"), m_logLevelCombo,
                                          QString(), logCard));
 
